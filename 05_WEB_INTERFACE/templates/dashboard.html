@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FORVIA NRT Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --forvia-blue: #0033CC;
+            --forvia-dark: #001a99;
+            --forvia-light: #e6f0ff;
+            --gray-dark: #1a1a1a;
+            --gray-light: #f8f9fa;
+            --accent: #FF6B35;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--gray-dark);
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 20px rgba(0, 51, 204, 0.25);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .navbar-brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .navbar-brand-text .primary {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-brand-text .secondary {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0.95;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after { width: 100%; }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            color: var(--forvia-dark);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .hero-tags {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--forvia-light);
+            color: var(--forvia-blue);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 25px;
+            margin-bottom: 60px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--accent) 100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 25px rgba(0, 51, 204, 0.15);
+            border-color: var(--forvia-light);
+        }
+
+        .stat-card h3 {
+            color: var(--gray-dark);
+            font-size: 13px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--forvia-blue);
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #999;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 28px;
+            color: var(--forvia-dark);
+            margin-bottom: 40px;
+            font-weight: 700;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--accent) 100%);
+            border-radius: 2px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--forvia-blue);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 35px rgba(0, 51, 204, 0.2);
+            border-color: var(--forvia-light);
+            background: linear-gradient(135deg, #ffffff 0%, var(--forvia-light) 100%);
+        }
+
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: inline-block;
+            color: var(--forvia-blue);
+        }
+
+        .feature-card h2 {
+            color: var(--forvia-dark);
+            margin-bottom: 12px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .cta-button:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 15px rgba(0, 51, 204, 0.3);
+        }
+
+        .cta-button i { transition: transform 0.3s; }
+        .cta-button:hover i { transform: translateX(2px); }
+
+        footer {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+            font-size: 13px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { gap: 15px; }
+            .hero h1 { font-size: 28px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <img src="/static/forvia_logo.png" alt="FORVIA Logo" style="height: 70px;">
+                <div class="navbar-brand-text">
+                    <div class="primary">MESX.0</div>
+                    <div class="secondary">NRT</div>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
+                <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
+                <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Graph</a></li>
+                <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero">
+            <h1>🚀 NRT Scope Platform</h1>
+            <p>Automated Non-Regression Test Scope Generation</p>
+            <div class="hero-tags">
+                <span class="tag"><i class="fas fa-check-circle"></i> Real-time Analysis</span>
+                <span class="tag"><i class="fas fa-lightning"></i> Fast Processing</span>
+                <span class="tag"><i class="fas fa-lock"></i> Enterprise Grade</span>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>📊 Nodes</h3>
+                <div class="stat-number" id="nodesCount">-</div>
+                <div class="stat-label">Graph nodes</div>
+            </div>
+            <div class="stat-card">
+                <h3>🔗 Relations</h3>
+                <div class="stat-number" id="relationsCount">-</div>
+                <div class="stat-label">Graph relations</div>
+            </div>
+            <div class="stat-card">
+                <h3>💻 Commits</h3>
+                <div class="stat-number" id="commitsCount">-</div>
+                <div class="stat-label">Total commits</div>
+            </div>
+            <div class="stat-card">
+                <h3>🏢 Microservices</h3>
+                <div class="stat-number" id="microservicesCount">-</div>
+                <div class="stat-label">System modules</div>
+            </div>
+            <div class="stat-card">
+                <h3>⚙️ Functions</h3>
+                <div class="stat-number" id="functionsCount">-</div>
+                <div class="stat-label">Functions</div>
+            </div>
+            <div class="stat-card">
+                <h3>📋 WorkItems</h3>
+                <div class="stat-number" id="workitemsCount">-</div>
+                <div class="stat-label">User stories</div>
+            </div>
+        </div>
+
+        <h2 class="section-title">✨ Core Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h2>Commit Analysis</h2>
+                <p>Analyze the complete impact of any commit on microservices, functions, and associated workitems in real-time</p>
+                <a href="/commit-analysis" class="cta-button">
+                    <span>Analyze</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📋</div>
+                <h2>NRT-Scope</h2>
+                <p>Generate comprehensive NRT scopes for any workitem with complete dependency tracing and export capabilities</p>
+                <a href="/workitem-scope" class="cta-button">
+                    <span>Generate Scope</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🕸️</div>
+                <h2>Graph Visualization</h2>
+                <p>Interactive visualization of complex dependency relationships with multi-level dependency analysis</p>
+                <a href="/graph-visualization" class="cta-button">
+                    <span>View Graph</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h2>System Reports</h2>
+                <p>Comprehensive analytics dashboard with detailed metrics, charts, and system reliability insights</p>
+                <a href="/reports" class="cta-button">
+                    <span>View Reports</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <h2>Impact Tracing</h2>
+                <p>Complete transitive dependency analysis showing multi-level impact chains through the system</p>
+                <a href="/commit-analysis" class="cta-button">
+                    <span>Trace Impact</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h2>Data Export</h2>
+                <p>Export NRT scopes in JSON and CSV formats for integration with testing frameworks</p>
+                <a href="/workitem-scope" class="cta-button">
+                    <span>Export Data</span>
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 FORVIA NRT Scope System | <strong>Automated Non-Regression Test Orchestration</strong></p>
+    </footer>
+
+    <script>
+        function animateNumber(element, target) {
+            let current = 0;
+            const increment = target / 30;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target.toLocaleString();
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current).toLocaleString();
+                }
+            }, 30);
+        }
+
+        fetch('/api/statistics')
+            .then(response => response.json())
+            .then(data => {
+                animateNumber(document.getElementById('nodesCount'), data.total_nodes);
+                animateNumber(document.getElementById('relationsCount'), data.total_relations);
+                animateNumber(document.getElementById('commitsCount'), data.commit_count || 0);
+                animateNumber(document.getElementById('microservicesCount'), data.microservice_count || 0);
+                animateNumber(document.getElementById('functionsCount'), data.function_count || 0);
+                animateNumber(document.getElementById('workitemsCount'), data.workitem_count || 0);
+            })
+            .catch(error => console.error('Erreur:', error));
+    </script>
+</body>
+</html>

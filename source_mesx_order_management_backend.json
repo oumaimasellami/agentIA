@@ -1,0 +1,250 @@
+[
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1776
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: order-m-be\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'high'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/order-management-backend\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
+    "taille": 1240
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"",
+    "taille": 259
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/order-management-backend');\n    });\n  });\n});\n",
+    "taille": 633
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(public readonly appService: AppService) {}\n\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { appConfig } from './config/app-config/configuration';\nimport { daprConfiguration } from './config/dapr/configuration';\nimport { DynamicSequencerModule } from './dynamic-sequencer/dynamic-sequencer.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    UrlApiConfigModule,\n    DynamicSequencerModule,\n    ConfigModule.forRoot({\n      load: [appConfig, urlApiConfiguration, daprConfiguration],\n    }),\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 806
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/order-management-backend';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 210
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  public log(message: unknown): void {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public debug(message: unknown): void {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public verbose(message: unknown): void {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 644
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/common/sleep/sleep.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Async sleep\n * @param timeout in ms\n */\nexport async function asyncSleep(timeout: number): Promise<void> {\n  await new Promise((resolve) => {\n    setTimeout(resolve, timeout);\n  });\n}\n",
+    "taille": 191
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (!config.value) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 1259
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2816
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface DaprConfiguration {\r\n  orderManagementApiAppId: string | undefined;\r\n  plantHierarchyApiAppId: string | undefined;\r\n}\r\nexport const daprConfiguration = (): DaprConfiguration => ({\r\n  orderManagementApiAppId: process.env.ORDER_MANAGEMENT_API_APP_ID,\r\n  plantHierarchyApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\r\n});\r\n",
+    "taille": 332
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\r\nimport { ConfigModule } from '@nestjs/config';\r\nimport { DaprConfigService } from './dapr-config.service';\r\n\r\n@Module({\r\n  exports: [DaprConfigService],\r\n  imports: [ConfigModule],\r\n  providers: [DaprConfigService],\r\n})\r\nexport class DaprConfigModule {}\r\n",
+    "taille": 297
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\r\nimport { ConfigService } from '@nestjs/config';\r\n\r\n@Injectable()\r\nexport class DaprConfigService {\r\n  public constructor(private readonly configService: ConfigService) {}\r\n\r\n  public get orderManagementApiAppId(): string {\r\n    return this.configService.get<string>('orderManagementApiAppId') ?? '';\r\n  }\r\n\r\n  public get plantHierarchyApiAppId(): string {\r\n    return this.configService.get<string>('plantHierarchyApiAppId') ?? '';\r\n  }\r\n}\r\n",
+    "taille": 487
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  urlApi: process.env.URL_ORDER_MANAGEMENT_BACKEND,\n});\n",
+    "taille": 179
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/order-m-be/'\n    );\n  }\n}\n",
+    "taille": 369
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dto/get-order-status-request.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { IsArray, IsOptional } from 'class-validator';\n\nexport class GetOrderStatusRequestDto {\n  @IsOptional()\n  @IsArray()\n  public orderId?: Array<string>;\n\n  @IsOptional()\n  @IsArray()\n  public materialNumber?: Array<string>;\n\n  @IsOptional()\n  @IsArray()\n  public workcenter?: Array<string>;\n\n  @IsOptional()\n  @IsArray()\n  public resource?: Array<string>;\n}\n",
+    "taille": 364
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dto/get-order-status-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class GetOrderStatusResponseDto {\n  public page: number;\n\n  public totalPages: number;\n\n  public totalRecords: number;\n\n  public orders: Array<{\n    plantId: number;\n    orderId: string | undefined;\n    materialNumber: string | undefined;\n    orderedQuantity: number;\n    producedQuantity: number;\n    groupingKey: string | undefined;\n    workcenter: string | undefined;\n    resource: string | undefined;\n    sequenceNumber: number | undefined;\n    isFrozen: boolean;\n    linkedWK: string | undefined;\n    status: string | undefined;\n  }>;\n}\n",
+    "taille": 549
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dto/header.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class HttpHeadersDto {\n  public authorization: string;\n\n  public 'Content-Type': string;\n}\n",
+    "taille": 98
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dto/mes-buffer.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsNumber, IsOptional, IsString, IsDate } from 'class-validator';\n\nexport class MesBufferDto {\n  @ApiProperty()\n  @IsNumber()\n  public plant: number;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public orderId?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public materialNumber?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public upstreamMaterial?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public workcenter?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public tpaNumber?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public deliveryNumber?: string;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public startPickingDatetime?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public endPickingDatetime?: Date;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsNumber()\n  public quantity?: number;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public customer?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public productionLineUpstream?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public sourceLocation?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public destinationLocation?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public bufferStatus?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public batch?: string;\n\n  @ApiProperty({ required: false })\n  @IsOptional()\n  @IsString()\n  public batchTest?: string;\n\n  @ApiProperty({ required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public calendarType1?: Date;\n\n  @ApiProperty({\n    format: 'date-time',\n    required: false,\n    type: String,\n  })\n  @IsOptional()\n  @IsDate()\n  public calendarType2?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public calendarType3?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public calendarType4?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public calendarType5?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public calendarType6?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public endPreparationDatetime?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public truckDepartureDatetime?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public launchDatetime?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public startProductionDatetime?: Date;\n\n  @ApiProperty({ format: 'date-time', required: false, type: String })\n  @IsOptional()\n  @IsDate()\n  public endProductionDatetime?: Date;\n}\n",
+    "taille": 3338
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dto/mes-workcenter.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsOptional } from 'class-validator';\n\nexport class MesWorkcenterDto {\n  @ApiProperty({ required: false })\n  @IsOptional()\n  public workcenters: Array<string>;\n}\n",
+    "taille": 217
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dynamic-sequencer.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  BadRequestException,\n  Body,\n  Controller,\n  Get,\n  Logger,\n  Param,\n  ParseIntPipe,\n  Post,\n  Query,\n} from '@nestjs/common';\nimport {\n  ApiBody,\n  ApiOperation,\n  ApiParam,\n  ApiQuery,\n  ApiResponse,\n} from '@nestjs/swagger';\nimport { GetOrderStatusRequestDto } from './dto/get-order-status-request.dto';\nimport { GetOrderStatusResponseDto } from './dto/get-order-status-response.dto';\nimport { MesBufferDto } from './dto/mes-buffer.dto';\nimport { DynamicSequencerService } from './dynamic-sequencer.service';\n\n@Controller('dynamic-sequencer')\nexport class DynamicSequencerController {\n  private readonly logger = new Logger(DynamicSequencerController.name);\n\n  public constructor(private readonly dynamicSeqSer: DynamicSequencerService) {}\n\n  @Get('getMesWk/:plant')\n  @ApiOperation({\n    summary: 'Get MES buffer data by plant for all MES-enabled workcenters',\n  })\n  @ApiParam({ description: 'ID of the plant', name: 'plantId', type: Number })\n  @ApiQuery({\n    description: 'Page number for pagination',\n    example: 1,\n    name: 'page',\n    required: false,\n    type: Number,\n  })\n  @ApiResponse({\n    description: 'Paginated list of MES buffer records',\n    schema: {\n      properties: {\n        data: {\n          type: 'array',\n        },\n        limit: { type: 'number' },\n        page: { type: 'number' },\n        total: { type: 'number' },\n      },\n      type: 'object',\n    },\n    status: 200,\n  })\n  public async getMesWksByPlant(\n    @Param('plant') plant: number,\n    @Query('page') page: number,\n  ): Promise<{\n    data: Array<MesBufferDto>;\n    total: number;\n    page: number;\n    limit: number;\n  }> {\n    try {\n      return await this.dynamicSeqSer.getMesWksByPlant(plant, +page);\n    } catch (error) {\n      this.logger.error(\n        `Failed to fetch MES workcenters for plant ${plant} (page ${page}): ${\n          error.message ?? error\n        }`,\n      );\n\n      // Return a safe fallback response\n      return {\n        data: [],\n        limit: 0,\n        page: +page,\n        total: 0,\n      };\n    }\n  }\n\n  @Post('get-order-status/:plant')\n  @ApiOperation({\n    description:\n      'Fetches production orders and their statuses for a given plant, supporting optional filters and pagination.',\n    summary: 'Retrieve production order status from Order Management service',\n  })\n  @ApiParam({\n    description: 'Plant identifier',\n    example: 1146,\n    name: 'plant',\n    required: true,\n    type: Number,\n  })\n  @ApiQuery({\n    description: 'Page number for pagination',\n    example: 1,\n    name: 'page',\n    required: false,\n    type: Number,\n  })\n  @ApiBody({\n    description: 'Optional filter criteria for production orders',\n\n    examples: {\n      default: {\n        summary: 'Example filters',\n        value: {\n          materialNumber: [],\n          orderId: ['PO-1234567890-TEST'],\n          resource: ['RES-0001'],\n          workcenter: ['WC-0001'],\n        },\n      },\n    },\n    required: false,\n    type: GetOrderStatusRequestDto,\n  })\n  @ApiResponse({\n    description: 'Successfully retrieved production order status data.',\n    status: 200,\n    type: GetOrderStatusResponseDto,\n  })\n  @ApiResponse({\n    description: 'Invalid parameters or missing required fields.',\n    status: 400,\n  })\n  @ApiResponse({\n    description: 'Unexpected server error when fetching order status data.',\n    status: 500,\n  })\n  public async getOrderStatus(\n    @Param('plant', ParseIntPipe) plant: number,\n    @Query('page', ParseIntPipe) page: number,\n    @Body() filters: GetOrderStatusRequestDto,\n  ): Promise<GetOrderStatusResponseDto> {\n    if (!plant) {\n      throw new BadRequestException('Plant parameter is required.');\n    }\n\n    return this.dynamicSeqSer.getOrderStatus(plant, filters, page);\n  }\n}\n",
+    "taille": 3740
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dynamic-sequencer.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DynamicSequencerController } from './dynamic-sequencer.controller';\nimport { DynamicSequencerService } from './dynamic-sequencer.service';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\n\n@Module({\n  controllers: [DynamicSequencerController],\n  imports: [ConfigModule.forRoot(), DaprConfigModule, UrlApiConfigModule],\n  providers: [DynamicSequencerService],\n})\nexport class DynamicSequencerModule {}\n",
+    "taille": 588
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/dynamic-sequencer/dynamic-sequencer.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { GetOrderStatusRequestDto } from './dto/get-order-status-request.dto';\nimport { GetOrderStatusResponseDto } from './dto/get-order-status-response.dto';\nimport { HttpHeadersDto } from './dto/header.dto';\nimport { MesBufferDto } from './dto/mes-buffer.dto';\nimport { MesWorkcenterDto } from './dto/mes-workcenter.dto';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Injectable()\nexport class DynamicSequencerService {\n  private readonly daprClient: DaprClient;\n\n  private readonly logger = new Logger(DynamicSequencerService.name);\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async findWksbyplantandworkcenter(\n    plant: number,\n    workcenters: MesWorkcenterDto,\n    page: number,\n  ): Promise<{\n    data: Array<MesBufferDto>;\n    total: number;\n    page: number;\n    limit: number;\n  }> {\n    try {\n      const token = `Bearer ${process.env.TOKEN}`;\n      const options = { headers: { authorization: token } };\n      const serviceAppId = this.daprConfigService.orderManagementApiAppId;\n      const serviceMethod = `order-management/buffer/${plant}?page=${page}`;\n\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.POST,\n        workcenters,\n        options,\n      );\n\n      if (!response) {\n        throw new Error('Empty response from MES buffer service');\n      }\n\n      return response as {\n        data: Array<MesBufferDto>;\n        total: number;\n        page: number;\n        limit: number;\n      };\n    } catch (error) {\n      this.logger.error(\n        `Failed to fetch MES buffer for plant ${plant} (page ${page}): ${\n          error.message ?? error\n        }`,\n      );\n      throw new Error(\n        `Error retrieving MES buffer data for plant ${plant}: ${\n          error.message ?? 'Unknown error'\n        }`,\n      );\n    }\n  }\n\n  public async getWorkcentersByPlant(plant: number): Promise<MesWorkcenterDto> {\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethod = `workcenter/mes-workcenter/${plant}`;\n\n    try {\n      const token = `Bearer ${process.env.TOKEN}`;\n      const options = { headers: { authorization: token } };\n\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.GET,\n        undefined,\n        options,\n      );\n\n      if (response) {\n        return response as MesWorkcenterDto;\n      }\n\n      this.logger.warn(`Empty response received for plant ${plant}`);\n      return { workcenters: [] };\n    } catch (error) {\n      this.logger.error(\n        `Error while fetching workcenters for plant ${plant}: ${\n          error.message ?? error\n        }`,\n      );\n\n      return { workcenters: [] };\n    }\n  }\n\n  public async getMesWksByPlant(\n    plant: number,\n    page: number,\n  ): Promise<{\n    data: Array<MesBufferDto>;\n    total: number;\n    page: number;\n    limit: number;\n  }> {\n    const mesWorkcenters = await this.getWorkcentersByPlant(plant);\n\n    const result = this.findWksbyplantandworkcenter(\n      plant,\n      mesWorkcenters,\n      page,\n    );\n    return result;\n  }\n\n  public async getOrderStatus(\n    plant: number,\n    filters: GetOrderStatusRequestDto,\n    page: number,\n  ): Promise<GetOrderStatusResponseDto> {\n    try {\n      const token = `Bearer ${process.env.TOKEN}`;\n      const headersDto = new HttpHeadersDto();\n      headersDto.authorization = `Bearer ${token}`;\n      headersDto['Content-Type'] = 'application/json';\n      const options = {\n        headers: headersDto,\n      };\n\n      const serviceAppId = this.daprConfigService.orderManagementApiAppId;\n      const serviceMethod = `order-management/production-order/get-order-status/${plant}?page=${page}`;\n\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.POST,\n        filters,\n        options,\n      );\n\n      if (!response) {\n        throw new Error('Empty response from production order service');\n      }\n\n      return response as GetOrderStatusResponseDto;\n    } catch (error) {\n      this.logger.error(\n        `Failed to fetch order status for plant ${plant} (page ${page}): ${\n          error.message ?? error\n        }`,\n      );\n      throw new Error(\n        `Error retrieving order status data for plant ${plant}: ${\n          error.message ?? 'Unknown error'\n        }`,\n      );\n    }\n  }\n}\n",
+    "taille": 4620
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport type { NestExpressApplication } from '@nestjs/platform-express';\nimport { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';\nimport * as express from 'express';\nimport { AppModule } from '@/app.module';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create<NestExpressApplication>(AppModule, {\n    rawBody: true,\n  });\n\n  app.use(express.json({ type: 'application/cloudevents+json' }));\n  app.use(express.json({ type: 'application/json' }));\n\n  // Global validation pipe\n  app.useGlobalPipes(\n    new ValidationPipe({\n      forbidNonWhitelisted: true,\n      transform: true,\n      whitelist: true,\n    }),\n  );\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n\n  const { urlApi } = app.get(UrlApiConfigService);\n\n  const config = new DocumentBuilder()\n    .setTitle('Backend Downtime Swagger Documentation')\n    .setDescription(\n      \"In this page you'll find all of the necessary informations about the microservice Backend Downtime and it's different endpoints.\",\n    )\n    .setVersion('1.0')\n    .addServer(urlApi, 'pre-production')\n    .build();\n\n  const document = SwaggerModule.createDocument(app, config);\n  SwaggerModule.setup('api', app, document);\n\n  await app.listen(3000);\n}\n\nbootstrap();\n",
+    "taille": 1463
+  },
+  {
+    "microservice": "mesx-order-management-backend",
+    "chemin": "/test/app.end2end-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { INestApplication } from '@nestjs/common';\nimport { Test, TestingModule } from '@nestjs/testing';\nimport * as request from 'supertest';\nimport { AppModule } from '../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 628
+  }
+]

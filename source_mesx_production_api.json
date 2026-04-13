@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: prod-api\n  cajMigrationJobName: prod-dbm\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/production-api\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n      migrationContainerAppJobName: caj-gptmpxn01-eun-dev-$(cajMigrationJobName)\n\n",
+    "taille": 1346
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "# apiVersion: dapr.io/v1alpha1\n# kind: Component\n# metadata:\n#   name: bindings-events\n# spec:\n#   type: bindings.kafka\n#   version: v1\n#   metadata:\n#   - name: brokers\n#     value: \"localhost:9092\"\n#   - name: topics\n#     value: \"connect-test\"\n#   - name: direction\n#     value: \"input\"\n#   - name: initialOffset # Optional. Used for input bindings.\n#     value: \"newest\"\n#   - name: authRequired\n#     value: \"false\"\n#   - name: consumerGroup\n#     value: \"group1\"\n",
+    "taille": 469
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/production-api');\n    });\n  });\n});\n",
+    "taille": 623
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { ApiExcludeEndpoint } from '@nestjs/swagger';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(private readonly appService: AppService) {}\n\n  @ApiExcludeEndpoint()\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 366
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { appConfig } from './config/app-config/configuration';\nimport { ingestionCleansingJobConfig } from './config/ingestion-cleansing-job/configuration';\nimport { IngestionCleansingJobConfigModule } from './config/ingestion-cleansing-job/ingestion-cleansing-job.module';\nimport { CleanUpModule } from './modules/clean-up/clean-up.module';\nimport { PlantConfigModule } from './modules/plant-config/plant-config.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\nimport { CauseFamilyAssignModule } from '@/modules/cause-family-assign/cause-family-assign.module';\nimport { ContainerModule } from '@/modules/container/container.module';\nimport { DownTimeCauseModule } from '@/modules/down-time-cause/down-time-cause.module';\nimport { DownTimeTicketModule } from '@/modules/down-time-ticket/down-time-ticket.module';\nimport { FamilyModule } from '@/modules/family/family.module';\nimport { IngestionEventTrackingModule } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.module';\nimport { ProbesModule } from '@/modules/probes/probes.module';\nimport { ResourceFamilyAssignModule } from '@/modules/resource-family-assign/resource-family-assign.module';\nimport { MssqlDatabaseProviderModule } from '@/providers/database/mssql/mssql.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    ProbesModule,\n    ContainerModule,\n    MssqlDatabaseProviderModule,\n    UrlApiConfigModule,\n    IngestionCleansingJobConfigModule,\n    HttpModule,\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        mssqlConfiguration,\n        urlApiConfiguration,\n        ingestionCleansingJobConfig,\n      ],\n    }),\n    DownTimeTicketModule,\n    DownTimeCauseModule,\n    CauseFamilyAssignModule,\n    FamilyModule,\n    ResourceFamilyAssignModule,\n    IngestionEventTrackingModule,\n    PlantConfigModule,\n    CleanUpModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 2297
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/production-api';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 200
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/common/helpers/date-utils.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HourRange } from '../../modules/down-time-ticket/interfaces/date-range.interface';\n\n/**\n * Splits a date range into hourly intervals, creating an array of HourRange objects\n * where each range represents one hour from the start to end time.\n * @param from - The start date and time for the range\n * @param to - The end date and time for the range\n * @returns An array of HourRange objects representing each hour in the given range\n */\nexport function splitIntoHours(from: Date, to: Date): Array<HourRange> {\n  const hours: Array<HourRange> = [];\n  const current = new Date(from);\n  const endTime = new Date(to);\n  endTime.setMinutes(59, 59, 999);\n\n  while (current <= endTime) {\n    const start = new Date(current);\n    const end = new Date(current);\n    end.setMinutes(59, 59, 999);\n\n    hours.push({ start, end });\n    current.setHours(current.getHours() + 1, 0, 0, 0);\n  }\n\n  return hours;\n}\n",
+    "taille": 904
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  log(message: unknown) {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  error(message: unknown, stack?: string) {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  warn(message: unknown) {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  debug(message: unknown) {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  verbose(message: unknown) {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 579
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'appConfigEndpoint', value: this.appConfigEndpoint }];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 1346
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2816
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/database/mssql/abstract.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export abstract class MssqlConfigurationService {\n  public abstract get requestTimeout(): number;\n\n  public abstract get type(): string;\n\n  public abstract get host(): string;\n\n  public abstract get port(): number;\n\n  public abstract get username(): string;\n\n  public abstract get password(): string;\n\n  public abstract get database(): string;\n\n  public abstract get synchronize(): boolean;\n\n  public abstract get useManagedIdentity(): boolean;\n\n  public abstract get managedIdentityClientId(): string;\n\n  public abstract get encrypt(): boolean;\n\n  public abstract get entities(): Array<string>;\n\n  public abstract get migrations(): Array<string>;\n\n  public abstract get migrationsTableName(): string;\n\n  public abstract get migrationsWaitDelayMilliseconds(): number;\n\n  public abstract get migrationsWaitRetryLimit(): number;\n}\n",
+    "taille": 829
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/database/mssql/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface MssqlEnvironmentVariableConfig {\n  mssql: {\n    database: string | undefined;\n    encrypt: boolean | undefined;\n    entities: Array<string> | undefined;\n    host: string | undefined;\n    managedIdentityClientId: string | undefined;\n    migrations: Array<string> | undefined;\n    migrationsTableName: string | undefined;\n    migrationsWaitDelayMilliseconds: number;\n    migrationsWaitRetryLimit: number;\n    password: string | undefined;\n    port: number | undefined;\n    synchronize: boolean | undefined;\n    type: string | undefined;\n    username: string | undefined;\n    requestTimeout: number;\n  };\n}\n\nexport const mssqlConfiguration = (): MssqlEnvironmentVariableConfig => ({\n  mssql: {\n    database: process.env.DB_NAME,\n    encrypt: process.env.DB_ENCRYPT_CONNECTION === 'true',\n    entities: ['dist/**/*.entity{.ts,.js}'], // Entity files path\n    host: process.env.DB_HOST,\n    managedIdentityClientId: process.env.DB_MANAGED_ID_CLIENT_ID,\n    migrations: ['dist/**/migration/*{.ts,.js}'], // Migrations files path\n    migrationsTableName: 'migrations_TypeORM', // Name of the migrations table\n    migrationsWaitDelayMilliseconds: Number(\n      process.env.DB_MIGRATION_WAIT_DELAY_MILLISECONDS,\n    ),\n    migrationsWaitRetryLimit: Number(process.env.DB_MIGRATION_WAIT_RETRY_LIMIT),\n    password: process.env.DB_PASSWORD,\n    port: Number(process.env.DB_PORT),\n    requestTimeout: Number(process.env.DB_REQUEST_TIMEOUT),\n    synchronize: process.env.DB_SYNC === 'true', // Whether to automatically synchronize database schema\n    type: 'mssql',\n    username: process.env.DB_USERNAME,\n  },\n});\n",
+    "taille": 1611
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/database/mssql/default.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\ninterface MssqlConfigurationObject {\n  database: string | undefined;\n  encrypt: boolean | undefined;\n  entities: Array<string> | undefined;\n  host: string | undefined;\n  managedIdentityClientId: string | undefined;\n  migrations: Array<string> | undefined;\n  migrationsTableName: string | undefined;\n  migrationsWaitDelayMilliseconds: number;\n  migrationsWaitRetryLimit: number;\n  password: string | undefined;\n  port: number | undefined;\n  requestTimeout: number;\n  synchronize: boolean | undefined;\n  type: string | undefined;\n  username: string | undefined;\n}\n\nexport class DefaultMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly mssqlConfig: MssqlConfigurationObject) {\n    super();\n  }\n\n  public get type(): string {\n    return this.mssqlConfig.type ?? '';\n  }\n\n  public get host(): string {\n    return this.mssqlConfig.host ?? '';\n  }\n\n  public get port(): number {\n    return this.mssqlConfig.port ?? 1433;\n  }\n\n  public get username(): string {\n    return this.mssqlConfig.username ?? '';\n  }\n\n  public get password(): string {\n    return this.mssqlConfig.password ?? '';\n  }\n\n  public get database(): string {\n    return this.mssqlConfig.database ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.mssqlConfig.synchronize ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return this.mssqlConfig.managedIdentityClientId ?? '';\n  }\n\n  public get encrypt(): boolean {\n    return this.mssqlConfig.encrypt ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.mssqlConfig.entities ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.mssqlConfig.migrations ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return this.mssqlConfig.migrationsTableName ?? 'migrations_TypeORM';\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitDelayMilliseconds)\n      ? 3000\n      : this.mssqlConfig.migrationsWaitDelayMilliseconds;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitRetryLimit)\n      ? 50\n      : this.mssqlConfig.migrationsWaitRetryLimit;\n  }\n\n  public get requestTimeout(): number {\n    return Number.isNaN(this.mssqlConfig.requestTimeout)\n      ? 120_000\n      : this.mssqlConfig.requestTimeout;\n  }\n}\n",
+    "taille": 2577
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/database/mssql/mssql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { NestMssqlConfigurationService } from '@/config/database/mssql/nest.mssql.config.service';\n\n@Module({\n  exports: [MssqlConfigurationService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true, // Make sure to make the config module global\n    }),\n  ],\n  providers: [\n    {\n      provide: MssqlConfigurationService,\n      useClass: NestMssqlConfigurationService,\n    },\n  ],\n})\nexport class MssqlModule {}\n",
+    "taille": 611
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/database/mssql/nest.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\n@Injectable()\nexport class NestMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly configService: ConfigService) {\n    super();\n  }\n\n  public get type(): string {\n    return this.configService.get<string>('mssql.type') ?? '';\n  }\n\n  public get host(): string {\n    return this.configService.get<string>('mssql.host') ?? '';\n  }\n\n  public get port(): number {\n    return this.configService.get<number>('mssql.port') ?? 1433;\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('mssql.username') ?? '';\n  }\n\n  public get password(): string {\n    return this.configService.get<string>('mssql.password') ?? '';\n  }\n\n  public get database(): string {\n    return this.configService.get<string>('mssql.database') ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.configService.get<boolean>('mssql.synchronize') ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return (\n      this.configService.get<string>('mssql.managedIdentityClientId') ?? ''\n    );\n  }\n\n  public get encrypt(): boolean {\n    return this.configService.get<boolean>('mssql.encrypt') ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.entities') ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.migrations') ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return (\n      this.configService.get<string>('mssql.migrationsTableName') ??\n      'migrations_TypeORM'\n    );\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitDelayMilliseconds',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 3000 : value;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitRetryLimit',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 50 : value;\n  }\n\n  public get requestTimeout(): number {\n    const value = this.configService.get<number>('mssql.requestTimeout');\n\n    return Number.isNaN(value) || value === undefined ? 120_000 : value;\n  }\n}\n",
+    "taille": 2536
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/ingestion-cleansing-job/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  dataIngestionWorkdataRetentionDays: string | undefined;\n}\n\nconst ingestionCleansingJobConfig = (): Config => ({\n  dataIngestionWorkdataRetentionDays:\n    process.env.DATA_INGESTION_WORKDATA_RETENTION_DAYS,\n});\n\nexport { ingestionCleansingJobConfig };\n",
+    "taille": 272
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { IngestionCleansingJobConfigService } from './ingestion-cleansing-job.service';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\n\n@Module({\n  exports: [IngestionCleansingJobConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n    AppConfigModule,\n  ],\n\n  providers: [IngestionCleansingJobConfigService],\n})\nexport class IngestionCleansingJobConfigModule {}\n",
+    "taille": 510
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class IngestionCleansingJobConfigService implements OnModuleInit {\n  private readonly logger: AppLogger = new AppLogger(\n    IngestionCleansingJobConfigService.name,\n  );\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public async dataIngestionWorkdataRetentionDays(): Promise<number> {\n    const retentionDaysEnvironment = this.configService.get<string>(\n      'dataIngestionWorkdataRetentionDays',\n    );\n\n    if (retentionDaysEnvironment === undefined) {\n      const appStoreValue = Number(\n        await this.appConfigService.getConfigurationValue(\n          'PRODUCTION_DATA_INGESTION_WORKDATA_RETENTION_DAYS',\n        ),\n      );\n      this.logger.verbose(\n        `'dataIngestionWorkdataRetentionDays' was read from app config`,\n      );\n      return Number.isNaN(appStoreValue) ? 1 : appStoreValue ?? 1;\n    }\n    this.logger.warn(\n      `'dataIngestionWorkdataRetentionDays' was read from environment variable`,\n    );\n    const retentionDays = Number(retentionDaysEnvironment);\n    return Number.isNaN(retentionDays) ? 1 : retentionDays ?? 1;\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      this.logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      {\n        key: 'dataIngestionWorkdataRetentionDays',\n        value: await this.dataIngestionWorkdataRetentionDays(),\n      },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required Ingestion cleansing job configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 2491
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface UrlApiConfig {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): UrlApiConfig => ({\n  urlApi: process.env.URL_PROD_API,\n});\n",
+    "taille": 155
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/prod-api/'\n    );\n  }\n}\n",
+    "taille": 367
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';\nimport { AppModule } from '@/app.module';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\nimport { MssqlDatabaseChecker } from '@/providers/database/mssql/mssql.database.checker';\n\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create(AppModule);\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n  app.useGlobalPipes(new ValidationPipe());\n  const { urlApi } = app.get(UrlApiConfigService);\n  const config = new DocumentBuilder()\n    .setTitle('Production API Swagger Documentation')\n    .setDescription(\n      \"In this page you'll find all of the necessary informations about the microservice Production API and it's different endpoints.\",\n    )\n    .setVersion('1.0')\n    .addServer(urlApi, 'pre-production')\n    .build();\n  const document = SwaggerModule.createDocument(app, config);\n  SwaggerModule.setup('api', app, document);\n\n  const databaseConfig = app.get(MssqlConfigurationService);\n  const { migrationsWaitDelayMilliseconds, migrationsWaitRetryLimit } =\n    databaseConfig;\n  const logger = new AppLogger(bootstrap.name);\n  const mssqlDatabaseChecker = app.get(MssqlDatabaseChecker);\n\n  await mssqlDatabaseChecker.waitForMigrations(\n    logger,\n    migrationsWaitDelayMilliseconds,\n    migrationsWaitRetryLimit,\n  );\n\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 1692
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration.data.source.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import 'dotenv/config';\nimport { DataSource } from 'typeorm';\nimport { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { DefaultMssqlConfigurationService } from '@/config/database/mssql/default.mssql.config.service';\nimport { getDatabaseConnectionProperties } from '@/providers/database/mssql/mssql.connection.factory';\n\nconst mssqlConfig = mssqlConfiguration().mssql;\n\nconst connectionProperties = getDatabaseConnectionProperties(\n  new DefaultMssqlConfigurationService(mssqlConfig),\n);\nconst dataSource = new DataSource({\n  ...connectionProperties,\n  logging: true,\n} as SqlServerConnectionOptions);\n\nexport { dataSource };\n",
+    "taille": 750
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1714483989865-first-migration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport default class FirstMigration1714483989865 implements MigrationInterface {\n  name = 'FirstMigration1714483989865';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"container\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_b2e8bf1e74c965ce5f0f303d7df\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_d0c63a46c8f6fdde6d70a778d5e\" DEFAULT getdate(), \"deleted_at\" datetime2, \"container_id\" nvarchar(20) NOT NULL, \"plant\" int NOT NULL, \"status\" nvarchar(10), \"unit\" nvarchar(3), \"current_storage_location\" nvarchar(25), \"material\" nvarchar(18), \"quantity\" int, \"book_date\" datetime, \"create_on\" datetime, \"create_by\" nvarchar(512), \"picking_order_id\" nvarchar(36), \"blocked\" bit, \"pack_type\" nvarchar(6), \"external_hu\" nvarchar(30), CONSTRAINT \"PK_fcc5615207af270f303355254b4\" PRIMARY KEY (\"container_id\", \"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"container\"`);\n  }\n}\n",
+    "taille": 1140
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1714989736343-add-non-trs-tables.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class AddNonTrsTables1714989736343\n  implements MigrationInterface\n{\n  name = 'AddNonTrsTables1714989736343';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"non_trs_cause\" (\"cause\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"cause_global\" numeric(1,0) NOT NULL, \"cause_desc\" nvarchar(40), \"status\" nvarchar(20) NOT NULL, \"parent_cause\" nvarchar(10), CONSTRAINT \"PK_4683aeb790abe0a100dae754857\" PRIMARY KEY (\"cause\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"cause_family_assign\" (\"family\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"cause\" nvarchar(10) NOT NULL, CONSTRAINT \"PK_4905f08a9814b440359490c88d7\" PRIMARY KEY (\"family\", \"plant\", \"cause\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"non_trs_ticket\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_e57de64378789b0b5fd96638043\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_45da21e2772a7ad5af0ea99371d\" DEFAULT getdate(), \"deleted_at\" datetime2, \"ticket\" nvarchar(13) NOT NULL, \"plant\" int NOT NULL, \"start_date\" datetime NOT NULL, \"end_date\" datetime, \"status\" nvarchar(4) NOT NULL, \"cause\" numeric(1,0) NOT NULL, \"shift_code\" numeric(1,0) NOT NULL, \"cause_1\" nvarchar(10), \"cause_2\" nvarchar(10), \"resource\" nvarchar(20), \"remark\" nvarchar(255), \"modified_by\" nvarchar(50) NOT NULL, \"duration\" int, CONSTRAINT \"PK_af8380ebdb5b20cd05e5d74e9c0\" PRIMARY KEY (\"ticket\", \"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"non_trs_ticket\"`);\n    await queryRunner.query(`DROP TABLE \"cause_family_assign\"`);\n    await queryRunner.query(`DROP TABLE \"non_trs_cause\"`);\n  }\n}\n",
+    "taille": 1851
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715717555754-add-columns-in-ntrs-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport default class AddColumnsInNtrsTicket1715717555754\n  implements MigrationInterface\n{\n  name = 'AddColumnsInNtrsTicket1715717555754';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"non_trs_ticket\" ADD \"co_target\" int NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"non_trs_ticket\" ADD \"tool\" nvarchar(18)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"non_trs_ticket\" DROP COLUMN \"tool\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"non_trs_ticket\" DROP COLUMN \"co_target\"`,\n    );\n  }\n}\n",
+    "taille": 757
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715773653123-add_family_table.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport default class AddFamilyTable1715773653123 implements MigrationInterface {\n  name = 'AddFamilyTable1715773653123';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"family\" (\"family\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"description\" nvarchar(128), \"from_mdm\" bit NOT NULL CONSTRAINT \"DF_358d48d130972c0902f59205f71\" DEFAULT 0, \"activated\" bit NOT NULL CONSTRAINT \"DF_969b88b5a5c9ad23988cf6a0e6e\" DEFAULT 1, CONSTRAINT \"PK_632b9f1b0bd361c45609f6cf256\" PRIMARY KEY (\"family\", \"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"family\"`);\n  }\n}\n",
+    "taille": 799
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715847479391-add-table-resource-family-assign.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class AddTableResourceFamilyAssign1715847479391\n  implements MigrationInterface\n{\n  name = 'AddTableResourceFamilyAssign1715847479391';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"resource_family_assign\" (\"family\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"resource\" nvarchar(20) NOT NULL, CONSTRAINT \"PK_da3978b0041194e966fadf1b376\" PRIMARY KEY (\"family\", \"plant\", \"resource\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"resource_family_assign\"`);\n  }\n}\n",
+    "taille": 718
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715855703168-rename-ntrs-by-downtime.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class RenameNtrsByDowntime1715855703168\n  implements MigrationInterface\n{\n  name = 'RenameNtrsByDowntime1715855703168';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      \"exec sp_rename 'non_trs_ticket', 'down_time_ticket'\",\n    );\n    await queryRunner.query(\n      \"exec sp_rename 'non_trs_cause', 'down_time_cause'\",\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      \"exec sp_rename 'down_time_ticket', 'non_trs_ticket'\",\n    );\n    await queryRunner.query(\n      \"exec sp_rename 'down_time_cause', 'non_trs_cause'\",\n    );\n  }\n}\n",
+    "taille": 757
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715884089826-rename-ntrs-by-downtime-add-timestamp.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class RenameNtrsByDowntimeAddTimestamp1715884089826\n  implements MigrationInterface\n{\n  name = 'RenameNtrsByDowntimeAddTimestamp1715884089826';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_07379214a71dac72f2c2815f93c\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_6360c4d8c708f12c25d672a7582\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_1b567736b68f0a546fb069be8e5\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_281916ecf1f300215bf0fb2c864\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_cc9526e37f94aa8885e0b1326ad\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_f41492b5f56e6cdd1ea4d7d35c4\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"family\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_629496e3d934f9f7a56e5f689d7\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"family\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_006c63466b74515d4a724e65b71\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(`ALTER TABLE \"family\" ADD \"deleted_at\" datetime2`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"family\" DROP COLUMN \"deleted_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"family\" DROP CONSTRAINT \"DF_006c63466b74515d4a724e65b71\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"family\" DROP COLUMN \"updated_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"family\" DROP CONSTRAINT \"DF_629496e3d934f9f7a56e5f689d7\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"family\" DROP COLUMN \"created_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" DROP CONSTRAINT \"DF_f41492b5f56e6cdd1ea4d7d35c4\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" DROP CONSTRAINT \"DF_cc9526e37f94aa8885e0b1326ad\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"cause_family_assign\" DROP COLUMN \"created_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" DROP CONSTRAINT \"DF_281916ecf1f300215bf0fb2c864\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" DROP CONSTRAINT \"DF_1b567736b68f0a546fb069be8e5\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" DROP COLUMN \"created_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" DROP CONSTRAINT \"DF_6360c4d8c708f12c25d672a7582\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" DROP CONSTRAINT \"DF_07379214a71dac72f2c2815f93c\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_family_assign\" DROP COLUMN \"created_at\"`,\n    );\n  }\n}\n",
+    "taille": 4345
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1715951550523-change-modified-time-stamp-nullable.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class ChangeModifiedTimeStampNullable1715951550523\n  implements MigrationInterface\n{\n  public name = 'ChangeModifiedTimeStampNullable1715951550523';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"modified_timestamp\" datetime`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"modified_timestamp\"`,\n    );\n  }\n}\n",
+    "taille": 621
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1716202765178-change-fields-to-nullable.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\nexport default class ChangeFieldsToNullable1716202765178\n  implements MigrationInterface\n{\n  public name = 'ChangeFieldsToNullable1716202765178';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"created_on\" datetime NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ALTER COLUMN \"cause_global\" numeric(1,0)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ALTER COLUMN \"status\" nvarchar(20)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"status\" nvarchar(4)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"cause\" numeric(1,0)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"modified_by\" nvarchar(50)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"modified_by\" nvarchar(50) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"cause\" numeric(1,0) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ALTER COLUMN \"status\" nvarchar(4) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ALTER COLUMN \"status\" nvarchar(20) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause\" ALTER COLUMN \"cause_global\" numeric(1,0) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"created_on\"`,\n    );\n  }\n}\n",
+    "taille": 1765
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1716286431391-add-table-change-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class AddTableChangeLog1716286431391\n  implements MigrationInterface\n{\n  name = 'AddTableChangeLog1716286431391';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" int NOT NULL, \"last_timestamp \" int NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"table_change_log\"`);\n  }\n}\n",
+    "taille": 885
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1716384522964-change-column-to-string.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class ChangeColumnToString1716384522964\n  implements MigrationInterface\n{\n  name = 'ChangeColumnToString1716384522964';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(20) NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" bigint NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 821
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1716389549693-change-column-to-bigint.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class ChangeColumnToBigint1716389549693\n  implements MigrationInterface\n{\n  name = 'ChangeColumnToBigint1716389549693';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"last_timestamp \"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"last_timestamp \" bigint NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"last_timestamp \"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"last_timestamp \" int NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 812
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1717075528324-modify-change-last-lsn-to-binary-10.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class ModifyChangeLastLsnToBinary101717075528324\n  implements MigrationInterface\n{\n  name = 'ModifyChangeLastLsnToBinary101717075528324';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" binary(10) NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(20) NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 843
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1720605377467-add-field-mode-to-downtime-ticket-table.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddFieldModeToDowntimeTicketTable1720605377467\n  implements MigrationInterface\n{\n  public name = 'AddFieldModeToDowntimeTicketTable1720605377467';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"down-time-ticket-classification-mode\" (\"id\" int NOT NULL, \"label\" nvarchar(255) NOT NULL, CONSTRAINT \"PK_2a79254b14d48aa73ce4f1e0831\" PRIMARY KEY (\"id\"))`,\n    );\n    await queryRunner.query(`ALTER TABLE \"down_time_ticket\" ADD \"mode\" int`);\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD CONSTRAINT \"FK_ce31b8cdbb4da748868eb73323d\" FOREIGN KEY (\"mode\") REFERENCES \"down-time-ticket-classification-mode\"(\"id\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    // Insert initial values into mode table\n    await queryRunner.query(\n      `INSERT INTO \"down-time-ticket-classification-mode\" (id, label) VALUES (1, 'manual'), (2, 'voice')`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP CONSTRAINT \"FK_ce31b8cdbb4da748868eb73323d\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"mode\"`,\n    );\n    await queryRunner.query(\n      `DROP TABLE \"down-time-ticket-classification-mode\"`,\n    );\n  }\n}\n",
+    "taille": 1391
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1726564174287-add-columns-in-downtime-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddColumnsInDowntimeTicket1726564174287\n  implements MigrationInterface\n{\n  public name = 'AddColumnsInDowntimeTicket1726564174287';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"lock_status\" bit NOT NULL CONSTRAINT \"DF_325ed28408de16ee6f58869aed2\" DEFAULT 0`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"last_processed_timestamp\" datetime`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"last_processed_timestamp\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP CONSTRAINT \"DF_325ed28408de16ee6f58869aed2\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"lock_status\"`,\n    );\n  }\n}\n",
+    "taille": 961
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1733821884776-drop-table-change-log-add-ingestion-event-tracking.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class DropTableChangeLogAddIngestionEventTracking1732544491973\n  implements MigrationInterface\n{\n  public name = 'DropTableChangeLogAddIngestionEventTracking1732544491973';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"ingestion_event_tracking\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_395bbcdbaf782420c08deb984d7\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_b59b47e3f14a85cdf499873040b\" DEFAULT getdate(), \"deleted_at\" datetime2, \"hash_key\" char(64) NOT NULL, \"keys\" nvarchar(1236) NOT NULL, \"source_table\" nvarchar(50) NOT NULL, \"destination_table\" nvarchar(50), \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_399631b334958d1f3d7e006eca0\" PRIMARY KEY (\"hash_key\")) ;\n      DROP TABLE \"table_change_log\";`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"ingestion_event_tracking\";\n        CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`);\n  }\n}\n",
+    "taille": 1491
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734094761626-add-ticket-informations.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddTicketInformations1734094761626 implements MigrationInterface {\n  public name = 'AddTicketInformations1734094761626';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"user\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"workcenter\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"planned_stoppage_id\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_type\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"tool_to\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"master_ticket\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_master_ticket\" nvarchar(10)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"tool_to\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_type\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"planned_stoppage_id\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"workcenter\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"user\"`,\n    );\n  }\n}\n",
+    "taille": 1791
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734101803497-create-table-plant-config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class CreateTablePlantConfig1734101803497 implements MigrationInterface {\n  public name = 'CreateTablePlantConfig1734101803497';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"plant-config\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_e2020bfe6b0cca9e24234730bb5\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_45e62d4c86d3f92057bf32a939d\" DEFAULT getdate(), \"deleted_at\" datetime2, \"plant\" int NOT NULL, \"pmm_button_display\" bit, CONSTRAINT \"PK_a0885c7179d6d0304c0d23d1d31\" PRIMARY KEY (\"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"plant-config\"`);\n  }\n}\n",
+    "taille": 793
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734344870379-add-column-repair-request-nr-in-downtime-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';\n\nexport class AddColumnRepairRequestNrInDowntimeTicket1734344870379\n  implements MigrationInterface\n{\n  public name = 'AddColumnRepairRequestNrInDowntimeTicket1734344870379';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.addColumn(\n      'down_time_ticket',\n      new TableColumn({\n        isNullable: true,\n        name: 'REPAIR_REQUEST_NR',\n        type: 'bigint',\n      }),\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.dropColumn('down_time_ticket', 'REPAIR_REQUEST_NR');\n  }\n}\n",
+    "taille": 643
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734514909779-rename-the-column-repair-request-nr.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RenameTheColumnRepairRequestNr1734514909779\n  implements MigrationInterface\n{\n  public name = 'RenameTheColumnRepairRequestNr1734514909779';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      ` EXEC sp_rename \"down_time_ticket.REPAIR_REQUEST_NR\", \"repair_request_nr2\";\n         EXEC sp_rename \"down_time_ticket.repair_request_nr2\", \"repair_request_nr\";`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      ` EXEC sp_rename \"down_time_ticket.repair_request_nr\", \"repair_request_nr2\";\n         EXEC sp_rename \"down_time_ticket.repair_request_nr2\", \"REPAIR_REQUEST_NR\";`,\n    );\n  }\n}\n",
+    "taille": 760
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734516830316-rename-table-plant-config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RenameTablePlantConfig1734516830316 implements MigrationInterface {\n  public name = 'RenameTablePlantConfig1734516830316';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query('EXEC sp_rename \"plant-config\", \"plant_config\";');\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query('EXEC sp_rename \"plant_config\", \"plant-config\";');\n  }\n}\n",
+    "taille": 490
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1734533312154-alter-columns-downtime-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AlterColumnsDowntimeTicket1734533312154\n  implements MigrationInterface\n{\n  public name = 'AlterColumnsDowntimeTicket1734533312154';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"user\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"workcenter\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"user_id\" nvarchar(50)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"planned_stoppage_id\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"planned_stoppage_id\" int`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_type\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_type\" nvarchar(1)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"tool_to\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"tool_to\" nvarchar(18)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"master_ticket\" nvarchar(13)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_master_ticket\" nvarchar(13)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_master_ticket\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"master_ticket\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"master_ticket\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"tool_to\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"tool_to\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"co_type\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"co_type\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"planned_stoppage_id\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"planned_stoppage_id\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"user_id\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"workcenter\" nvarchar(10)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"user\" nvarchar(10)`,\n    );\n  }\n}\n",
+    "taille": 3053
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1736948019201-add-columns-workcenter-packaging-material.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddColumnsWorkcenterPackagingMaterial1736948019201\n  implements MigrationInterface\n{\n  public name = 'AddColumnsWorkcenterPackagingMaterial1736948019201';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"container\" ADD \"workcenter\" nvarchar(8)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"container\" ADD \"packaging_material\" nvarchar(20)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"container\" DROP COLUMN \"packaging_material\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"container\" DROP COLUMN \"workcenter\"`);\n  }\n}\n",
+    "taille": 752
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1737986544441-add-columns-type-and-printed.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddColumnsTypeAndPrinted1737986544441\n  implements MigrationInterface\n{\n  public name = 'AddColumnsTypeAndPrinted1737986544441';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"container\" ADD \"type\" nvarchar(6)`);\n    await queryRunner.query(`ALTER TABLE \"container\" ADD \"printed\" bit`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"container\" DROP COLUMN \"printed\"`);\n    await queryRunner.query(`ALTER TABLE \"container\" DROP COLUMN \"type\"`);\n  }\n}\n",
+    "taille": 644
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1741166661707-add-new-index-to-container.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddNewIndexToContainer1741166661707 implements MigrationInterface {\n  public name = 'AddNewIndexToContainer1741166661707';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\" (\"plant\", \"picking_order_id\", \"pack_type\") `,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DROP INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\"`,\n    );\n  }\n}\n",
+    "taille": 612
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1748254928660-alter-table-container-increment-picking-order-length.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AlterTableContainerIncrementPickingOrderLength1748254928660\n  implements MigrationInterface\n{\n  public name = 'AlterTableContainerIncrementPickingOrderLength1748254928660';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DROP INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"container\" ALTER COLUMN \"picking_order_id\" nvarchar(512)`,\n    );\n    await queryRunner.query(\n      `CREATE INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\" (\"plant\", \"picking_order_id\", \"pack_type\") `,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DROP INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"container\" ALTER COLUMN \"picking_order_id\" nvarchar(32)`,\n    );\n    await queryRunner.query(\n      `CREATE INDEX \"IDX_CONTAINER_PLANT_PICKING_ORDER_PACK_TYPE\" ON \"container\" (\"plant\", \"picking_order_id\", \"pack_type\") `,\n    );\n  }\n}\n",
+    "taille": 1171
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1758902564917-add-downtime-cause-translations.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddDowntimeCauseTranslations1758902564917\n  implements MigrationInterface\n{\n  public name = 'AddDowntimeCauseTranslations1758902564917';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"down_time_cause_translation\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_ac0f369343bbf70619710265d8c\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_ff59b3a743c126f125fabc2752e\" DEFAULT getdate(), \"deleted_at\" datetime2, \"plant\" int NOT NULL, \"target_language\" nvarchar(8) NOT NULL, \"cause\" nvarchar(10) NOT NULL, \"translated_desc\" nvarchar(512), \"is_manual\" bit NOT NULL CONSTRAINT \"DF_23608636e8dcb43ee1c74024ca7\" DEFAULT 0, CONSTRAINT \"PK_b95d5739c6baf72236ab232f996\" PRIMARY KEY (\"plant\", \"target_language\", \"cause\"))`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause_translation\" ADD CONSTRAINT \"FK_14a8a5049e121d018b0c5419599\" FOREIGN KEY (\"cause\", \"plant\") REFERENCES \"down_time_cause\"(\"cause\",\"plant\") ON DELETE CASCADE ON UPDATE NO ACTION`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_cause_translation\" DROP CONSTRAINT \"FK_14a8a5049e121d018b0c5419599\"`,\n    );\n    await queryRunner.query(`DROP TABLE \"down_time_cause_translation\"`);\n  }\n}\n",
+    "taille": 1409
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1759395904664-add-mode-3.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddMode31759395904664 implements MigrationInterface {\n  public name = 'AddMode31759395904664';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `INSERT INTO \"down-time-ticket-classification-mode\" (id, label) VALUES (3, 'smartDMC')`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DELETE FROM \"down-time-ticket-classification-mode\" where id = 3`,\n    );\n  }\n}\n",
+    "taille": 544
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1761752104554-add-column-non-quality-flag.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddColumnNonQualityFlag1761752104554\n  implements MigrationInterface\n{\n  public name = 'AddColumnNonQualityFlag1761752104554';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" ADD \"non_quality_flag\" bit NOT NULL CONSTRAINT \"DF_5a278e4e1bd0065fce153db0db8\" DEFAULT 0`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP CONSTRAINT \"DF_5a278e4e1bd0065fce153db0db8\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"down_time_ticket\" DROP COLUMN \"non_quality_flag\"`,\n    );\n  }\n}\n",
+    "taille": 734
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1762878169649-add-non-clustered-index-downtime-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddNonClusteredIndexDowntimeTicket1762878169649\n  implements MigrationInterface\n{\n  public name = 'AddNonClusteredIndexDowntimeTicket1762878169649';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE INDEX \"IDX_DOWN_TIME_TICKET_PLANT_RESOURCE_START_DATE\" ON \"down_time_ticket\" (\"plant\", \"resource\", \"start_date\") `,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DROP INDEX \"IDX_DOWN_TIME_TICKET_PLANT_RESOURCE_START_DATE\" ON \"down_time_ticket\"`,\n    );\n  }\n}\n",
+    "taille": 651
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1767782631770-create-table-clean-up-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class CreateTableCleanUpLog1767782631770 implements MigrationInterface {\n  public name = 'CreateTableCleanUpLog1767782631770';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"cleanup_logs\" (\"id\" int NOT NULL IDENTITY(1,1), \"plant_code\" int NOT NULL, \"process_name\" nvarchar(255) NOT NULL, \"log_type\" nvarchar(50) NOT NULL, \"message\" text NOT NULL, \"created_at\" datetime NOT NULL CONSTRAINT \"DF_d589ee00d57920eb5ae04804596\" DEFAULT GETDATE(), CONSTRAINT \"PK_23cf5c2d0b397a8aa54210ed0fd\" PRIMARY KEY (\"id\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"cleanup_logs\"`);\n  }\n}\n",
+    "taille": 778
+  },
+  {
+    "microservice": "mesx-production-api",
+    "chemin": "/src/migration/1767783096572-implement-cleanup-for-donw-time-ticket.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class ImplementCleanupForDonwTimeTicket1767783096572\n  implements MigrationInterface\n{\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`\n      CREATE OR ALTER PROCEDURE dbo.usp_cleanup_down_time_ticket_deleted_closed\n        @PlantCode INT,\n        @BatchSize INT = 100,\n        @Months INT = 1,\n        @NbRowsToClean INT = 1000,\n        @DelayMSBetweenRuns INT = 0 --Number of milliseconds in interval 0-999 to wait (give other queries chance to run) between iterations \n      AS\n      BEGIN\n          SET NOCOUNT ON;\n\n          DECLARE @Iterations INT;\n          DECLARE @TotalBatches INT;\n          DECLARE @RowsDeleted INT;\n          DECLARE @DelayMSBetweenRunsString NVARCHAR(16) = '00:00:00.' + RIGHT('000' + CAST(@DelayMSBetweenRuns AS NVARCHAR(3)),3);\n\n          -- Step 1: Delete logs older than 3 days\n          DELETE FROM dbo.cleanup_logs\n          WHERE created_at < DATEADD(DAY, -3, GETDATE());\n\n          -- Step 2: Compute number of iterations / total batches\n          SET @Iterations = CEILING(@NbRowsToClean * 1.0 / @BatchSize);\n          SET @TotalBatches = @Iterations;\n\n           -- Step 3: Loop over batches\n          WHILE @Iterations > 0\n          BEGIN\n              BEGIN TRY\n                  SET @Iterations = @Iterations - 1;\n                  BEGIN TRANSACTION;\n\n                  -- Delete batch from downtime ticket where status is 'DELT' or 'CLSD'\n                  DELETE TOP (@BatchSize) ticket\n                  FROM down_time_ticket ticket\n                  WHERE ticket.plant = @PlantCode\n                    AND start_date < DATEADD(MONTH, -@Months, GETDATE())\n                    AND (ticket.status = 'CLSD' OR ticket.status = 'DELT');\n                    SET @RowsDeleted = @@ROWCOUNT;\n\n                  -- Exit early if no rows deleted\n                  IF @RowsDeleted = 0\n                  BEGIN\n                      COMMIT;\n                      BREAK; -- Exit WHILE loop\n                  END\n\n                  -- Move to next iteration\n                  COMMIT;\n                  WAITFOR DELAY @DelayMSBetweenRunsString;\n              END TRY\n              BEGIN CATCH\n                  IF XACT_STATE() <> 0\n                      ROLLBACK;\n\n                  DECLARE @ERROR_MESSAGE NVARCHAR(4000) = ERROR_MESSAGE();\n\n                  -- Log error\n                  INSERT INTO dbo.cleanup_logs (plant_code, process_name, log_type, message)\n                  VALUES (@PlantCode, 'dbo.usp_cleanup_down_time_ticket_deleted_closed', 'ERROR', @ERROR_MESSAGE);\n              END CATCH\n          END\n      END\n          `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`\n      IF OBJECT_ID('dbo.usp_cleanup_down_time_ticket_deleted_closed', 'P') IS NOT NULL\n        DROP PROCEDURE dbo.usp_cleanup_down_time_ticket_deleted_closed;\n    `);\n  }\n}\n",
+    "taille": 2950
+  }
+]

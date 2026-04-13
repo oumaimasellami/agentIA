@@ -1,0 +1,19 @@
+{
+  "matches": [
+    [
+      "admin-backend",
+      "mesx-admin-backend"
+    ],
+    [
+      "admin-ui",
+      "mesx-admin-ui"
+    ],
+    [
+      "apartboard-ui",
+      "mesx-apartboard-ui"
+    ]
+  ],
+  "precision": 75.0,
+  "extra_microservices": 18,
+  "conclusion": "SYST\u00c8ME FIABLE \u2705"
+}

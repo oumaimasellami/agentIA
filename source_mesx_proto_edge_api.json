@@ -1,0 +1,242 @@
+[
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/.eslintrc.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {\n  parser: '@typescript-eslint/parser',\n  parserOptions: {\n    project: 'tsconfig.json',\n    tsconfigRootDir: __dirname,\n    sourceType: 'module',\n  },\n  plugins: ['@typescript-eslint/eslint-plugin'],\n  extends: [\n    'plugin:@typescript-eslint/recommended',\n    'plugin:prettier/recommended',\n  ],\n  root: true,\n  env: {\n    node: true,\n    jest: true,\n  },\n  ignorePatterns: ['.eslintrc.js'],\n  rules: {\n    '@typescript-eslint/interface-name-prefix': 'off',\n    '@typescript-eslint/explicit-function-return-type': 'off',\n    '@typescript-eslint/explicit-module-boundary-types': 'off',\n    '@typescript-eslint/no-explicit-any': 'off',\n  },\n};\n",
+    "taille": 663
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n\nstages:\n- stage: Build\n  jobs:\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/edge-api-proto\n",
+    "taille": 519
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/daprComponents/kafka-in-binding.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: main-topic-in\nspec:\n  type: bindings.kafka\n  metadata:\n  - name: topics # Optional. in use for input bindings\n    value:  main-topic\n  - name: brokers\n    value: localhost:9092\n  - name: consumerGroup\n    value: main-consumer\n  # - name: publishTopic # Optional. in use for output bindings\n  #   value: main-topic\n  - name: authRequired # Required. default: \"true\"\n    value: \"false\"\n  - name: direction # Required. default: \"true\"\n    value: \"input\"\n  #  - name: saslUsername # Optional.\n  #   value: \"user\"\n  #  - name: saslPassword # Optional.\n  #   value: \"password\"",
+    "taille": 633
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/daprComponents/kafka-out-binding.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: main-topic-out\nspec:\n  type: bindings.kafka\n  metadata:\n  # - name: topics # Optional. in use for input bindings\n  #   value: topic1,topic2\n  - name: brokers\n    value: localhost:9092\n  # - name: consumerGroup\n  #   value: group1\n  - name: publishTopic # Optional. in use for output bindings\n    value: main-topic\n  - name: authRequired # Required. default: \"true\"\n    value: \"false\"\n  - name: direction # Required. default: \"true\"\n    value: \"output\"\n  #  - name: saslUsername # Optional.\n  #   value: \"user\"\n  #  - name: saslPassword # Optional.\n  #   value: \"password\"",
+    "taille": 634
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/daprComponents/secret-store.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: mesx-secret-main\nspec:\n  type: secretstores.local.file\n  version: v1\n  metadata:\n  - name: secretsFile\n    value: \"/home/chedy/mesx/mesx-proto-edge-api/daprComponents/secrets.json\"\n  - name: nestedSeparator\n    value: \":\"\n  - name: multiValued\n    value: \"false\"",
+    "taille": 325
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n\n  describe('root', () => {\n    it('should return \"Hello World!\"', () => {\n      expect(appController.getHello()).toBe('Hello World!');\n    });\n  });\n});\n",
+    "taille": 617
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Logger, Post, Req } from '@nestjs/common';\nimport { AppService } from './app.service';\nimport { Request } from 'express';\nimport { AppConfigService } from './config/app-config/app-config.service';\n\nconst INPUT_BINDING_ROUTE = process.env.INPUT_BINDING_NAME || 'main-topic-in';\n\n@Controller()\nexport class AppController {\n  public constructor(\n    private readonly appService: AppService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  @Get()\n  public getHello(): string {\n    return `Changed => ${this.appService.getHello()}`;\n  }\n\n  @Get('invk')\n  public async invokeApi(): Promise<string | object> {\n    return await this.appService.invokeApi();\n  }\n\n  @Get('db')\n  public async readFromDatabse(): Promise<string[]> {\n    return await this.appService.getFromDb();\n  }\n\n  @Get('secrets')\n  public async readSecrets(): Promise<string> {\n    return await this.appService.getSecrets();\n  }\n\n  @Get('secrets-dapr')\n  public async readSecretsDapr(): Promise<string> {\n    return await this.appService.getSecretViaDapr();\n  }\n\n  @Post('send')\n  public async sendEvent(): Promise<string> {\n    const eventId = await this.appService.sendEvent();\n    return `Event Sent ${eventId}`;\n  }\n\n  @Post(INPUT_BINDING_ROUTE)\n  public async receiveEvent(@Req() request: Request): Promise<string> {\n    Logger.log(`Received event: ${JSON.stringify(request.body)}`);\n    return 'Event Received';\n  }\n}\n",
+    "taille": 1429
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\nimport { appConfig } from './config/app-config/configuration';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { DaprClient } from '@dapr/dapr';\nimport { DatabaseModule } from './database/database.module';\nimport { PgSqlModule } from './config/database/pgsql.module';\nimport { PgSqlDatabaseProviderModule } from './providers/pgsql/pgsql.module';\nimport { pgSqlConfiguration } from './config/database/configuration';\n@Module({\n  imports: [\n    AppConfigModule,\n    DatabaseModule,\n    PgSqlModule,\n    PgSqlDatabaseProviderModule,\n    ConfigModule.forRoot({\n      load: [appConfig, pgSqlConfiguration],\n    }),\n  ],\n  controllers: [AppController],\n  providers: [AppService, DaprClient],\n})\nexport class AppModule {}\n",
+    "taille": 929
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { AppConfigService } from './config/app-config/app-config.service';\nimport { DaprClient, HttpMethod } from '@dapr/dapr';\nimport { DatabaseService } from './database/database.service';\nimport * as fs from 'fs/promises';\nimport * as path from 'path';\n\n@Injectable()\nexport class AppService {\n  public constructor(\n    private readonly appConfigService: AppConfigService,\n    private readonly daprClient: DaprClient,\n    private readonly databaseService: DatabaseService,\n  ) {}\n\n  public getHello(): string {\n    return this.appConfigService.message;\n  }\n\n  public async getFromDb(): Promise<string[]> {\n    return await this.databaseService.getAllPersonsNames();\n  }\n\n  public async getSecrets(): Promise<string> {\n    const secretsPath = '/mnt/secrets-store';\n    let result = '';\n\n    try {\n      // Read the directory contents\n      const files = await fs.readdir(secretsPath);\n\n      // Process each file\n      for (const file of files) {\n        const filePath = path.join(secretsPath, file);\n\n        // Get file stats to check if it's a file\n        const stats = await fs.stat(filePath);\n\n        if (stats.isFile()) {\n          // Read the file content\n          const content = await fs.readFile(filePath, 'utf8');\n          result += `File: ${filePath}\\nContent: ${content}\\n\\n`;\n        }\n      }\n\n      return result || 'No secret files found';\n    } catch (error) {\n      Logger.error(`Error reading secrets: ${error.message}`);\n      return `Error reading secrets: ${error.message}`;\n    }\n  }\n  public async getSecretViaDapr(): Promise<string> {\n    try {\n      const secretStoreName = 'secret-store';\n      const secretKey = 'mes-mii-api-password';\n      const secret = await this.daprClient.secret.get(\n        secretStoreName,\n        secretKey,\n      );\n\n      if (secret && Object.keys(secret).length > 0) {\n        return `Secret successfully retrieved: ${JSON.stringify(secret)}`;\n      } else {\n        return 'Secret was empty or not found';\n      }\n    } catch (error) {\n      Logger.error(`Error retrieving secret via Dapr: ${error.message}`);\n      return `Error retrieving secret via Dapr: ${error.message}`;\n    }\n  }\n\n  public async invokeApi(): Promise<string | object> {\n    const targetAppId = this.appConfigService.providerAppId;\n    if (targetAppId !== '') {\n      Logger.log(`Calling app id: '${targetAppId}'`);\n      const response = await this.daprClient.invoker.invoke(\n        targetAppId,\n        '/',\n        HttpMethod.GET,\n      );\n\n      return response;\n    } else {\n      return 'No target app id found';\n    }\n  }\n\n  public async sendEvent(): Promise<string> {\n    const guid = crypto.randomUUID();\n    await this.daprClient.binding.send(\n      this.appConfigService.outputBindingName,\n      'create',\n      { message: guid },\n      null,\n    );\n    return guid;\n  }\n}\n",
+    "taille": 2877
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigService } from './app-config.service';\n\n@Module({\n  exports: [AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 331
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class AppConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get message(): string {\n    return (\n      this.configService.get<string>('message') ??\n      'MES X.0 EDGE API Default [OK]'\n    );\n  }\n\n  public get providerAppId(): string {\n    return this.configService.get<string>('providerAppId') ?? '';\n  }\n\n  public get appPort(): number {\n    return this.configService.get<number>('appPort') ?? 3000;\n  }\n\n  public get outputBindingName(): string {\n    return (\n      this.configService.get<string>('outputBindingName') ?? 'main-topic-out'\n    );\n  }\n\n  public get databaseType(): string {\n    return this.configService.get<string>('databaseType') ?? 'SQLSERVER';\n  }\n\n  public get secretStoreName(): string {\n    return (\n      this.configService.get<string>('secretStoreName') ?? 'mesx-secret-main'\n    );\n  }\n\n  public get miiApiPasswordSecretName(): string {\n    return (\n      this.configService.get<string>('miiApiPasswordSecretName') ??\n      'mes-mii-api-password'\n    );\n  }\n}\n",
+    "taille": 1149
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface AppConfig {\n  message: string | undefined;\n  providerAppId: string | undefined;\n  appPort: string | undefined;\n  outputBindingName: string | undefined;\n  databaseType: string | undefined;\n  secretStoreName: string | undefined;\n  miiApiPasswordSecretName: string | undefined;\n}\n\nconst appConfig = (): AppConfig => ({\n  message: process.env.MESSAGE,\n  providerAppId: process.env.PROVIDER_APP_ID,\n  appPort: process.env.APP_PORT,\n  outputBindingName: process.env.OUTPUT_BINDING_NAME,\n  databaseType: process.env.DATABASE_TYPE,\n  secretStoreName: process.env.SECRET_STORE_NAME,\n  miiApiPasswordSecretName: process.env.MII_API_PASSWORD_SECRET_NAME,\n});\n\nexport { appConfig };\n",
+    "taille": 681
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/database/abstract.pgsql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export abstract class PgSqlConfigurationService {\n  public abstract get requestTimeout(): number;\n\n  public abstract get type(): string;\n\n  public abstract get host(): string;\n\n  public abstract get port(): number;\n\n  public abstract get username(): string;\n\n  public abstract get password(): string;\n\n  public abstract get database(): string;\n\n  public abstract get synchronize(): boolean;\n\n  // public abstract get useManagedIdentity(): boolean;\n\n  // public abstract get managedIdentityClientId(): string;\n\n  // public abstract get encrypt(): boolean;\n\n  public abstract get entities(): Array<string>;\n\n  public abstract get migrations(): Array<string>;\n\n  public abstract get migrationsTableName(): string;\n\n  public abstract get migrationsWaitDelayMilliseconds(): number;\n\n  public abstract get migrationsWaitRetryLimit(): number;\n}\n",
+    "taille": 838
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/database/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface PgSqlEnvironmentVariableConfig {\n  pgsql: {\n    database: string | undefined;\n    // encrypt: boolean | undefined;\n    entities: Array<string> | undefined;\n    host: string | undefined;\n    // managedIdentityClientId: string | undefined;\n    migrations: Array<string> | undefined;\n    migrationsTableName: string | undefined;\n    migrationsWaitDelayMilliseconds: number;\n    migrationsWaitRetryLimit: number;\n    password: string | undefined;\n    port: number | undefined;\n    synchronize: boolean | undefined;\n    type: string | undefined;\n    username: string | undefined;\n    requestTimeout: number;\n  };\n}\n\nexport const pgSqlConfiguration = (): PgSqlEnvironmentVariableConfig => ({\n  pgsql: {\n    database: process.env.DB_NAME,\n    // encrypt: process.env.DB_ENCRYPT_CONNECTION === 'true',\n    entities: ['dist/**/*.entity{.ts,.js}'], // Entity files path\n    host: process.env.DB_HOST,\n    // managedIdentityClientId: process.env.DB_MANAGED_ID_CLIENT_ID,\n    migrations: ['dist/**/migration/*{.ts,.js}'], // Migrations files path\n    migrationsTableName: 'migrations_TypeORM', // Name of the migrations table\n    migrationsWaitDelayMilliseconds: Number(\n      process.env.DB_MIGRATION_WAIT_DELAY_MILLISECONDS,\n    ),\n    migrationsWaitRetryLimit: Number(process.env.DB_MIGRATION_WAIT_RETRY_LIMIT),\n    password: process.env.DB_PASSWORD,\n    port: Number(process.env.DB_PORT),\n    requestTimeout: Number(process.env.DB_REQUEST_TIMEOUT),\n    synchronize: process.env.DB_SYNC === 'true', // Whether to automatically synchronize database schema\n    type: 'postgres',\n    username: process.env.DB_USERNAME,\n  },\n});\n",
+    "taille": 1626
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/database/default.pgsql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { PgSqlConfigurationService } from './abstract.pgsql.config.service';\n\ninterface PgSqlConfigurationObject {\n  database: string | undefined;\n  // encrypt: boolean | undefined;\n  entities: Array<string> | undefined;\n  host: string | undefined;\n  // managedIdentityClientId: string | undefined;\n  migrations: Array<string> | undefined;\n  migrationsTableName: string | undefined;\n  migrationsWaitDelayMilliseconds: number;\n  migrationsWaitRetryLimit: number;\n  password: string | undefined;\n  port: number | undefined;\n  requestTimeout: number;\n  synchronize: boolean | undefined;\n  type: string | undefined;\n  username: string | undefined;\n}\n\nexport class DefaultPgSqlConfigurationService extends PgSqlConfigurationService {\n  public constructor(private readonly pgSqlConfig: PgSqlConfigurationObject) {\n    super();\n  }\n\n  public get type(): string {\n    return this.pgSqlConfig.type ?? '';\n  }\n\n  public get host(): string {\n    return this.pgSqlConfig.host ?? '';\n  }\n\n  public get port(): number {\n    return this.pgSqlConfig.port ?? 1433;\n  }\n\n  public get username(): string {\n    return this.pgSqlConfig.username ?? '';\n  }\n\n  public get password(): string {\n    return this.pgSqlConfig.password ?? '';\n  }\n\n  public get database(): string {\n    return this.pgSqlConfig.database ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.pgSqlConfig.synchronize ?? false;\n  }\n\n  // public get useManagedIdentity(): boolean {\n  //   return this.managedIdentityClientId?.trim().length > 0;\n  // }\n\n  // public get managedIdentityClientId(): string {\n  //   return this.pgSqlConfig.managedIdentityClientId ?? '';\n  // }\n\n  // public get encrypt(): boolean {\n  //   return this.pgSqlConfig.encrypt ?? false;\n  // }\n\n  public get entities(): Array<string> {\n    return this.pgSqlConfig.entities ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.pgSqlConfig.migrations ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return this.pgSqlConfig.migrationsTableName ?? 'migrations_TypeORM';\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    return Number.isNaN(this.pgSqlConfig.migrationsWaitDelayMilliseconds)\n      ? 3000\n      : this.pgSqlConfig.migrationsWaitDelayMilliseconds;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    return Number.isNaN(this.pgSqlConfig.migrationsWaitRetryLimit)\n      ? 50\n      : this.pgSqlConfig.migrationsWaitRetryLimit;\n  }\n\n  public get requestTimeout(): number {\n    return Number.isNaN(this.pgSqlConfig.requestTimeout)\n      ? 90_000\n      : this.pgSqlConfig.requestTimeout;\n  }\n}\n",
+    "taille": 2587
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/database/nest.pgsql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { PgSqlConfigurationService } from './abstract.pgsql.config.service';\n\n@Injectable()\nexport class NestPgSqlConfigurationService extends PgSqlConfigurationService {\n  public constructor(private readonly configService: ConfigService) {\n    super();\n  }\n\n  public get type(): string {\n    return this.configService.get<string>('pgsql.type') ?? '';\n  }\n\n  public get host(): string {\n    return this.configService.get<string>('pgsql.host') ?? '';\n  }\n\n  public get port(): number {\n    return this.configService.get<number>('pgsql.port') ?? 1433;\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('pgsql.username') ?? '';\n  }\n\n  public get password(): string {\n    return this.configService.get<string>('pgsql.password') ?? '';\n  }\n\n  public get database(): string {\n    return this.configService.get<string>('pgsql.database') ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.configService.get<boolean>('pgsql.synchronize') ?? false;\n  }\n\n  // public get useManagedIdentity(): boolean {\n  //   return this.managedIdentityClientId?.trim().length > 0;\n  // }\n\n  // public get managedIdentityClientId(): string {\n  //   return (\n  //     this.configService.get<string>('pgsql.managedIdentityClientId') ?? ''\n  //   );\n  // }\n\n  // public get encrypt(): boolean {\n  //   return this.configService.get<boolean>('pgsql.encrypt') ?? false;\n  // }\n\n  public get entities(): Array<string> {\n    return this.configService.get<Array<string>>('pgsql.entities') ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.configService.get<Array<string>>('pgsql.migrations') ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return (\n      this.configService.get<string>('pgsql.migrationsTableName') ??\n      'migrations_TypeORM'\n    );\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    const value = this.configService.get<number>(\n      'pgsql.migrationsWaitDelayMilliseconds',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 3000 : value;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    const value = this.configService.get<number>(\n      'pgsql.migrationsWaitRetryLimit',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 50 : value;\n  }\n\n  public get requestTimeout(): number {\n    const value = this.configService.get<number>('pgsql.requestTimeout');\n\n    return Number.isNaN(value) || value === undefined ? 90_000 : value;\n  }\n}\n",
+    "taille": 2546
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/config/database/pgsql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PgSqlConfigurationService } from './abstract.pgsql.config.service';\nimport { NestPgSqlConfigurationService } from './nest.pgsql.config.service';\n\n@Module({\n  exports: [PgSqlConfigurationService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true, // Make sure to make the config module global\n    }),\n  ],\n  providers: [\n    {\n      provide: PgSqlConfigurationService,\n      useClass: NestPgSqlConfigurationService,\n    },\n  ],\n})\nexport class PgSqlModule {}\n",
+    "taille": 567
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/database/database.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { SQLServerDatabase } from './sqlserver-database/sql-server-database.service';\nimport { DatabaseService } from './database.service';\nimport { AppConfigService } from 'src/config/app-config/app-config.service';\nimport { PostgresDatabase } from './postgres-database/postgres-database.service';\nimport { AppConfigModule } from 'src/config/app-config/app-config.module';\nimport { Person } from './person.entity';\nimport { TypeOrmModule } from '@nestjs/typeorm';\n\n@Module({\n  exports: [DatabaseService, ConfigModule],\n  imports: [\n    AppConfigModule,\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n    TypeOrmModule.forFeature([Person]),\n  ],\n\n  providers: [\n    PostgresDatabase,\n    {\n      provide: DatabaseService,\n      inject: [AppConfigService, PostgresDatabase],\n      useFactory: (\n        configService: AppConfigService,\n        postgresDatabase: PostgresDatabase,\n      ) => {\n        const dbType = configService.databaseType;\n        if (dbType === 'POSTGRES') {\n          return postgresDatabase;\n        } else {\n          return new SQLServerDatabase();\n        }\n      },\n    },\n  ],\n})\nexport class DatabaseModule {}\n",
+    "taille": 1237
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/database/database.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export abstract class DatabaseService {\n  public abstract getAllPersonsNames(): Promise<string[]>;\n}\n",
+    "taille": 101
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/database/person.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Column, Entity, PrimaryColumn } from 'typeorm';\n\n@Entity('person')\nexport class Person {\n  @PrimaryColumn({ name: 'person_id', nullable: false })\n  public personId: number;\n\n  @Column({ length: 64, name: 'name', nullable: false })\n  public name: string;\n\n  @Column({ length: 64, name: 'lastname', nullable: true })\n  public lastname: string | null;\n}\n",
+    "taille": 360
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/database/postgres-database/postgres-database.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { DatabaseService } from '../database.service';\nimport { Person } from '../person.entity';\nimport { Repository } from 'typeorm';\nimport { InjectRepository } from '@nestjs/typeorm';\n\n@Injectable()\nexport class PostgresDatabase extends DatabaseService {\n  public constructor(\n    @InjectRepository(Person)\n    private readonly personRepository: Repository<Person>,\n  ) {\n    super();\n  }\n\n  public async getAllPersonsNames(): Promise<string[]> {\n    const allPersons = await this.personRepository.find();\n    return allPersons.map((person) => person.name);\n  }\n}\n",
+    "taille": 613
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/database/sqlserver-database/sql-server-database.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { DatabaseService } from '../database.service';\n\n@Injectable()\nexport class SQLServerDatabase extends DatabaseService {\n  public getAllPersonsNames(): Promise<string[]> {\n    return Promise.resolve([]);\n  }\n}\n",
+    "taille": 261
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { NestFactory } from '@nestjs/core';\nimport { AppModule } from './app.module';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { AppConfigService } from './config/app-config/app-config.service';\nimport { LoggerService, LogLevel } from '@nestjs/common';\n\n// Custom JSON logger implementation\nclass JsonLogger implements LoggerService {\n  private logLevels: LogLevel[] = ['error', 'warn', 'log', 'debug', 'verbose'];\n\n  constructor(\n    private readonly context?: string,\n    private readonly logLevels_?: LogLevel[],\n  ) {\n    if (logLevels_) {\n      this.logLevels = logLevels_;\n    }\n  }\n\n  error(message: any, trace?: string, context?: string): void {\n    this.printLog('error', message, context || this.context, trace);\n  }\n\n  warn(message: any, context?: string): void {\n    this.printLog('warn', message, context || this.context);\n  }\n\n  log(message: any, context?: string): void {\n    this.printLog('log', message, context || this.context);\n  }\n\n  debug(message: any, context?: string): void {\n    this.printLog('debug', message, context || this.context);\n  }\n\n  verbose(message: any, context?: string): void {\n    this.printLog('verbose', message, context || this.context);\n  }\n\n  setContext(context: string) {\n    return new JsonLogger(context, this.logLevels);\n  }\n\n  setLogLevels(levels: LogLevel[]) {\n    this.logLevels = levels;\n    return this;\n  }\n\n  private printLog(\n    level: LogLevel,\n    message: any,\n    context?: string,\n    trace?: string,\n  ): void {\n    if (!this.isLevelEnabled(level)) {\n      return;\n    }\n\n    let formattedMessage: string;\n    if (typeof message === 'object' && message !== null) {\n      formattedMessage = JSON.stringify(message);\n    } else {\n      formattedMessage = message;\n    }\n\n    const logEntry = {\n      timestamp: new Date().toISOString(),\n      level,\n      message: formattedMessage,\n      context: context || 'NestApplication',\n      ...(trace && { trace }),\n    };\n\n    const logString = JSON.stringify(logEntry);\n\n    // Output to console based on log level\n    if (level === 'error') {\n      console.error(logString);\n    } else if (level === 'warn') {\n      console.warn(logString);\n    } else {\n      console.log(logString);\n    }\n  }\n\n  private isLevelEnabled(level: LogLevel): boolean {\n    return this.logLevels.includes(level);\n  }\n}\n\nasync function bootstrap() {\n  // Create app with custom JSON logger\n  const app = await NestFactory.create(AppModule, {\n    logger: new JsonLogger(),\n  });\n\n  const appConfigService = (await NestFactory.create(AppConfigModule)).get(\n    AppConfigService,\n  );\n\n  await app.listen(appConfigService.appPort);\n}\nbootstrap();\n",
+    "taille": 2668
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/migration.data.source.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import 'dotenv/config';\nimport { DataSource } from 'typeorm';\nimport { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';\nimport { pgSqlConfiguration } from './config/database/configuration';\nimport { DefaultPgSqlConfigurationService } from './config/database/default.pgsql.config.service';\nimport { getDatabaseConnectionProperties } from './providers/pgsql/pgsql.connection.factory';\n\nconst pgsqlConfig = pgSqlConfiguration().pgsql;\n\nconst connectionProperties = getDatabaseConnectionProperties(\n  new DefaultPgSqlConfigurationService(pgsqlConfig),\n);\nconst dataSource = new DataSource({\n  ...connectionProperties,\n  logging: true,\n} as SqlServerConnectionOptions);\n\nexport { dataSource };\n",
+    "taille": 729
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/migration/1743690442132-create-person-table.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class CreatePersonTable1743690442132 implements MigrationInterface {\n  name = 'CreatePersonTable1743690442132';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`\n        CREATE TABLE \"person\" (\"person_id\" integer NOT NULL, \"name\" character varying(64) NOT NULL, CONSTRAINT \"PK_403c951c5e9b776c16385a8940f\" PRIMARY KEY (\"person_id\"));\n        INSERT INTO \"person\" (\"person_id\", \"name\") VALUES (1, 'James Johnson') ON CONFLICT (person_id) DO UPDATE SET name = EXCLUDED.name;\n        INSERT INTO \"person\" (\"person_id\", \"name\") VALUES (2, 'Kablam') ON CONFLICT (person_id) DO UPDATE SET name = EXCLUDED.name;\n        INSERT INTO \"person\" (\"person_id\", \"name\") VALUES (3, 'Festus') ON CONFLICT (person_id) DO UPDATE SET name = EXCLUDED.name;\n        INSERT INTO \"person\" (\"person_id\", \"name\") VALUES (4, 'Chiromi') ON CONFLICT (person_id) DO UPDATE SET name = EXCLUDED.name;\n        INSERT INTO \"person\" (\"person_id\", \"name\") VALUES (5, 'Bay Sargo') ON CONFLICT (person_id) DO UPDATE SET name = EXCLUDED.name;`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"person\"`);\n  }\n}\n",
+    "taille": 1243
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/migration/1744628350888-lastname-for-person.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class LastnameForPerson1744628350888 implements MigrationInterface {\n  name = 'LastnameForPerson1744628350888';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"person\" ADD \"lastname\" character varying(64)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"person\" DROP COLUMN \"lastname\"`);\n  }\n}\n",
+    "taille": 494
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/providers/pgsql/pgsql.connection.factory.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { DatabaseType } from 'typeorm';\nimport { PgSqlConfigurationService } from '../../config/database/abstract.pgsql.config.service';\n// /**\n//  *\n//  * @param mssqlConfigService\n//  */\n// interface ConnectionOptions {\n//   encrypt: boolean;\n// }\n\n// interface ConnectionExtra {\n//   trustServerCertificate: boolean;\n//   authentication?: {\n//     type: string;\n//     options: {\n//       clientId: string;\n//     };\n//   };\n// }\n\n// interface BaseProperties {\n//   type: DatabaseType;\n//   host: string;\n//   port: number;\n//   database: string;\n//   options: ConnectionOptions;\n//   synchronize: boolean;\n//   lazy: boolean;\n//   autoLoadEntities: boolean;\n//   extra: ConnectionExtra;\n//   entities: Array<string>;\n//   migrations: Array<string>;\n//   migrationsTableName: string;\n//   requestTimeout: number;\n// }\n\n// interface ManagedIdentityProperties extends BaseProperties {\n//   extra: ConnectionExtra & {\n//     authentication: {\n//       type: string;\n//       options: {\n//         clientId: string;\n//       };\n//     };\n//   };\n// }\n\n// interface SqlAuthProperties extends BaseProperties {\n//   username: string;\n//   password: string;\n// }\n\n// type ConnectionProperties = ManagedIdentityProperties | SqlAuthProperties;\n/**\n *\n * @param mssqlConfigService - The configuration service containing MSSQL settings.\n * @returns The connection properties for the database.\n */\n\ninterface ConnectionProperties {\n  type: DatabaseType;\n  host: string;\n  port: number;\n  database: string;\n  username: string;\n  password: string;\n  synchronize: boolean;\n  autoLoadEntities: boolean;\n  entities: Array<string>;\n  migrations: Array<string>;\n  migrationsTableName: string;\n  requestTimeout: number;\n}\n\nexport function getDatabaseConnectionProperties(\n  pgsqlConfigService: PgSqlConfigurationService,\n): ConnectionProperties {\n  //   const baseProperties: BaseProperties = {\n  //     autoLoadEntities: true,\n  //     database: mssqlConfigService.database,\n  //     entities: mssqlConfigService.entities,\n  //     extra: {\n  //       trustServerCertificate: true,\n  //     },\n  //     host: mssqlConfigService.host,\n  //     lazy: true,\n  //     migrations: mssqlConfigService.migrations,\n  //     migrationsTableName: mssqlConfigService.migrationsTableName,\n  //     options: {\n  //       encrypt: mssqlConfigService.encrypt,\n  //     },\n  //     port: mssqlConfigService.port,\n  //     requestTimeout: mssqlConfigService.requestTimeout,\n  //     synchronize: mssqlConfigService.synchronize,\n  //     type: mssqlConfigService.type as DatabaseType,\n  //   };\n\n  //   if (mssqlConfigService.useManagedIdentity) {\n  //     const managedIdentityProperties: ManagedIdentityProperties = {\n  //       ...baseProperties,\n  //       extra: {\n  //         ...baseProperties.extra,\n  //         authentication: {\n  //           options: {\n  //             clientId: mssqlConfigService.managedIdentityClientId,\n  //           },\n  //           type: 'azure-active-directory-msi-vm',\n  //         },\n  //       },\n  //     };\n\n  //     return managedIdentityProperties;\n  //   }\n\n  //   const sqlAuthProperties: SqlAuthProperties = {\n  //     ...baseProperties,\n  //     password: mssqlConfigService.password,\n  //     username: mssqlConfigService.username,\n  //   };\n\n  //   return sqlAuthProperties;\n  return {\n    autoLoadEntities: true,\n    type: pgsqlConfigService.type as DatabaseType,\n    host: pgsqlConfigService.host,\n    port: pgsqlConfigService.port,\n    username: pgsqlConfigService.username,\n    password: pgsqlConfigService.password,\n    database: pgsqlConfigService.database,\n    entities: pgsqlConfigService.entities,\n    synchronize: pgsqlConfigService.synchronize,\n    migrations: pgsqlConfigService.migrations,\n    migrationsTableName: pgsqlConfigService.migrationsTableName,\n    requestTimeout: pgsqlConfigService.requestTimeout,\n  };\n}\n",
+    "taille": 3846
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/providers/pgsql/pgsql.database.checker.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\nimport { InjectDataSource } from '@nestjs/typeorm';\nimport { DataSource } from 'typeorm';\n\nexport class DatabaseChecker {\n  public constructor(\n    @InjectDataSource()\n    private dataSource: DataSource,\n  ) {}\n\n  public async pendingMigrations(): Promise<boolean> {\n    if (!this.dataSource.isInitialized) {\n      this.dataSource = await this.dataSource.initialize();\n    }\n\n    return this.dataSource.showMigrations();\n  }\n\n  public async waitForMigrations(\n    waitDelayMilliseconds: number,\n    remainingRetries: number,\n  ): Promise<void> {\n    const isPendingMigrations: boolean = await this.pendingMigrations();\n    if (isPendingMigrations && remainingRetries > 0) {\n      Logger.warn(\n        `Waiting for Migrations to be applied (delay: ${waitDelayMilliseconds} ms, remainingRetries: ${remainingRetries})`,\n      );\n\n      await new Promise((resolve) => {\n        setTimeout(resolve, waitDelayMilliseconds);\n      });\n\n      await this.waitForMigrations(waitDelayMilliseconds, remainingRetries - 1);\n    } else if (remainingRetries <= 0) {\n      throw new Error(`Waiting for migrations timed-out`);\n    } else {\n      Logger.log('Migrations applied [OK]');\n    }\n  }\n}\n",
+    "taille": 1220
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/src/providers/pgsql/pgsql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';\nimport { PgSqlConfigurationService } from '../../config/database/abstract.pgsql.config.service';\nimport { PgSqlModule } from '../../config/database/pgsql.module';\nimport { getDatabaseConnectionProperties } from './pgsql.connection.factory';\nimport { DatabaseChecker } from './pgsql.database.checker';\n\n@Module({\n  exports: [DatabaseChecker],\n  imports: [\n    TypeOrmModule.forRootAsync({\n      imports: [PgSqlModule],\n      inject: [PgSqlConfigurationService],\n      useFactory: getDatabaseConnectionProperties,\n    } as TypeOrmModuleAsyncOptions),\n  ],\n  providers: [DatabaseChecker],\n})\nexport class PgSqlDatabaseProviderModule {}\n",
+    "taille": 750
+  },
+  {
+    "microservice": "mesx-proto-edge-api",
+    "chemin": "/test/app.e2e-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { INestApplication } from '@nestjs/common';\nimport * as request from 'supertest';\nimport { AppModule } from './../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 630
+  }
+]

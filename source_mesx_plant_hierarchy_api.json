@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: plt-hry-api\n  cajMigrationJobName: plthry-dbm\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/plant-hierarchy-api\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n      migrationContainerAppJobName: caj-gptmpxn01-eun-dev-$(cajMigrationJobName)\n\n",
+    "taille": 1356
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: pubsub  # Name of the pub/sub component\n  namespace: default\nspec:\n  type: pubsub.redis\n  version: v1\n  metadata:\n  - name: redisHost\n    value: localhost:6379\n  - name: redisPassword\n    secretKeyRef:\n      name: redis\n      key: redis-password\n  # uncomment below for connecting to redis cache instances over TLS (ex - Azure Redis Cache)\n  # - name: enableTLS\n  #   value: true \n",
+    "taille": 444
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/plant-hierarchy-api');\n    });\n  });\n});\n",
+    "taille": 628
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { ApiExcludeEndpoint } from '@nestjs/swagger';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(private readonly appService: AppService) {}\n\n  @ApiExcludeEndpoint()\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 366
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PublishMessageModule } from './common/publish-message/publish-message.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { EventHubModule } from './config/eventhub/eventhub.module';\nimport { ingestionCleansingJobConfig } from './config/ingestion-cleansing-job/configuration';\nimport { IngestionCleansingJobConfigModule } from './config/ingestion-cleansing-job/ingestion-cleansing-job.module';\nimport { redisSdkConfiguration } from './config/redis/redis-sdk/configuration';\nimport { RedisProviderModule } from './providers/cache/redis/redis.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { eventHubConfiguration } from '@/config/eventhub/configuration';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\nimport { IngestionEventTrackingModule } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.module';\nimport { PlantModule } from '@/modules/plant/plant.module';\nimport { ProbesModule } from '@/modules/probes/probes.module';\nimport { ProductionLineModule } from '@/modules/production-line/production-line.module';\nimport { ResourceModule } from '@/modules/resource/resource.module';\nimport { ResourceTypeModule } from '@/modules/resource-type/resource-type.module';\nimport { UapModule } from '@/modules/uap/uap.module';\nimport { WorkcenterModule } from '@/modules/workcenter/workcenter.module';\nimport { MssqlDatabaseProviderModule } from '@/providers/database/mssql/mssql.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        mssqlConfiguration,\n        urlApiConfiguration,\n        eventHubConfiguration,\n        ingestionCleansingJobConfig,\n        redisSdkConfiguration,\n      ],\n    }),\n    MssqlDatabaseProviderModule,\n    ProbesModule,\n    PlantModule,\n    IngestionCleansingJobConfigModule,\n    UapModule,\n    ProductionLineModule,\n    WorkcenterModule,\n    ResourceModule,\n    ResourceTypeModule,\n    UrlApiConfigModule,\n    IngestionEventTrackingModule,\n    PublishMessageModule,\n    EventHubModule,\n    RedisProviderModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 2445
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/plant-hierarchy-api';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 205
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/common-logger/app-logger.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Global, Module } from '@nestjs/common';\nimport { AppLogger } from './app-logger';\nimport { LoggerConfigModule } from '@/config/logger/logger-config.module';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Global()\n@Module({\n  exports: [AppLogger],\n  imports: [LoggerConfigModule],\n  providers: [\n    {\n      inject: [LoggerConfigService],\n      provide: AppLogger,\n      useFactory: async (\n        loggerConfigService: LoggerConfigService,\n      ): Promise<AppLogger> => {\n        const appLogger = new AppLogger(loggerConfigService);\n        await appLogger.init(); // Ensure async initialization is handled before returning\n        return appLogger;\n      },\n    },\n  ],\n})\nexport class AppLoggerModule {}\n",
+    "taille": 749
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/common-logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLoggerService } from '@mesx/common-lib';\nimport { Injectable, LogLevel } from '@nestjs/common';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Injectable()\nexport class AppLogger extends JobsLoggerService {\n  public constructor(\n    private readonly loggerConfigService: LoggerConfigService,\n  ) {\n    // Retrieve log level from environment\n    super('log');\n  }\n\n  public async init(minLogLevel?: LogLevel): Promise<void> {\n    const logLevel =\n      minLogLevel ?? (await this.loggerConfigService.plantHryapiLogLevel());\n    super.updateMinLogLevel(logLevel);\n  }\n}\n",
+    "taille": 613
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  public log(message: unknown): void {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public debug(message: unknown): void {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public verbose(message: unknown): void {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 644
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/publish-message/interface/publish-event-ewm-plant.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface EwmPlantMessage {\n  message: string;\n}\n",
+    "taille": 56
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/publish-message/interface/publish-event-ewm-workcenter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface EwmWorkcenterMessage {\n  message: string;\n}\n",
+    "taille": 61
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/publish-message/interface/publish-plant.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface PlantMessage {\n  message: string;\n}\n",
+    "taille": 53
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/publish-message/publish-message.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PublishMessageService } from '@/common/publish-message/publish-message.service';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\n\n@Module({\n  exports: [PublishMessageService],\n  imports: [EventHubModule, ConfigModule],\n  providers: [PublishMessageService],\n})\nexport class PublishMessageModule {}\n",
+    "taille": 414
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/common/publish-message/publish-message.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { DaprClient } from '@dapr/dapr';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\n\n@Injectable()\nexport class PublishMessageService {\n  private readonly logger = new AppLogger(PublishMessageService.name);\n\n  private readonly eventhubService: EventhubService;\n\n  public constructor(eventhubService: EventhubService) {\n    this.eventhubService = eventhubService;\n  }\n\n  public async publishMessage(topic: string, data: object): Promise<void> {\n    try {\n      const daprClient = new DaprClient();\n      const { pubSubName } = this.eventhubService;\n      this.logger.debug(\n        `Publishing: ${JSON.stringify(data)}, pubSub ${pubSubName} , topicname ${topic}`,\n      );\n      await daprClient.pubsub.publish(pubSubName, topic, data);\n    } catch (error) {\n      this.logger.error(`Failed to publish message: ${error.message}`);\n      this.logger.error(error);\n    }\n  }\n}\n",
+    "taille": 1002
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'appConfigEndpoint', value: this.appConfigEndpoint }];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 1346
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2816
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/database/mssql/abstract.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export abstract class MssqlConfigurationService {\n  public abstract get type(): string;\n\n  public abstract get host(): string;\n\n  public abstract get port(): number;\n\n  public abstract get username(): string;\n\n  public abstract get password(): string;\n\n  public abstract get database(): string;\n\n  public abstract get synchronize(): boolean;\n\n  public abstract get useManagedIdentity(): boolean;\n\n  public abstract get managedIdentityClientId(): string;\n\n  public abstract get encrypt(): boolean;\n\n  public abstract get entities(): Array<string>;\n\n  public abstract get migrations(): Array<string>;\n\n  public abstract get migrationsTableName(): string;\n\n  public abstract get migrationsWaitDelayMilliseconds(): number;\n\n  public abstract get migrationsWaitRetryLimit(): number;\n}\n",
+    "taille": 780
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/database/mssql/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface MssqlEnvironmentVariableConfig {\n  mssql: {\n    database: string | undefined;\n    encrypt: boolean | undefined;\n    entities: Array<string> | undefined;\n    host: string | undefined;\n    managedIdentityClientId: string | undefined;\n    migrations: Array<string> | undefined;\n    migrationsTableName: string | undefined;\n    migrationsWaitDelayMilliseconds: number;\n    migrationsWaitRetryLimit: number;\n    password: string | undefined;\n    port: number | undefined;\n    synchronize: boolean | undefined;\n    type: string | undefined;\n    username: string | undefined;\n  };\n}\n\nexport const mssqlConfiguration = (): MssqlEnvironmentVariableConfig => ({\n  mssql: {\n    database: process.env.DB_NAME,\n    encrypt: process.env.DB_ENCRYPT_CONNECTION === 'true',\n    entities: ['dist/**/*.entity{.ts,.js}'], // Entity files path\n    host: process.env.DB_HOST,\n    managedIdentityClientId: process.env.DB_MANAGED_ID_CLIENT_ID,\n    migrations: ['dist/**/migration/*{.ts,.js}'], // Migrations files path\n    migrationsTableName: 'migrations_TypeORM', // Name of the migrations table\n    migrationsWaitDelayMilliseconds: Number(\n      process.env.DB_MIGRATION_WAIT_DELAY_MILLISECONDS,\n    ),\n    migrationsWaitRetryLimit: Number(process.env.DB_MIGRATION_WAIT_RETRY_LIMIT),\n    password: process.env.DB_PASSWORD,\n    port: Number(process.env.DB_PORT),\n    synchronize: process.env.DB_SYNC === 'true', // Whether to automatically synchronize database schema\n    type: 'mssql',\n    username: process.env.DB_USERNAME,\n  },\n});\n",
+    "taille": 1523
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/database/mssql/default.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\ninterface MssqlConfigurationObject {\n  database: string | undefined;\n  encrypt: boolean | undefined;\n  entities: Array<string> | undefined;\n  host: string | undefined;\n  managedIdentityClientId: string | undefined;\n  migrations: Array<string> | undefined;\n  migrationsTableName: string | undefined;\n  migrationsWaitDelayMilliseconds: number;\n  migrationsWaitRetryLimit: number;\n  password: string | undefined;\n  port: number | undefined;\n  synchronize: boolean | undefined;\n  type: string | undefined;\n  username: string | undefined;\n}\n\nexport class DefaultMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly mssqlConfig: MssqlConfigurationObject) {\n    super();\n  }\n\n  public get type(): string {\n    return this.mssqlConfig.type ?? '';\n  }\n\n  public get host(): string {\n    return this.mssqlConfig.host ?? '';\n  }\n\n  public get port(): number {\n    return this.mssqlConfig.port ?? 1433;\n  }\n\n  public get username(): string {\n    return this.mssqlConfig.username ?? '';\n  }\n\n  public get password(): string {\n    return this.mssqlConfig.password ?? '';\n  }\n\n  public get database(): string {\n    return this.mssqlConfig.database ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.mssqlConfig.synchronize ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return this.mssqlConfig.managedIdentityClientId ?? '';\n  }\n\n  public get encrypt(): boolean {\n    return this.mssqlConfig.encrypt ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.mssqlConfig.entities ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.mssqlConfig.migrations ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return this.mssqlConfig.migrationsTableName ?? 'migrations_TypeORM';\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitDelayMilliseconds)\n      ? 3000\n      : this.mssqlConfig.migrationsWaitDelayMilliseconds;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitRetryLimit)\n      ? 50\n      : this.mssqlConfig.migrationsWaitRetryLimit;\n  }\n}\n",
+    "taille": 2392
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/database/mssql/mssql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { NestMssqlConfigurationService } from '@/config/database/mssql/nest.mssql.config.service';\n\n@Module({\n  exports: [MssqlConfigurationService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true, // Make sure to make the config module global\n    }),\n  ],\n  providers: [\n    {\n      provide: MssqlConfigurationService,\n      useClass: NestMssqlConfigurationService,\n    },\n  ],\n})\nexport class MssqlModule {}\n",
+    "taille": 611
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/database/mssql/nest.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\n@Injectable()\nexport class NestMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly configService: ConfigService) {\n    super();\n  }\n\n  public get type(): string {\n    return this.configService.get<string>('mssql.type') ?? '';\n  }\n\n  public get host(): string {\n    return this.configService.get<string>('mssql.host') ?? '';\n  }\n\n  public get port(): number {\n    return this.configService.get<number>('mssql.port') ?? 1433;\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('mssql.username') ?? '';\n  }\n\n  public get password(): string {\n    return this.configService.get<string>('mssql.password') ?? '';\n  }\n\n  public get database(): string {\n    return this.configService.get<string>('mssql.database') ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.configService.get<boolean>('mssql.synchronize') ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return (\n      this.configService.get<string>('mssql.managedIdentityClientId') ?? ''\n    );\n  }\n\n  public get encrypt(): boolean {\n    return this.configService.get<boolean>('mssql.encrypt') ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.entities') ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.migrations') ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return (\n      this.configService.get<string>('mssql.migrationsTableName') ??\n      'migrations_TypeORM'\n    );\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitDelayMilliseconds',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 3000 : value;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitRetryLimit',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 50 : value;\n  }\n}\n",
+    "taille": 2343
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/eventhub/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface EventHubEnvironmentVariableConfig {\n  eventhub: {\n    pubSubName: string | undefined;\n    topicPlantHYR: string | undefined;\n    topicEwmPlants: string | undefined;\n    topicEwmWorcenters: string | undefined;\n    topicLauncherKpi: string | undefined;\n  };\n}\n\nexport const eventHubConfiguration = (): EventHubEnvironmentVariableConfig => ({\n  eventhub: {\n    pubSubName: process.env.PUBSUB_NAME,\n    topicEwmPlants: process.env.TOPIC_EWM_PLANT_UPDATES,\n    topicEwmWorcenters: process.env.TOPIC_WORKCENTERS,\n    topicPlantHYR: process.env.TOPIC_PLANTS,\n    topicLauncherKpi: process.env.TOPIC_LAUNCHER_KPI,\n  },\n});\n",
+    "taille": 625
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/eventhub/eventhub.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\n\n@Module({\n  exports: [EventhubService],\n  imports: [ConfigModule],\n  providers: [EventhubService],\n})\nexport class EventHubModule {}\n",
+    "taille": 292
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/eventhub/eventhub.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class EventhubService implements OnModuleInit {\n  private readonly logger = new AppLogger(EventhubService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get pubSubName(): string {\n    return this.configService.get<string>('eventhub.pubSubName') ?? '';\n  }\n\n  public get topicPlantHYR(): string {\n    return this.configService.get<string>('eventhub.topicPlantHYR') ?? '';\n  }\n\n  public get topicEwmPlants(): string {\n    return this.configService.get<string>('eventhub.topicEwmPlants') ?? '';\n  }\n\n  public get topicEwmWorcenters(): string {\n    return this.configService.get<string>('eventhub.topicEwmWorcenters') ?? '';\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private checkConfiguration(): void {\n    // Check if all required configuration values are present\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'pubSubName', value: this.pubSubName },\n      { key: 'topicPlantHYR', value: this.topicPlantHYR },\n      { key: 'topicEwmWorcenters', value: this.topicEwmWorcenters },\n      { key: 'topicEwmPlants', value: this.topicEwmPlants },\n    ];\n\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.debug('All required configurations are properly set');\n  }\n}\n",
+    "taille": 1715
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/ingestion-cleansing-job/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  dataIngestionWorkdataRetentionDays: string | undefined;\n}\n\nconst ingestionCleansingJobConfig = (): Config => ({\n  dataIngestionWorkdataRetentionDays:\n    process.env.DATA_INGESTION_WORKDATA_RETENTION_DAYS,\n});\n\nexport { ingestionCleansingJobConfig };\n",
+    "taille": 272
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { IngestionCleansingJobConfigService } from './ingestion-cleansing-job.service';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\n\n@Module({\n  exports: [IngestionCleansingJobConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n    AppConfigModule,\n  ],\n\n  providers: [IngestionCleansingJobConfigService],\n})\nexport class IngestionCleansingJobConfigModule {}\n",
+    "taille": 510
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class IngestionCleansingJobConfigService implements OnModuleInit {\n  private readonly logger: AppLogger = new AppLogger(\n    IngestionCleansingJobConfigService.name,\n  );\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public async dataIngestionWorkdataRetentionDays(): Promise<number> {\n    const retentionDaysEnvironment = this.configService.get<string>(\n      'dataIngestionWorkdataRetentionDays',\n    );\n\n    if (retentionDaysEnvironment === undefined) {\n      const appStoreValue = Number(\n        await this.appConfigService.getConfigurationValue(\n          'PLANT_HIERARCHY_DATA_INGESTION_WORKDATA_RETENTION_DAYS',\n        ),\n      );\n      this.logger.verbose(\n        `'dataIngestionWorkdataRetentionDays' was read from app config`,\n      );\n      return Number.isNaN(appStoreValue) ? 1 : appStoreValue ?? 1;\n    }\n    this.logger.warn(\n      `'dataIngestionWorkdataRetentionDays' was read from environment variable`,\n    );\n    const retentionDays = Number(retentionDaysEnvironment);\n    return Number.isNaN(retentionDays) ? 1 : retentionDays ?? 1;\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      this.logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      {\n        key: 'dataIngestionWorkdataRetentionDays',\n        value: await this.dataIngestionWorkdataRetentionDays(),\n      },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required Ingestion cleansing job configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 2496
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/logger/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  plantHryapiLogLevel: string | undefined;\n}\n\nconst loggerConfig = (): Config => ({\n  plantHryapiLogLevel: process.env.PLT_HRY_API_LOG_LEVEL,\n});\n\nexport { loggerConfig };\n",
+    "taille": 191
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/logger/logger-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { LoggerConfigService } from './logger-config.service';\n\n@Module({\n  exports: [LoggerConfigService],\n  imports: [AppConfigModule],\n\n  providers: [LoggerConfigService],\n})\nexport class LoggerConfigModule {}\n",
+    "taille": 321
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/logger/logger-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger, LogLevel, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigService } from '../app-config/app-config.service';\n\n@Injectable()\nexport class LoggerConfigService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public async plantHryapiLogLevel(): Promise<LogLevel> {\n    let value = this.configService.get<string>(\n      'plantHryapiLogLevel',\n    ) as LogLevel;\n\n    if (value) {\n      Logger.warn(`'plantHryapiLogLevel' was read from environment variable`);\n    } else {\n      value = (await this.appConfigService.getConfigurationValue(\n        'PLT_HRY_API_LOG_LEVEL',\n      )) as LogLevel;\n    }\n\n    return value ?? '';\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      Logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: ' plantHryapiLogLevel', value: await this.plantHryapiLogLevel() },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        Logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1737
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/redis/redis-sdk/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface MssqlEnvironmentVariableConfig {\n  redisHost: string | undefined;\n  redisHostManagedRedis: string | undefined;\n  redisPort: number | undefined;\n  redisPortManagedRedis: number | undefined;\n  redisScope: string | undefined;\n  statePrefix: string | undefined;\n  localRedisPassword: string | undefined;\n  useRedisLocal: boolean | undefined;\n  useTls: boolean | undefined;\n  username: string | undefined;\n  useAzureManagedRedis: string | undefined;\n  redisPlantKey: string | undefined;\n}\nexport const redisSdkConfiguration = (): MssqlEnvironmentVariableConfig => ({\n  localRedisPassword: process.env.LOCAL_REDIS_PASSWORD,\n  redisHost: process.env.STATE_STORE_HOST,\n  redisHostManagedRedis: process.env.STATE_STORE_HOST_MANAGED_REDIS,\n  redisPlantKey: process.env.PLANT_HIERARCHY_API_PLANT_KEY,\n  redisPort: Number(process.env.STATE_STORE_PORT),\n  redisPortManagedRedis: Number(process.env.STATE_STORE_PORT_MANAGED_REDIS),\n  redisScope: process.env.REDIS_SCOPE,\n  statePrefix: process.env.STATE_PREFIX,\n  useAzureManagedRedis: process.env.USE_AZURE_MANAGED_REDIS,\n  useRedisLocal: process.env.USE_REDIS_LOCAL === 'true',\n  useTls: process.env.STATE_STORE_USE_TLS === 'true',\n  username: process.env.REDIS_USERNAME,\n});\n",
+    "taille": 1224
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/redis/redis-sdk/redis-sdk.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\nimport { RedisConfigService } from '@/config/redis/redis-sdk/redis-sdk.service';\n\n@Module({\n  exports: [RedisConfigService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [RedisConfigService],\n})\nexport class RedisSdkCofigModule {}\n",
+    "taille": 404
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/redis/redis-sdk/redis-sdk.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext, FullRedisConfig } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/common-logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class RedisConfigService implements OnModuleInit, FullRedisConfig {\n  private readonly context: JobsLogContext = {\n    method: '',\n    service: RedisConfigService.name,\n  };\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public get redisHost(): string {\n    return this.configService.get<string>('redisHost') ?? 'localhost';\n  }\n\n  public get redisPort(): number {\n    return this.configService.get<number>('redisPort') ?? 6379;\n  }\n\n  public get redisHostManagedRedis(): string {\n    return (\n      this.configService.get<string>('redisHostManagedRedis') ?? 'localhost'\n    );\n  }\n\n  public get redisPortManagedRedis(): number {\n    return this.configService.get<number>('redisPortManagedRedis') ?? 10_000;\n  }\n\n  public get statePrefix(): string {\n    return this.configService.get<string>('statePrefix') ?? '';\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('username') ?? '';\n  }\n\n  public get password(): string {\n    return this.configService.get<string>('redisPassword') ?? '';\n  }\n\n  public get localRedisPassword(): string {\n    return this.configService.get<string>('localRedisPassword') ?? '';\n  }\n\n  public get useTls(): boolean {\n    return this.configService.get<boolean>('useTls') ?? false;\n  }\n\n  public get useRedisLocal(): boolean {\n    return this.configService.get<boolean>('useRedisLocal') ?? false;\n  }\n\n  public get redisScope(): string {\n    return (\n      this.configService.get<string>('redisScope') ??\n      'https://redis.azure.com/.default'\n    );\n  }\n\n  public get redisPlantKey(): string {\n    return (\n      this.configService.get<string>('redisPlantKey') ??\n      'plant-hierarchy-api-plant'\n    );\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  /**\n   * Get the Redis password based on environment and configuration\n   * @returns The Redis password\n   */\n  public getRedisPassword(): string {\n    if (this.useRedisLocal) {\n      if (!this.localRedisPassword) {\n        throw new Error(\n          'Local Redis password is required when useRedisLocal is true',\n        );\n      }\n      this.customLogger.log(\n        'Using local Redis password from configuration',\n        this.context,\n      );\n      return this.localRedisPassword;\n    }\n\n    if (!this.password) {\n      throw new Error('Redis password is required when not using local Redis');\n    }\n    return this.password;\n  }\n\n  public async useAzureManagedRedis(): Promise<boolean> {\n    this.context.method = 'useAzureManagedRedis';\n    const value = this.configService.get<string>('useAzureManagedRedis');\n    if (value === undefined) {\n      const useAzureManagedRedis =\n        await this.appConfigService.getConfigurationValue(\n          'USE_AZURE_MANAGED_REDIS',\n        );\n      return useAzureManagedRedis?.toLowerCase() === 'true';\n    }\n    this.customLogger.warn(\n      `'useAzureManagedRedis' was read from environment variable`,\n      this.context,\n    );\n    return value?.toLowerCase() === 'true';\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'RedisConfigService',\n    };\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      {\n        key: 'redisHost',\n        value: this.redisHost,\n      },\n      {\n        key: 'redisPort',\n        value: this.redisPort,\n      },\n      {\n        key: 'statePrefix',\n        value: this.statePrefix,\n      },\n\n      {\n        key: 'useAzureManagedRedis',\n        value: await this.useAzureManagedRedis(),\n      },\n\n      {\n        key: 'redisHostManagedRedis',\n        value: this.redisHostManagedRedis,\n      },\n      {\n        key: 'redisPortManagedRedis',\n        value: this.redisPortManagedRedis,\n      },\n      {\n        key: 'redisPlantKey',\n        value: this.redisPlantKey,\n      },\n    ];\n\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 4675
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface UrlApiConfig {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): UrlApiConfig => ({\n  urlApi: process.env.URL_PLANT_HIERARCHY_API,\n});\n",
+    "taille": 166
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/plant-hierarchy-api/'\n    );\n  }\n}\n",
+    "taille": 378
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';\nimport { AppModule } from '@/app.module';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\nimport { MssqlDatabaseChecker } from '@/providers/database/mssql/mssql.database.checker';\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create(AppModule);\n  app.useGlobalPipes(\n    new ValidationPipe({\n      forbidNonWhitelisted: true,\n      transform: true,\n      whitelist: true,\n    }),\n  );\n  const { urlApi } = app.get(UrlApiConfigService);\n  const config = new DocumentBuilder()\n    .setTitle('plant-hierarchy-api Swagger Documentation')\n    .setDescription(\n      \"In this page you'll find all of the necessary informations about the microservice plant-hierarchy-api  and it's different endpoints.\",\n    )\n    .setVersion('1.0')\n    .addServer(urlApi, 'pre-production') // It will replaced by environment variable\n\n    .build();\n  const document = SwaggerModule.createDocument(app, config);\n  SwaggerModule.setup('api', app, document);\n\n  const databaseConfig = app.get(MssqlConfigurationService);\n  const { migrationsWaitDelayMilliseconds, migrationsWaitRetryLimit } =\n    databaseConfig;\n  const logger = new AppLogger(bootstrap.name);\n  const mssqlDatabaseChecker = app.get(MssqlDatabaseChecker);\n\n  await mssqlDatabaseChecker.waitForMigrations(\n    logger,\n    migrationsWaitDelayMilliseconds,\n    migrationsWaitRetryLimit,\n  );\n\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 1751
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration.data.source.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import 'dotenv/config';\nimport { DataSource } from 'typeorm';\nimport { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { DefaultMssqlConfigurationService } from '@/config/database/mssql/default.mssql.config.service';\nimport { getDatabaseConnectionProperties } from '@/providers/database/mssql/mssql.connection.factory';\n\nconst mssqlConfig = mssqlConfiguration().mssql;\n\nconst connectionProperties = getDatabaseConnectionProperties(\n  new DefaultMssqlConfigurationService(mssqlConfig),\n);\nconst dataSource = new DataSource({\n  ...connectionProperties,\n  logging: true,\n} as SqlServerConnectionOptions);\n\nexport { dataSource };\n",
+    "taille": 750
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1714471317309-first-migration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport class FirstMigration1714471317309 implements MigrationInterface {\n  public name = 'FirstMigration1714471317309';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"plant\" (\"plant_id\" int NOT NULL, \"plant_desc\" nvarchar(255), \"language_code\" nvarchar(3), \"plant_link\" nvarchar(1024), CONSTRAINT \"PK_23689581ae65474093c1ec7fa7a\" PRIMARY KEY (\"plant_id\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"uap\" (\"uap_id\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"uap_desc\" nvarchar(510), CONSTRAINT \"PK_218b5aba17a121a107f8e550bd0\" PRIMARY KEY (\"uap_id\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"production_line\" (\"prod_line_id\" nvarchar(25) NOT NULL, \"plant\" int NOT NULL, \"prod_line_desc\" nvarchar(255), \"uap_id\" nvarchar(10), CONSTRAINT \"PK_b2aec2c7d7b721285c41a032782\" PRIMARY KEY (\"prod_line_id\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"resource_type\" (\"resource_id\" nvarchar(20) NOT NULL, \"plant\" int NOT NULL, \"resource_type\" nvarchar(26) NOT NULL, CONSTRAINT \"PK_d1630958b3842966188ebe37f3d\" PRIMARY KEY (\"resource_id\", \"plant\", \"resource_type\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"resource\" (\"resource_id\" nvarchar(20) NOT NULL, \"plant\" int NOT NULL, \"resource_name\" nvarchar(35), \"seq_nb_activate\" bit, \"workcenter_id\" nvarchar(8), CONSTRAINT \"PK_467bc05dc59a0859c2babd2b921\" PRIMARY KEY (\"resource_id\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"workcenter\" (\"workcenter_id\" nvarchar(8) NOT NULL, \"plant\" int NOT NULL, \"advance_picking_duration\" nvarchar(1024) NOT NULL, \"workcenter_desc\" nvarchar(255), \"prod_line_id\" nvarchar(25), CONSTRAINT \"PK_f3da9d288aa31487839b2c3b404\" PRIMARY KEY (\"workcenter_id\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" ADD CONSTRAINT \"FK_d83ecd584ca96937fd09d2720ee\" FOREIGN KEY (\"plant\") REFERENCES \"plant\"(\"plant_id\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" ADD CONSTRAINT \"FK_37afadb8186f7cc14fe347ba405\" FOREIGN KEY (\"uap_id\", \"plant\") REFERENCES \"uap\"(\"uap_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" ADD CONSTRAINT \"FK_10eebba3eebf8070bea062055b8\" FOREIGN KEY (\"resource_id\", \"plant\") REFERENCES \"resource\"(\"resource_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD CONSTRAINT \"FK_eb92076c2526f494b3961e6e38f\" FOREIGN KEY (\"workcenter_id\", \"plant\") REFERENCES \"workcenter\"(\"workcenter_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD CONSTRAINT \"FK_f6240f5dd9d186bae6ff76258a9\" FOREIGN KEY (\"prod_line_id\", \"plant\") REFERENCES \"production_line\"(\"prod_line_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP CONSTRAINT \"FK_f6240f5dd9d186bae6ff76258a9\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" DROP CONSTRAINT \"FK_eb92076c2526f494b3961e6e38f\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP CONSTRAINT \"FK_10eebba3eebf8070bea062055b8\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP CONSTRAINT \"FK_37afadb8186f7cc14fe347ba405\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" DROP CONSTRAINT \"FK_d83ecd584ca96937fd09d2720ee\"`,\n    );\n    await queryRunner.query(`DROP TABLE \"workcenter\"`);\n    await queryRunner.query(`DROP TABLE \"resource\"`);\n    await queryRunner.query(`DROP TABLE \"resource_type\"`);\n    await queryRunner.query(`DROP TABLE \"production_line\"`);\n    await queryRunner.query(`DROP TABLE \"uap\"`);\n    await queryRunner.query(`DROP TABLE \"plant\"`);\n  }\n}\n",
+    "taille": 4093
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1714660773617-alter-nullable-workcenter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport class AlterNullableWorkcenter1714660773617\n  implements MigrationInterface\n{\n  public name = 'AlterNullableWorkcenter1714660773617';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ALTER COLUMN \"advance_picking_duration\" nvarchar(1024)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ALTER COLUMN \"advance_picking_duration\" nvarchar(1024) NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 638
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1714988965842-remove-relation-plant-uap.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RemoveRelationPlantUap1714988965842 implements MigrationInterface {\n  public name = 'RemoveRelationPlantUap1714988965842';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" DROP CONSTRAINT \"FK_d83ecd584ca96937fd09d2720ee\"`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" ADD CONSTRAINT \"FK_d83ecd584ca96937fd09d2720ee\" FOREIGN KEY (\"plant\") REFERENCES \"plant\"(\"plant_id\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n  }\n}\n",
+    "taille": 692
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1716821555986-remove-relations-from-data-model.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RemoveRelationsFromDataModel1716821555986\n  implements MigrationInterface\n{\n  public name = 'RemoveRelationsFromDataModel1716821555986';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP CONSTRAINT \"FK_f6240f5dd9d186bae6ff76258a9\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" DROP CONSTRAINT \"FK_eb92076c2526f494b3961e6e38f\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP CONSTRAINT \"FK_37afadb8186f7cc14fe347ba405\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_55032041dc43554ffc261ba3288\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_00c05d082c20a31bf95bb10a1bb\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_57dd3eb91c08a1bd5a2985391a7\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_51c70eb0b169f8515697bfd2162\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(`ALTER TABLE \"uap\" ADD \"deleted_at\" datetime2`);\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_d5dea2eba3a8a5628b332a2d10e\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_a8fe5069bfbc7c0451e043e9d3b\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_68bb11a96dd289472f1b69923fd\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_71843463f5c7183e9ea135c4b89\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_385b218db176e3c8952782cd3d6\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_693d0bef463fb1fdcbdc1b066ba\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" ADD \"deleted_at\" datetime2`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" ADD \"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_675247ba68191c85958f64b6374\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" ADD \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_051405ed2bd654ad56eeeafd678\" DEFAULT getdate()`,\n    );\n    await queryRunner.query(`ALTER TABLE \"plant\" ADD \"deleted_at\" datetime2`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"deleted_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" DROP CONSTRAINT \"DF_051405ed2bd654ad56eeeafd678\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"updated_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" DROP CONSTRAINT \"DF_675247ba68191c85958f64b6374\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"created_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP CONSTRAINT \"DF_693d0bef463fb1fdcbdc1b066ba\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP CONSTRAINT \"DF_385b218db176e3c8952782cd3d6\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" DROP COLUMN \"created_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP CONSTRAINT \"DF_71843463f5c7183e9ea135c4b89\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP CONSTRAINT \"DF_68bb11a96dd289472f1b69923fd\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource_type\" DROP COLUMN \"created_at\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"resource\" DROP COLUMN \"deleted_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" DROP CONSTRAINT \"DF_a8fe5069bfbc7c0451e043e9d3b\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"resource\" DROP COLUMN \"updated_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" DROP CONSTRAINT \"DF_d5dea2eba3a8a5628b332a2d10e\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"resource\" DROP COLUMN \"created_at\"`);\n    await queryRunner.query(`ALTER TABLE \"uap\" DROP COLUMN \"deleted_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" DROP CONSTRAINT \"DF_51c70eb0b169f8515697bfd2162\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"uap\" DROP COLUMN \"updated_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"uap\" DROP CONSTRAINT \"DF_57dd3eb91c08a1bd5a2985391a7\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"uap\" DROP COLUMN \"created_at\"`);\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP COLUMN \"deleted_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP CONSTRAINT \"DF_00c05d082c20a31bf95bb10a1bb\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP COLUMN \"updated_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP CONSTRAINT \"DF_55032041dc43554ffc261ba3288\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP COLUMN \"created_at\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"production_line\" ADD CONSTRAINT \"FK_37afadb8186f7cc14fe347ba405\" FOREIGN KEY (\"uap_id\", \"plant\") REFERENCES \"uap\"(\"uap_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD CONSTRAINT \"FK_eb92076c2526f494b3961e6e38f\" FOREIGN KEY (\"workcenter_id\", \"plant\") REFERENCES \"workcenter\"(\"workcenter_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD CONSTRAINT \"FK_f6240f5dd9d186bae6ff76258a9\" FOREIGN KEY (\"prod_line_id\", \"plant\") REFERENCES \"production_line\"(\"prod_line_id\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n  }\n}\n",
+    "taille": 7018
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1716827103650-add-table-change-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddTableChangeLog1716827103650 implements MigrationInterface {\n  public name = 'AddTableChangeLog1716827103650';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" nvarchar(20) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"table_change_log\"`);\n  }\n}\n",
+    "taille": 894
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1716914559992-increase-change-last-lsn-length.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class IncreaseChangeLastLsnLength1716914559992\n  implements MigrationInterface\n{\n  public name = 'IncreaseChangeLastLsnLength1716914559992';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(30) NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(20) NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 840
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1717064202405-modify-change-last-lsn-to-binary-10.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class ModifyChangeLastLsnToBinary101717064202405\n  implements MigrationInterface\n{\n  public name = 'ModifyChangeLastLsnToBinary101717064202405';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" binary(10) NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(30) NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 842
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1717413342423-add-timezone-column.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddTimezoneColumn1717413342423 implements MigrationInterface {\n  public name = 'AddTimezoneColumn1717413342423';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" ADD \"timezone\" nvarchar(60)`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"timezone\"`);\n  }\n}\n",
+    "taille": 477
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1717413650206-timezone-column-length.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class TimezoneColumnLength1717413650206 implements MigrationInterface {\n  public name = 'TimezoneColumnLength1717413650206';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`EXEC sp_rename \"dbo.plant.timezone\", \"time_zone\"`);\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"time_zone\"`);\n    await queryRunner.query(`ALTER TABLE \"plant\" ADD \"time_zone\" nvarchar(36)`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"time_zone\"`);\n    await queryRunner.query(`ALTER TABLE \"plant\" ADD \"time_zone\" nvarchar(60)`);\n    await queryRunner.query(`EXEC sp_rename \"dbo.plant.time_zone\", \"timezone\"`);\n  }\n}\n",
+    "taille": 804
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1724255294027-add-site-maintenance-column.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddSiteMaintenanceColumn1724255294027\n  implements MigrationInterface\n{\n  public name = 'AddSiteMaintenanceColumn1724255294027';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" ADD \"sid\" nvarchar(3)`);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"sid\"`);\n  }\n}\n",
+    "taille": 482
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1734522102253-add-picking-time-horizon-column-to-workcenter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddPickingTimeHorizonColumnToWorkcenter1734522102253\n  implements MigrationInterface\n{\n  public readonly name = 'AddPickingTimeHorizonColumnToWorkcenter1734522102253';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"picking_time_horizon\" int`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP COLUMN \"picking_time_horizon\"`,\n    );\n  }\n}\n",
+    "taille": 583
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1735140885163-drop-table-change-log-add-ingestion-event-tracking.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class DropTableChangeLogAddIngestionEventTracking1735140885163\n  implements MigrationInterface\n{\n  public name = 'DropTableChangeLogAddIngestionEventTracking1735140885163';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"ingestion_event_tracking\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_395bbcdbaf782420c08deb984d7\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_b59b47e3f14a85cdf499873040b\" DEFAULT getdate(), \"deleted_at\" datetime2, \"hash_key\" char(64) NOT NULL, \"keys\" nvarchar(1236) NOT NULL, \"source_table\" nvarchar(50) NOT NULL, \"destination_table\" nvarchar(50), \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_399631b334958d1f3d7e006eca0\" PRIMARY KEY (\"hash_key\")) ;\n          DROP TABLE \"table_change_log\";`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"ingestion_event_tracking\";\n            CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`);\n  }\n}\n",
+    "taille": 1499
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1738070649357-add-ewmflow-volumn.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddEwmflowVolumn1738070649357 implements MigrationInterface {\n  public name = 'AddEwmflowVolumn1738070649357';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" ADD \"ewm_flow\" bit NOT NULL CONSTRAINT \"DF_5168d71726de4c1f4ac2684a9a2\" DEFAULT 0`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" DROP CONSTRAINT \"DF_5168d71726de4c1f4ac2684a9a2\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"ewm_flow\"`);\n  }\n}\n",
+    "taille": 656
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1738080053976-add-ewmflow-column-workcenter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddEwmflowColumnWorkcenter1738080053976\n  implements MigrationInterface\n{\n  public name = 'AddEwmflowColumnWorkcenter1738080053976';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"ewm_flow\" bit NOT NULL CONSTRAINT \"DF_0d7923d80c5ac8ae56ce302cac0\" DEFAULT 0`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP CONSTRAINT \"DF_0d7923d80c5ac8ae56ce302cac0\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"workcenter\" DROP COLUMN \"ewm_flow\"`);\n  }\n}\n",
+    "taille": 693
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1739350831367-add-managed-by-column.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddManagedByColumn1739350831367 implements MigrationInterface {\n  public name = 'AddManagedByColumn1739350831367';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"resource\" ADD \"managed_by\" nvarchar(4)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`ALTER TABLE \"resource\" DROP COLUMN \"managed_by\"`);\n  }\n}\n",
+    "taille": 501
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1747843087316-remove-pickingtimehorizon-entity-from-plant-config-table.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RemovePickingtimehorizonEntityFromPlantConfigTable1747843087316\n  implements MigrationInterface\n{\n  public name =\n    'RemovePickingtimehorizonEntityFromPlantConfigTable1747843087316';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" DROP COLUMN \"picking_time_horizon\"`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"workcenter\" ADD \"picking_time_horizon\" int`,\n    );\n  }\n}\n",
+    "taille": 600
+  },
+  {
+    "microservice": "mesx-plant-hierarchy-api",
+    "chemin": "/src/migration/1750692229294-add-bufferization-column-to-plant.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddBufferizationColumnToPlant1750692229294\n  implements MigrationInterface\n{\n  public name = 'AddBufferizationColumnToPlant1750692229294';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" ADD \"bufferization\" bit NOT NULL CONSTRAINT \"DF_c7927ccefd5c825337a50270a08\" DEFAULT 0`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant\" DROP CONSTRAINT \"DF_c7927ccefd5c825337a50270a08\"`,\n    );\n    await queryRunner.query(`ALTER TABLE \"plant\" DROP COLUMN \"bufferization\"`);\n  }\n}\n",
+    "taille": 694
+  }
+]

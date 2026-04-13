@@ -1,0 +1,418 @@
+[
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: ume-be\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/ume-backend\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1228
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"\n   \n",
+    "taille": 264
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/ume-backend');\n    });\n  });\n});\n",
+    "taille": 620
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { ApiExcludeEndpoint } from '@nestjs/swagger';\nimport { AppService } from './app.service';\n\n@Controller('')\nexport class AppController {\n  public constructor(private readonly appService: AppService) {}\n\n  @ApiExcludeEndpoint()\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 368
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\nimport { AuthModule } from './auth/auth.module';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { config } from './config/dapr/configuration';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { urlApiConfiguration } from './config/url-api/configuration';\nimport { UrlApiConfigModule } from './config/url-api/url-api.module';\nimport { MenuModule } from './menu/menu.module';\nimport { AppPageListModule } from './module/app-page-list/app-page-list.module';\nimport { HomepageShortcutsModule } from './module/homepage-shortcuts/homepage-shortcuts.module';\nimport { PlantModule } from './plant/plant.module';\nimport { UserPreferenceModule } from './user-preference/user-preference.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    UrlApiConfigModule,\n    DaprConfigModule,\n    ConfigModule.forRoot({\n      load: [urlApiConfiguration, config, appConfig],\n    }),\n    MenuModule,\n    PlantModule,\n    HomepageShortcutsModule,\n    AuthModule,\n    AppPageListModule,\n    AppConfigModule,\n    UserPreferenceModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 1390
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/ume-backend';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 197
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/auth/auth.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Controller,\n  Get,\n  Req,\n  HttpException,\n  HttpStatus,\n  Logger,\n} from '@nestjs/common';\nimport { ApiOperation, ApiResponse } from '@nestjs/swagger';\nimport axios from 'axios';\n\nimport { Request } from 'express';\nimport { AuthService } from './auth.service';\n\ninterface Claim {\n  typ: string;\n  val: string | Array<string>;\n}\n\ninterface DecodedPrincipal {\n  authType: string;\n  claims: Array<Claim>;\n}\n\ninterface AuthRefreshResponse {\n  [key: string]: unknown;\n}\n\n@Controller('auth')\nexport class AuthController {\n  private readonly cookie = 'cookie';\n\n  public constructor(private readonly authService: AuthService) {} // <-- Proper injection\n\n  @Get('claims')\n  public getUserClaims(@Req() request: Request): DecodedPrincipal | undefined {\n    return this.authService.getUserClaims(request); // <- call the service method here\n  }\n\n  @Get('refresh-token')\n  public async refreshToken(\n    @Req() request: Request,\n  ): Promise<AuthRefreshResponse> {\n    const cookie = request.headers[this.cookie];\n    if (!cookie) {\n      throw new HttpException(\n        'No cookie found in request',\n        HttpStatus.BAD_REQUEST,\n      );\n    }\n\n    try {\n      const response = await axios.get<AuthRefreshResponse>(\n        'https://mesx-dev.app.corp/.auth/refresh',\n        {\n          headers: {\n            cookie, // Pass the full cookie header as is\n          },\n        },\n      );\n\n      return response.data;\n    } catch (error) {\n      Logger.error(\n        'Failed to invoke /.auth/refresh',\n        error.response?.data ?? error.message,\n      );\n      throw new HttpException(\n        'Token refresh failed',\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n\n  @Get('user-plant')\n  @ApiOperation({ summary: 'Get the list of plant IDs assigned to the user' })\n  @ApiResponse({\n    status: 200,\n    description: 'List of plant IDs as strings',\n    schema: {\n      type: 'array',\n      items: { type: 'string', example: '1146' },\n    },\n  })\n  @ApiResponse({ status: 500, description: 'Internal server error' })\n  public async resolveUserPlants(\n    @Req() request: Request,\n  ): Promise<Array<string>> {\n    return this.authService.resolveUserPlants(request);\n  }\n}\n",
+    "taille": 2194
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/auth/auth.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { AppConfigModule } from 'src/config/app-config/app-config.module';\nimport { PlantModule } from 'src/plant/plant.module';\nimport { AuthController } from './auth.controller';\nimport { AuthService } from './auth.service';\n\n@Module({\n  controllers: [AuthController],\n  providers: [AuthService],\n  imports: [PlantModule, AppConfigModule],\n})\nexport class AuthModule {}\n",
+    "taille": 413
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/auth/auth.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\r\nimport { Request } from 'express';\r\nimport { AppConfigService } from 'src/config/app-config/app-config.service';\r\nimport { PlantService } from 'src/plant/plant.service';\r\n\r\ninterface Claim {\r\n  typ: string;\r\n  val: string | Array<string>;\r\n}\r\n\r\ninterface DecodedPrincipal {\r\n  authType: string;\r\n  claims: Array<Claim>;\r\n}\r\n\r\n@Injectable()\r\nexport class AuthService {\r\n  public static format(decoded: DecodedPrincipal): DecodedPrincipal {\r\n    const claims: Array<Claim> = [];\r\n\r\n    for (const [key, value] of Object.entries(decoded)) {\r\n      let typ: string;\r\n\r\n      // ð strict mappings, no claimMappings map\r\n      switch (key) {\r\n        case 'sub': {\r\n          typ =\r\n            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier';\r\n          break;\r\n        }\r\n        case 'given_name': {\r\n          typ =\r\n            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname';\r\n          break;\r\n        }\r\n        case 'family_name': {\r\n          typ = 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname';\r\n          break;\r\n        }\r\n        case 'email': {\r\n          typ =\r\n            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress';\r\n          break;\r\n        }\r\n        case 'auth_time': {\r\n          typ =\r\n            'http://schemas.microsoft.com/ws/2008/06/identity/claims/authenticationinstant';\r\n          break;\r\n        }\r\n        default: {\r\n          typ = key;\r\n        }\r\n      }\r\n\r\n      if (Array.isArray(value)) {\r\n        for (const v of value) claims.push({ typ, val: String(v) });\r\n      } else {\r\n        claims.push({ typ, val: String(value) });\r\n      }\r\n    }\r\n\r\n    // Add a nonce if not present\r\n    if (!claims.some((c) => c.typ === 'nonce')) {\r\n      claims.push({\r\n        typ: 'nonce',\r\n        val: 'ad6434610eee472fa95938c56f2a4746_20250820105358',\r\n      });\r\n    }\r\n\r\n    return {\r\n      authType: 'pingFederate',\r\n      claims,\r\n    };\r\n  }\r\n\r\n  private static normalizeRole(role: string): string {\r\n    if (!role) return '';\r\n\r\n    const regex = /CN=([^,]+)/;\r\n    const match = regex.exec(role);\r\n\r\n    return match ? match[1].trim() : role.trim();\r\n  }\r\n\r\n  private static extractFromClaims(principal: DecodedPrincipal): {\r\n    roles: Array<string>;\r\n    assignedPlants: Array<string>;\r\n  } {\r\n    const { claims } = principal;\r\n\r\n    const roles =\r\n      claims\r\n        .filter(\r\n          (c) => c.typ.toLowerCase().includes('groups') || c.typ === 'groups',\r\n        )\r\n        .flatMap((c) => (Array.isArray(c.val) ? c.val : [c.val])) ?? [];\r\n\r\n    const assignedPlants = claims\r\n      .filter((c) => c.typ === 'assignedPlants')\r\n      .flatMap((c) => (Array.isArray(c.val) ? c.val : [c.val]));\r\n\r\n    return { roles, assignedPlants };\r\n  }\r\n\r\n  private readonly logger = new Logger(AuthService.name);\r\n\r\n  private readonly encodedClaimsHeaderName = 'x-ms-client-principal';\r\n\r\n  public constructor(\r\n    private readonly plantService: PlantService,\r\n    private readonly appConfigService: AppConfigService,\r\n  ) {}\r\n\r\n  private capitalize(value: string): string {\r\n    try {\r\n      if (!value) return '';\r\n      return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();\r\n    } catch (error) {\r\n      this.logger.error('Error in capitalize:', error);\r\n      return '';\r\n    }\r\n  }\r\n\r\n  public getUserClaims(request: Request): DecodedPrincipal | undefined {\r\n    const encodedPrincipal = request.headers[\r\n      this.encodedClaimsHeaderName\r\n    ] as string;\r\n\r\n    let decodedPrincipal: DecodedPrincipal | undefined;\r\n\r\n    // === 1. Try to decode from base64 header ===\r\n    if (encodedPrincipal) {\r\n      try {\r\n        const decoded = Buffer.from(encodedPrincipal, 'base64').toString(\r\n          'utf8',\r\n        );\r\n        decodedPrincipal = JSON.parse(decoded) as DecodedPrincipal;\r\n        const formatted = AuthService.format(decodedPrincipal);\r\n\r\n        return formatted;\r\n      } catch (error) {\r\n        this.logger.warn(\r\n          `Invalid base64 or JSON in ${this.encodedClaimsHeaderName}: ${error}`,\r\n        );\r\n      }\r\n    }\r\n    // === 2. Fallback to forwarded headers ===\r\n    const fallbackPrincipal = this.buildFromForwardedHeaders(request);\r\n\r\n    // === 3. Merge if both exist ===\r\n\r\n    return decodedPrincipal ?? fallbackPrincipal;\r\n  }\r\n\r\n  private buildFromForwardedHeaders(\r\n    request: Request,\r\n  ): DecodedPrincipal | undefined {\r\n    const email = request.headers['x-forwarded-email'] as string | undefined;\r\n    const user = request.headers['x-forwarded-user'] as string | undefined;\r\n    const groupsHeader = request.headers['x-forwarded-groups'] as\r\n      | string\r\n      | undefined;\r\n\r\n    const identifier = user ?? email;\r\n    if (!identifier) {\r\n      this.logger.warn('No fallback identifier from proxy headers');\r\n      return undefined;\r\n    }\r\n\r\n    const [givenName, surname] = this.extractNamesFromEmail(identifier);\r\n\r\n    const claims: Array<Claim> = [\r\n      {\r\n        typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier',\r\n        val: identifier,\r\n      },\r\n    ];\r\n\r\n    if (email) {\r\n      claims.push({\r\n        typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',\r\n        val: email,\r\n      });\r\n    }\r\n\r\n    if (givenName) {\r\n      claims.push({\r\n        typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname',\r\n        val: givenName,\r\n      });\r\n    }\r\n\r\n    if (surname) {\r\n      claims.push({\r\n        typ: 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname',\r\n        val: surname,\r\n      });\r\n    }\r\n\r\n    if (groupsHeader) {\r\n      const groups = groupsHeader.includes(',')\r\n        ? groupsHeader.split(',').map((g) => g.trim())\r\n        : groupsHeader;\r\n      claims.push({ typ: 'groups', val: groups });\r\n    }\r\n\r\n    return {\r\n      authType: 'proxy-headers',\r\n      claims,\r\n    };\r\n  }\r\n\r\n  private extractNamesFromEmail(email: string): [string, string] {\r\n    const [localPart] = email.split('@');\r\n    const parts = localPart.split('.');\r\n    const givenName = this.capitalize(parts[0]);\r\n    const surname = parts[1] ? parts[1].toUpperCase() : '';\r\n    return [givenName, surname];\r\n  }\r\n\r\n  public async resolveUserPlants(request: Request): Promise<Array<string>> {\r\n    try {\r\n      const principal = this.getUserClaims(request);\r\n\r\n      if (!principal) {\r\n        throw new Error('No claims found for user');\r\n      }\r\n\r\n      const { roles, assignedPlants } =\r\n        AuthService.extractFromClaims(principal);\r\n\r\n      const cleanedRoles = roles.map((r) => AuthService.normalizeRole(r));\r\n\r\n      // Get exception roles from Azure App Configuration\r\n      const exceptionRolesValue =\r\n        await this.appConfigService.getConfigurationValue(\r\n          'AUTH_PROXY_EXCEPTION_ROLES',\r\n        );\r\n      this.logger.log('exceptionRolesValue:', exceptionRolesValue);\r\n\r\n      const exceptionRoles = Array.isArray(exceptionRolesValue)\r\n        ? exceptionRolesValue.map((r) => r.trim())\r\n        : (exceptionRolesValue?.split(';').map((r) => r.trim()) ?? []);\r\n\r\n      const isExceptionUser = cleanedRoles.some((r) =>\r\n        exceptionRoles.includes(r),\r\n      );\r\n\r\n      if (isExceptionUser) {\r\n        // Exception roles get all plants\r\n        return this.plantService.getPlant();\r\n      }\r\n\r\n      return assignedPlants;\r\n    } catch (error) {\r\n      this.logger.error('Error resolving user plants:', error);\r\n      throw new Error('Failed to resolve user plants');\r\n    }\r\n  }\r\n}\r\n",
+    "taille": 7531
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/common/constants/exception-roles.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const EXCEPTION_ROLES = [\n  'DL-TN-GHA-MESX-PRODUCTION',\n  'DL-MES-CC-DEV',\n  'DL-TN-GHA-GTF-MII',\n];\n",
+    "taille": 109
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  public log(message: unknown): void {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public debug(message: unknown): void {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public verbose(message: unknown): void {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 644
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (!config.value) {\n        Logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1008
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from './app-config-initial-config.service';\nimport { AppConfigService } from './app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 478
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable, Logger } from '@nestjs/common';\nimport { AppConfigInitialConfigService } from './app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      Logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2636
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "const config = (): {\n  plantHierarchyApiAppId: string | undefined;\n  umeApiAppId: string | undefined;\n} => ({\n  plantHierarchyApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n  umeApiAppId: process.env.UME_API_APP_ID,\n});\n\nexport { config };\n",
+    "taille": 243
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigService } from './dapr-config.service';\n\n@Module({\n  exports: [DaprConfigService],\n  imports: [ConfigModule],\n  providers: [DaprConfigService],\n})\nexport class DaprConfigModule {}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class DaprConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get umeApiAppId(): string {\n    return this.configService.get<string>('umeApiAppId') ?? '';\n  }\n\n  public get plantHierarchyApiAppId(): string {\n    return this.configService.get<string>('plantHierarchyApiAppId') ?? '';\n  }\n}\n",
+    "taille": 448
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  urlApi: process.env.URL_UME_BACKEND,\n});\n",
+    "taille": 166
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from './url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 291
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-dev.app.corp/ume-be/'\n    );\n  }\n}\n",
+    "taille": 365
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';\nimport { AppModule } from './app.module';\n\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create(AppModule);\n  app.useGlobalPipes(new ValidationPipe());\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n  const config = new DocumentBuilder()\n    .setTitle('Backend UME Swagger Documentation')\n    .setDescription(\n      \"In this page you'll find all of the necessary informations about the microservice Backend UME and it's different endpoints.\",\n    )\n    .setVersion('1.0')\n    .addServer('https://mesx-ppr.app.corp/ume-be/', 'pre-production')\n\n    .build();\n  const document = SwaggerModule.createDocument(app, config);\n  SwaggerModule.setup('api', app, document);\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 950
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/menu/dto/app-list.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class AppListDTO {\n  public id: number;\n\n  public appName: string;\n\n  public link: string;\n\n  public isMe: number;\n\n  public order: number;\n\n  public isClickable: boolean;\n\n  public parentId: number | null;\n\n  public children: Array<AppListDTO>;\n\n  public supportPageUrl: string | null;\n\n  public constructor(partial: Partial<AppListDTO>) {\n    Object.assign(this, partial);\n  }\n}\n",
+    "taille": 388
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/menu/menu.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppListDTO } from './dto/app-list.dto';\nimport { MenuService } from './menu.service';\n\n@Controller()\nexport class MenuController {\n  public constructor(private readonly menuService: MenuService) {}\n\n  @Get('app-list')\n  public async getAppList(): Promise<Array<AppListDTO>> {\n    return this.menuService.fetchAppList();\n  }\n}\n",
+    "taille": 385
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/menu/menu.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigModule } from '../config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from '../config/url-api/url-api.module';\nimport { MenuController } from './menu.controller';\nimport { MenuService } from './menu.service';\n\n@Module({\n  controllers: [MenuController],\n  imports: [\n    ConfigModule.forRoot(),\n    HttpModule,\n    DaprConfigModule,\n    UrlApiConfigModule,\n  ],\n  providers: [MenuService],\n})\nexport class MenuModule {}\n",
+    "taille": 581
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/menu/menu.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Injectable,\n  Logger,\n  InternalServerErrorException,\n  NotFoundException,\n} from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { DaprConfigService } from '../config/dapr/dapr-config.service';\nimport { AppListDTO } from './dto/app-list.dto';\n\n@Injectable()\nexport class MenuService {\n  private readonly daprClient: DaprClient;\n\n  private readonly logger = new Logger(MenuService.name);\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async fetchAppList(): Promise<Array<AppListDTO>> {\n    const serviceAppId = this.daprConfigService.umeApiAppId;\n    const serviceMethod = 'menus';\n\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.GET,\n      );\n\n      if (Array.isArray(response)) {\n        return response.map((item) => new AppListDTO(item));\n      }\n      throw new NotFoundException(\n        'Expected an array of app lists but received something else.',\n      );\n    } catch (error) {\n      this.logger.error(\n        'Failed to fetch App List from Dapr service',\n        error.stack,\n      );\n\n      if (error.response) {\n        throw new InternalServerErrorException(\n          `Error communicating with Dapr service: ${error.response}`,\n        );\n      }\n\n      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEOUT') {\n        throw new InternalServerErrorException(\n          'Network error or Dapr service unavailable.',\n        );\n      }\n\n      throw new InternalServerErrorException(\n        'An unexpected error occurred while fetching the app list.',\n      );\n    }\n  }\n}\n",
+    "taille": 1712
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/app-page-list/app-page-list.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Query } from '@nestjs/common';\nimport { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';\nimport { AppPageListService } from './app-page-list.service';\nimport { SupportUrlResponse } from './dtos/support-url.dto';\n\n@Controller('app-page-list')\nexport class AppPageListController {\n  public constructor(private readonly appPageListService: AppPageListService) {}\n\n  @Get('find-support-url')\n  @ApiOperation({ summary: 'Get support URL by route path' })\n  @ApiQuery({\n    name: 'path',\n    type: String,\n    description: 'The route path to resolve support URL for',\n    required: true,\n  })\n  @ApiResponse({\n    status: 200,\n    description: 'Support URL found',\n    schema: {\n      example: { supportUrl: 'https://example.com/support' },\n    },\n  })\n  @ApiResponse({\n    status: 500,\n    description: 'Internal server error',\n  })\n  public async getSupportUrl(\n    @Query('path') path: string,\n  ): Promise<SupportUrlResponse> {\n    try {\n      const supportUrl = await this.appPageListService.getSupportUrl(path);\n      return { supportUrl };\n    } catch (error) {\n      console.error('Error fetching support URL:', error);\n      throw error;\n    }\n  }\n}\n",
+    "taille": 1192
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/app-page-list/app-page-list.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\n\nimport { DaprConfigModule } from 'src/config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from 'src/config/url-api/url-api.module';\nimport { AppPageListController } from './app-page-list.controller';\nimport { AppPageListService } from './app-page-list.service';\n\n@Module({\n  controllers: [AppPageListController],\n  imports: [\n    ConfigModule.forRoot(),\n    HttpModule,\n    DaprConfigModule,\n    UrlApiConfigModule,\n  ],\n  providers: [AppPageListService],\n})\nexport class AppPageListModule {}\n",
+    "taille": 637
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/app-page-list/app-page-list.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { DaprConfigService } from 'src/config/dapr/dapr-config.service';\nimport { SupportUrlResponse } from './dtos/support-url.dto';\n\n@Injectable()\nexport class AppPageListService {\n  private readonly daprClient: DaprClient;\n\n  private readonly logger = new Logger(AppPageListService.name);\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async getSupportUrl(currentPath: string): Promise<string | null> {\n    const serviceAppId = this.daprConfigService.umeApiAppId;\n    const serviceMethod = `app-page-list/find-support-url?path=${currentPath}`;\n\n    try {\n      const token = `Bearer ${process.env.TOKEN}`;\n      const options = { headers: { authorization: token } };\n      const response = (await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.GET,\n        undefined,\n        options,\n      )) as SupportUrlResponse;\n      return response.supportUrl ?? null;\n    } catch (error) {\n      this.logger.error('Error invoking Dapr service UME API:', error);\n      return null;\n    }\n  }\n}\n",
+    "taille": 1229
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/app-page-list/dtos/support-url.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface SupportUrlResponse {\n  supportUrl: string | null;\n}\n",
+    "taille": 69
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/homepage-shortcuts/dtos/homepage-shortcuts.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiPropertyOptional } from '@nestjs/swagger';\nimport { IsInt, IsOptional, IsPositive } from 'class-validator';\n\nexport class HomepageShortcutDto {\n  @ApiPropertyOptional({ description: 'User ID who owns the shortcut' })\n  @IsOptional()\n  @IsInt()\n  @IsPositive()\n  public userId?: number;\n\n  @ApiPropertyOptional({ description: 'Page ID to be linked in the shortcut' })\n  @IsOptional()\n  @IsInt()\n  @IsPositive()\n  public pageId?: number;\n\n  @ApiPropertyOptional({ description: 'Shortcut position (1 to 6)' })\n  @IsOptional()\n  @IsInt()\n  @IsPositive()\n  public position?: number;\n}\n",
+    "taille": 592
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/homepage-shortcuts/homepage-shortcuts.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Controller,\n  Post,\n  Get,\n  Put,\n  Delete,\n  Body,\n  Param,\n  HttpException,\n  HttpStatus,\n} from '@nestjs/common';\nimport { HomepageShortcutDto } from './dtos/homepage-shortcuts.dto';\nimport { HomepageShortcutService } from './homepage-shortcuts.service';\n\n@Controller('homepage-shortcuts')\nexport class HomepageShortcutsController {\n  public constructor(\n    private readonly shortcutService: HomepageShortcutService, // Private for the constructor parameter\n  ) {}\n\n  @Post()\n  public async create(\n    @Body() dto: HomepageShortcutDto,\n  ): Promise<HomepageShortcutDto | undefined> {\n    try {\n      return await this.shortcutService.createShortcut(dto);\n    } catch {\n      throw new HttpException(\n        'Failed to create shortcut',\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n\n  @Get('user/:userId')\n  public async getByUser(\n    @Param('userId') userId: number,\n  ): Promise<Array<HomepageShortcutDto>> {\n    try {\n      return await this.shortcutService.getShortcutsByUser(userId);\n    } catch {\n      throw new HttpException(\n        'Failed to retrieve shortcuts',\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n\n  @Put(':shortcutId')\n  public async update(\n    @Param('shortcutId') shortcutId: number,\n    @Body() dto: HomepageShortcutDto,\n  ): Promise<HomepageShortcutDto | undefined> {\n    try {\n      return await this.shortcutService.updateShortcut(shortcutId, dto);\n    } catch {\n      throw new HttpException(\n        'Failed to update shortcut',\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n\n  @Delete(':shortcutId')\n  public async delete(\n    @Param('shortcutId') shortcutId: number,\n  ): Promise<{ message: string }> {\n    try {\n      await this.shortcutService.deleteShortcut(shortcutId);\n      return { message: 'Shortcut deleted successfully' };\n    } catch {\n      throw new HttpException(\n        'Failed to delete shortcut',\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n}\n",
+    "taille": 1976
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/homepage-shortcuts/homepage-shortcuts.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigModule } from 'src/config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from 'src/config/url-api/url-api.module';\nimport { HomepageShortcutsController } from './homepage-shortcuts.controller';\nimport { HomepageShortcutService } from './homepage-shortcuts.service';\n\n@Module({\n  controllers: [HomepageShortcutsController],\n  imports: [\n    ConfigModule.forRoot(),\n    HttpModule,\n    DaprConfigModule,\n    UrlApiConfigModule,\n  ],\n  providers: [HomepageShortcutService],\n})\nexport class HomepageShortcutsModule {}\n",
+    "taille": 674
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/module/homepage-shortcuts/homepage-shortcuts.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { DaprConfigService } from '../../config/dapr/dapr-config.service';\nimport { HomepageShortcutDto } from './dtos/homepage-shortcuts.dto';\n\n@Injectable()\nexport class HomepageShortcutService {\n  private readonly daprClient: DaprClient;\n\n  private readonly serviceAppId: string;\n\n  private readonly logger = new Logger(HomepageShortcutService.name);\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n    this.serviceAppId = this.daprConfigService.umeApiAppId; // ð ID du service ume-api (dans Dapr)\n  }\n\n  public async createShortcut(\n    dto: HomepageShortcutDto,\n  ): Promise<HomepageShortcutDto | undefined> {\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        'homepage-shortcuts',\n        HttpMethod.POST,\n        dto,\n      );\n      return response;\n    } catch (error) {\n      this.logger.error('Error creating shortcut:', error);\n      throw error;\n    }\n  }\n\n  public async getShortcutsByUser(\n    userId: number,\n  ): Promise<Array<HomepageShortcutDto>> {\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        `homepage-shortcuts/user/${userId}`,\n        HttpMethod.GET,\n      );\n      return Array.isArray(response) ? response : [];\n    } catch (error) {\n      this.logger.error('Error fetching shortcuts by user:', error);\n      return [];\n    }\n  }\n\n  public async updateShortcut(\n    shortcutId: number,\n    dto: HomepageShortcutDto,\n  ): Promise<HomepageShortcutDto | undefined> {\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        `homepage-shortcuts/${shortcutId}`,\n        HttpMethod.PUT,\n        dto,\n      );\n      return response;\n    } catch (error) {\n      this.logger.error('Error updating shortcut:', error);\n      throw error;\n    }\n  }\n\n  public async deleteShortcut(shortcutId: number): Promise<void> {\n    try {\n      await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        `homepage-shortcuts/${shortcutId}`,\n        HttpMethod.DELETE,\n      );\n    } catch (error) {\n      this.logger.error('Error deleting shortcut:', error);\n      throw error;\n    }\n  }\n}\n",
+    "taille": 2350
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/plant.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Uap } from './uap';\n\nexport interface Plant {\n  plantId: number;\n  plantDesc: string;\n  languageCode: string;\n  plantLink: string;\n  timezone: string;\n  sid: string;\n  ewmFlow: boolean;\n  uaps?: Array<Uap>;\n}\n",
+    "taille": 218
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/prodline.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class ProductionLineDto {\n  @ApiProperty()\n  public prodLineId: string;\n\n  @ApiProperty()\n  public prodLineDesc: string;\n}\n",
+    "taille": 178
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/prodline.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Workcenter } from './workcenter';\n\nexport class ProductionLine {\n  public prodLineId: string;\n\n  public plant: number;\n\n  public uapId?: string;\n\n  public prodLineDesc?: string;\n\n  public workcenters?: Array<Workcenter>;\n}\n",
+    "taille": 232
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/resource.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsNotEmpty, IsOptional, IsString } from 'class-validator';\n\nexport class ResourceDTO {\n  @ApiProperty()\n  @IsString()\n  @IsNotEmpty()\n  public resourceId: string;\n\n  @ApiProperty({ nullable: true, required: false })\n  @IsString()\n  @IsOptional()\n  public resourceName?: string;\n}\n",
+    "taille": 336
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/resource.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface Resource {\n  resourceId: string;\n  plant: number;\n  workcenterId: string;\n  resourceName: string | null;\n  managedBy: string | null;\n  seqNbActivate: string | null;\n}\n",
+    "taille": 184
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/uap.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ProductionLine } from './prodline';\n\nexport class Uap {\n  public uapId: string;\n\n  public plant: number;\n\n  public uapDesc?: string;\n\n  public productionLines?: Array<ProductionLine>;\n}\n",
+    "taille": 195
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/workcenter-result.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString } from 'class-validator';\n\nexport class WorkcenterResultDTO {\n  @ApiProperty()\n  @IsString()\n  public workcenterDesc: string;\n\n  @ApiProperty()\n  @IsString()\n  public workcenterId?: string;\n}\n",
+    "taille": 257
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/dto/workcenter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Resource } from './resource';\n\nexport class Workcenter {\n  public workcenterId: string;\n\n  public plant: number;\n\n  public advancePickingDuration?: string;\n\n  public workcenterDesc?: string;\n\n  public prodLineId?: string;\n\n  public ewmFlow: boolean;\n\n  public resources?: Array<Resource>;\n}\n",
+    "taille": 300
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/plant.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Param, Query } from '@nestjs/common';\nimport { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';\nimport { ProductionLineDto } from './dto/prodline.dto';\nimport { ResourceDTO } from './dto/resource.dto';\nimport { Uap } from './dto/uap';\nimport { WorkcenterResultDTO } from './dto/workcenter-result.dto';\nimport { PlantService } from './plant.service';\n\n@Controller()\nexport class PlantController {\n  public constructor(private readonly plantService: PlantService) {}\n\n  @Get('getSid/:plant')\n  @ApiOperation({\n    description: 'Retrieves SID DTOs based on the given plant number.',\n    summary: 'Get SID by Plant',\n  })\n  @ApiResponse({ description: 'sid', status: 200 })\n  @ApiResponse({ description: 'Invalid plant number', status: 400 })\n  @ApiResponse({ description: 'Internal server error', status: 500 })\n  public async getSidByPlant(@Param('plant') plant: number): Promise<string> {\n    return this.plantService.getSidByPlant(plant);\n  }\n\n  @Get('getUapIdsByPlant/:plantId')\n  @ApiOperation({\n    description: 'Retrieves UAP IDs based on the given plant ID.',\n    summary: 'Get UAP IDs by Plant',\n  })\n  @ApiResponse({ description: 'UAP IDs', status: 200, type: [Uap] })\n  @ApiResponse({ description: 'Invalid plant ID', status: 400 })\n  @ApiResponse({ description: 'Internal server error', status: 500 })\n  public async getUapIdsByPlant(\n    @Param('plantId') plantId: number,\n  ): Promise<Array<Uap>> {\n    return this.plantService.getUapIdsByPlant(plantId);\n  }\n\n  @Get('getWorkcenters')\n  @ApiOperation({\n    description: 'Retrieves a list of workcenters based on query parameters.',\n    summary: 'Get workcenters',\n  })\n  @ApiQuery({\n    description: 'Plant key identifier',\n    name: 'plantKey',\n    required: true,\n    type: Number,\n  })\n  @ApiQuery({\n    description: 'UAP filter',\n    name: 'uap',\n    required: false,\n    type: String,\n  })\n  @ApiQuery({\n    description: 'Production line filter',\n    name: 'productionLine',\n    required: false,\n    type: String,\n  })\n  @ApiResponse({\n    description: 'List of workcenters',\n    status: 200,\n    type: [WorkcenterResultDTO],\n  })\n  public async getWorkcenters(\n    @Query('plantKey') plantKey: number,\n    @Query('uap') uap?: string,\n    @Query('productionLine') productionLine?: string,\n  ): Promise<Array<WorkcenterResultDTO>> {\n    return this.plantService.getWorkcenters(plantKey, uap, productionLine);\n  }\n\n  @Get('getResources')\n  @ApiOperation({\n    description: 'Retrieves a list of resources based on query parameters.',\n    summary: 'Get resources',\n  })\n  @ApiQuery({\n    description: 'Plant key identifier',\n    name: 'plantKey',\n    required: true,\n    type: Number,\n  })\n  @ApiQuery({\n    description: 'UAP filter',\n    name: 'uap',\n    required: false,\n    type: String,\n  })\n  @ApiQuery({\n    description: 'Production line filter',\n    name: 'productionLine',\n    required: false,\n    type: String,\n  })\n  @ApiQuery({\n    description: 'Workcenter filter',\n    name: 'workcenter',\n    required: false,\n    type: String,\n  })\n  @ApiResponse({\n    description: 'List of resources',\n    status: 200,\n    type: [ResourceDTO],\n  })\n  public async getResources(\n    @Query('plantKey') plantKey: number,\n    @Query('uap') uap?: string,\n    @Query('productionLine') productionLine?: string,\n    @Query('workcenter') workcenter?: string,\n  ): Promise<Array<ResourceDTO>> {\n    return this.plantService.getResources(\n      plantKey,\n      uap,\n      productionLine,\n      workcenter,\n    );\n  }\n\n  @Get('getProdlines')\n  @ApiOperation({\n    description:\n      'Retrieves a list of production lines based on query parameters.',\n    summary: 'Get production lines',\n  })\n  @ApiQuery({\n    description: 'Plant key identifier',\n    name: 'plantKey',\n    required: true,\n    type: Number,\n  })\n  @ApiQuery({\n    description: 'UAP filter',\n    name: 'uap',\n    required: false,\n    type: String,\n  })\n  @ApiResponse({\n    description: 'List of production lines',\n    status: 200,\n    type: [ProductionLineDto],\n  })\n  public async getProdlines(\n    @Query('plantKey') plantKey: number,\n    @Query('uap') uap?: string,\n  ): Promise<Array<ProductionLineDto>> {\n    return this.plantService.getProdlines(plantKey, uap);\n  }\n\n  @Get('plant')\n  @ApiOperation({ summary: 'Get plant IDs' })\n  @ApiResponse({\n    description: 'List of plant IDs',\n    schema: {\n      items: {\n        example: [1146, 1355, 1017, 1020, 1021],\n        type: 'integer',\n      },\n      type: 'array',\n    },\n    status: 200,\n  })\n  @ApiResponse({ description: 'Internal server error', status: 500 })\n  public async getPlantIds(): Promise<Array<string>> {\n    return this.plantService.getPlant();\n  }\n}\n",
+    "taille": 4678
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/plant.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigModule } from '../config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from '../config/url-api/url-api.module';\nimport { PlantController } from './plant.controller';\nimport { PlantService } from './plant.service';\n\n@Module({\n  controllers: [PlantController],\n  imports: [\n    ConfigModule.forRoot(),\n    HttpModule,\n    DaprConfigModule,\n    UrlApiConfigModule,\n  ],\n  providers: [PlantService],\n  exports: [PlantService],\n})\nexport class PlantModule {}\n",
+    "taille": 615
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/plant/plant.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { DaprConfigService } from '../config/dapr/dapr-config.service';\nimport { Plant } from './dto/plant';\nimport { ProductionLineDto } from './dto/prodline.dto';\nimport { ResourceDTO } from './dto/resource.dto';\nimport { Uap } from './dto/uap';\n\nimport { WorkcenterResultDTO } from './dto/workcenter-result.dto';\n\n@Injectable()\nexport class PlantService {\n  private readonly daprClient: DaprClient;\n\n  private readonly logger = new Logger(PlantService.name);\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async getSidByPlant(plant: number): Promise<string> {\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethod = `plant/getPlantById/${plant}`;\n\n    try {\n      const token = `Bearer ${process.env.TOKEN}`;\n      const options = { headers: { authorization: token } };\n      const response = (await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.GET,\n        undefined,\n        options,\n      )) as Plant | Array<Plant>;\n\n      if (Array.isArray(response)) {\n        return response.length > 0 && response[0].sid ? response[0].sid : '';\n      }\n      return response.sid ?? '';\n    } catch (error) {\n      console.error('Error invoking Dapr service Production API:', error);\n      return '';\n    }\n  }\n\n  public async getUapIdsByPlant(plantId: number): Promise<Array<Uap>> {\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethod = `uap/getUapIdsByPlant/${plantId}`;\n\n    try {\n      return (await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethod,\n        HttpMethod.GET,\n      )) as Array<Uap>;\n    } catch (error) {\n      this.logger.error('Error getting UAP IDs by plant:', error);\n      return [];\n    }\n  }\n\n  public async getWorkcenters(\n    plantKey: number,\n    uap?: string,\n    productionLine?: string,\n  ): Promise<Array<WorkcenterResultDTO>> {\n    const daprClient = new DaprClient(); // Initialize DaprClient\n    try {\n      // Construct query parameters dynamically\n      let queryParameters = `plant=${plantKey}`;\n\n      if (uap) {\n        queryParameters += `&uap=${uap}`;\n      }\n\n      if (productionLine) {\n        queryParameters += `&prodLine=${productionLine}`;\n      }\n\n      // Make the GET request to your service using Dapr's invoker\n      const response = (await daprClient.invoker.invoke(\n        this.daprConfigService.plantHierarchyApiAppId, // Dapr app ID for your service\n        `workcenter?${queryParameters}`, // Your API endpoint with query parameters\n        HttpMethod.GET, // HTTP GET request\n      )) as Array<WorkcenterResultDTO>;\n\n      // Ensure the response is an array and return it\n      return Array.isArray(response) ? response : [];\n    } catch (error) {\n      console.error('Error invoking Dapr service Workcenter API:', error);\n      return []; // Return an empty array in case of an error\n    }\n  }\n\n  public async getResources(\n    plantKey: number,\n    uap?: string,\n    productionLine?: string,\n    workcenter?: string,\n  ): Promise<Array<ResourceDTO>> {\n    const daprClient = new DaprClient(); // Initialize DaprClient\n    try {\n      // Construct query parameters dynamically\n      let queryParameters = `plant=${plantKey}`;\n\n      if (uap) {\n        queryParameters += `&uap=${uap}`;\n      }\n\n      if (productionLine) {\n        queryParameters += `&prodLine=${productionLine}`;\n      }\n\n      if (workcenter) {\n        queryParameters += `&workcenter=${workcenter}`;\n      }\n\n      // Make the GET request to your service using Dapr's invoker\n      const response = (await daprClient.invoker.invoke(\n        this.daprConfigService.plantHierarchyApiAppId, // Dapr app ID for your service\n        `resource?${queryParameters}`, // Your API endpoint with query parameters\n        HttpMethod.GET, // HTTP GET request\n      )) as Array<ResourceDTO>;\n\n      // Ensure the response is an array and return it\n      return Array.isArray(response) ? response : [];\n    } catch (error) {\n      console.error('Error invoking Dapr service Resource API:', error);\n      return []; // Return an empty array in case of an error\n    }\n  }\n\n  public async getProdlines(\n    plantKey: number,\n    uap?: string,\n  ): Promise<Array<ProductionLineDto>> {\n    const daprClient = new DaprClient(); // Initialize DaprClient\n    try {\n      // Construct query parameters dynamically\n      let queryParameters = `plant=${plantKey}`;\n\n      if (uap) {\n        queryParameters += `&uap=${uap}`;\n      }\n\n      // Make the GET request to your service using Dapr's invoker\n      const response = (await daprClient.invoker.invoke(\n        this.daprConfigService.plantHierarchyApiAppId, // Dapr app ID for your service\n        `prodline?${queryParameters}`, // Your API endpoint with query parameters\n        HttpMethod.GET, // HTTP GET request\n      )) as Array<ProductionLineDto>;\n\n      // Ensure the response is an array and return it\n      return Array.isArray(response) ? response : [];\n    } catch (error) {\n      this.logger.error(\n        'Error invoking Dapr service ProductionLine API:',\n        error,\n      );\n      return []; // Return an empty array in case of an error\n    }\n  }\n\n  public async getPlant(): Promise<Array<string>> {\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethodPlant = `plant`;\n    const token = `Bearer ${process.env.TOKEN}`;\n    const options = { headers: { authorization: token } };\n    const response = await this.daprClient.invoker\n      .invoke(\n        serviceAppId,\n        serviceMethodPlant,\n        HttpMethod.GET,\n        undefined,\n        options,\n      )\n      .catch((error: Error) => {\n        this.logger.error(error);\n        throw new Error('Error fetching plant data');\n      });\n\n    if (Array.isArray(response)) {\n      return response as Array<string>;\n    }\n    throw new Error('Invalid response from getPlant');\n  }\n}\n",
+    "taille": 6109
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/user-preference/dtos/user-preference-user.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class UserPreferenceUserDto {\n  public userId!: number | string;\n}\n",
+    "taille": 74
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/user-preference/dtos/user-preference.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { UserPreferenceUserDto } from './user-preference-user.dto';\n\nexport class UserPreferenceDto {\n  public plant!: number;\n\n  public action!: string;\n\n  public appName!: string;\n\n  public userCriteria?: string;\n\n  public addData?: string;\n\n  public object?: string;\n\n  public user?: UserPreferenceUserDto;\n}\n",
+    "taille": 312
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/user-preference/user-preference.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Body,\n  Controller,\n  Get,\n  Param,\n  ParseIntPipe,\n  Post,\n} from '@nestjs/common';\nimport { UserPreferenceDto } from './dtos/user-preference.dto';\nimport { UserPreferenceService } from './user-preference.service';\n\n@Controller('user-preference')\nexport class UserPreferenceController {\n  public constructor(\n    private readonly userPreferenceService: UserPreferenceService,\n  ) {}\n\n  @Get(':plant/:userId/:appName')\n  public async getUserPreference(\n    @Param('plant', ParseIntPipe) plant: number,\n    @Param('userId') userId: string,\n    @Param('appName') appName: string,\n  ): Promise<Array<UserPreferenceDto>> {\n    return this.userPreferenceService.getPreferences(plant, userId, appName);\n  }\n\n  @Post('save')\n  public async saveUserPreference(\n    @Body() preferences: Array<UserPreferenceDto>,\n  ): Promise<string> {\n    return this.userPreferenceService.savePreferences(preferences);\n  }\n}\n",
+    "taille": 912
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/user-preference/user-preference.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpModule } from '@nestjs/axios';\nimport { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigModule } from 'src/config/dapr/dapr-config.module';\nimport { UrlApiConfigModule } from 'src/config/url-api/url-api.module';\nimport { UserPreferenceController } from './user-preference.controller';\nimport { UserPreferenceService } from './user-preference.service';\n\n@Module({\n  controllers: [UserPreferenceController],\n  imports: [\n    ConfigModule.forRoot(),\n    HttpModule,\n    DaprConfigModule,\n    UrlApiConfigModule,\n  ],\n  providers: [UserPreferenceService],\n})\nexport class UserPreferenceModule {}\n",
+    "taille": 655
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/src/user-preference/user-preference.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { DaprClient, HttpMethod } from 'dapr-client';\nimport { DaprConfigService } from 'src/config/dapr/dapr-config.service';\nimport { UserPreferenceDto } from './dtos/user-preference.dto';\n\n@Injectable()\nexport class UserPreferenceService {\n  private readonly daprClient: DaprClient;\n\n  private readonly serviceAppId: string;\n\n  private readonly logger = new Logger(UserPreferenceService.name);\n\n  private readonly authorizationHeaderKey = 'Authorization';\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {\n    this.daprClient = new DaprClient();\n    this.serviceAppId = this.daprConfigService.umeApiAppId;\n  }\n\n  public async getPreferences(\n    plant: number,\n    userId: number | string,\n    appName: string,\n  ): Promise<Array<UserPreferenceDto>> {\n    try {\n      const safeAppName = encodeURIComponent(appName);\n\n      const token = process.env.TOKEN;\n      const options = token\n        ? {\n            headers: {\n              [this.authorizationHeaderKey]: `Bearer ${token}`,\n            },\n          }\n        : undefined;\n\n      const response = await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        `user-preference/${plant}/${userId}/${safeAppName}`,\n        HttpMethod.GET,\n        undefined,\n        options,\n      );\n\n      return Array.isArray(response)\n        ? (response as Array<UserPreferenceDto>)\n        : [];\n    } catch (error) {\n      this.logger.error('Error fetching user preferences:', error);\n      return [];\n    }\n  }\n\n  public async savePreferences(\n    preferences: Array<UserPreferenceDto>,\n  ): Promise<string> {\n    try {\n      const token = process.env.TOKEN;\n      const options = token\n        ? {\n            headers: {\n              [this.authorizationHeaderKey]: `Bearer ${token}`,\n            },\n          }\n        : undefined;\n\n      const response = await this.daprClient.invoker.invoke(\n        this.serviceAppId,\n        'user-preference/save',\n        HttpMethod.POST,\n        preferences,\n        options,\n      );\n\n      return typeof response === 'string'\n        ? response\n        : 'User preferences inserted successfully';\n    } catch (error) {\n      this.logger.error('Error saving user preferences:', error);\n      throw error;\n    }\n  }\n}\n",
+    "taille": 2303
+  },
+  {
+    "microservice": "mesx-ume-backend",
+    "chemin": "/test/app.e2e-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { INestApplication } from '@nestjs/common';\nimport * as request from 'supertest';\nimport AppModule from '../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 624
+  }
+]

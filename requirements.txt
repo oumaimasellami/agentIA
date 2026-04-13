@@ -1,0 +1,52 @@
+# Requirements - MESX 0 NRT System
+
+## Python Dependencies
+
+```
+neo4j==5.18.0
+python-dotenv==1.0.0
+```
+
+## Installation
+
+### Installer les dépendances:
+
+```powershell
+D:\Python\bin\python.exe -m pip install -r requirements.txt
+```
+
+### Ou installer manuellement:
+
+```powershell
+# Neo4j Bolt Driver
+D:\Python\bin\python.exe -m pip install neo4j==5.18.0
+
+# Environment variables support
+D:\Python\bin\python.exe -m pip install python-dotenv==1.0.0
+```
+
+### Vérification:
+
+```powershell
+D:\Python\bin\python.exe -c "import neo4j; import dotenv; print('✓ All dependencies installed')"
+```
+
+## System Requirements
+
+- **OS:** Windows 10/11
+- **Docker:** 25.0+
+- **Python:** 3.11+
+- **Memory:** 4GB minimum (Neo4j + Python server)
+- **Disk:** 2GB (Neo4j image + data)
+
+## Ports utilisés
+
+- **7474** - Neo4j HTTP Browser
+- **7687** - Neo4j Bolt Protocol
+- **5000** - Web server
+
+## Notes
+
+- `requirements.txt` est versionnée dans Git ✅
+- Les installations doivent être reproductibles ✅
+- Python-dotenv charge les variables depuis `.env` ✅

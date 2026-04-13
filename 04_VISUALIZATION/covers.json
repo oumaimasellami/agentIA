@@ -1,0 +1,1826 @@
+[
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_148001",
+    "type": "COVERS",
+    "score": 0.333,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_148001",
+    "type": "COVERS",
+    "score": 0.333,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::menu.controller::getAppList",
+    "cible": "UC_131267",
+    "type": "COVERS",
+    "score": 0.333,
+    "mots_communs": [
+      "list"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_148001",
+    "type": "COVERS",
+    "score": 0.333,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getAllMaterial",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::getPlantLink",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::getAllCauseDesc",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-input-binding::app.controller::health",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::setData",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getData23",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_148495",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::update",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::delete",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::findOne",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::plant-config.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::plant-config.controller::getOffsets",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::rescheduler-wk-history.controller::getReschedulerWkHistoryById",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-quality-api::scrap-list.controller::UseFilters",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_148495",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::app-page-list.controller::ApiOperation",
+    "cible": "UC_147948",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "support"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::app-page-list.controller::ApiOperation",
+    "cible": "UC_147948",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "support"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_148495",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::plant.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.25,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getAllWorkcenters",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getMesWorkcenters",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getAllStorageLocationsByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_148938",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_148940",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-central-error-backend::probes.controller::getHello",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-job-scheduler-backend::jobs.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getWorkCentersGroupedByUapsByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getWorkCentersByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getOdListByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getPickingOrderListByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getCustomerListByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getMaterialListByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getTpaListByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getShopOrdersByPlant",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_148537",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-picking-backend::alert.controller::closeAutomaticAlert",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::buffer.controller::HttpCode",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::buffer.controller::ApiParam",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::material-group-member.controller::ApiOperation",
+    "cible": "UC_131158",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "mode"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::material-group-member.controller::ApiOperation",
+    "cible": "UC_131265",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "mode"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::getPickingOrderById",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::probes.controller::getHello",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::production-order.controller::minSeqNumByPickingOrder",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-quality-api::probes.controller::getHello",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-quality-api::rework-list.controller::UseFilters",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::probes.controller::getHello",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_147422",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "options"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_146614",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_146614",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::probes.controller::getHello",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_148537",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_148537",
+    "type": "COVERS",
+    "score": 0.2,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcentersBulk",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_148938",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_148940",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcenter",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_149024",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148671",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::smartDMCData",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::checkPmmRequest",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::handleDowntimeUpdate",
+    "cible": "UC_131125",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "downtime"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getData23",
+    "cible": "UC_113581",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-ops-auth-proxy::app.controller::HttpCode",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_148395",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_147102",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_147930",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-picking-backend::alert.controller::handleSfgClosedEvent",
+    "cible": "UC_138498",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "event"
+    ]
+  },
+  {
+    "source": "mesx-picking-job-service::reminder-scheduler.controller::rescheduleJob",
+    "cible": "UC_146340",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "reschedule"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::material-group-member.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::getPickingOrderByDate",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-redis-stream-scaler::app.controller::getHealth",
+    "cible": "UC_148387",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "health"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_148395",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_147102",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_147930",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_148520",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::menu.controller::getAppList",
+    "cible": "UC_149056",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "list"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_148395",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_147102",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_147930",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::user-preference.controller::getUserPreference",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.167,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_149024",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_147921",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148672",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148682",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getAllWkCodes",
+    "cible": "UC_148010",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "work"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::order.controller::getPlantConfigOrder",
+    "cible": "UC_147422",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "config"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::order.controller::getPlantConfigOrder",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::create",
+    "cible": "UC_147868",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::ApiOperation",
+    "cible": "UC_147831",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "plant"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::create",
+    "cible": "UC_147868",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::create",
+    "cible": "UC_147868",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "create"
+    ]
+  },
+  {
+    "source": "mesx-wk-integration-backend::reprocess-buffer.controller::ApiOperation",
+    "cible": "UC_117217",
+    "type": "COVERS",
+    "score": 0.143,
+    "mots_communs": [
+      "buffer"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_147921",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_147926",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148673",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::handleDowntimeUpdate",
+    "cible": "UC_149056",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "downtime"
+    ]
+  },
+  {
+    "source": "mesx-ops-auth-proxy::auth.controller::refresh",
+    "cible": "UC_123386",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "refresh"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::update",
+    "cible": "UC_148884",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::update",
+    "cible": "UC_147868",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_148949",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147953",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::getPickingOrderByDate",
+    "cible": "UC_113581",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-redis-stream-scaler::metrics.controller::Header",
+    "cible": "UC_147921",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "header"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_143099",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_148889",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_146618",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_146619",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_143099",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_148889",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_146618",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_146619",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::app-page-list.controller::ApiOperation",
+    "cible": "UC_148527",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "support"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_147652",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_147972",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::app-page-list.controller::ApiOperation",
+    "cible": "UC_148527",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "support"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::update",
+    "cible": "UC_148884",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::update",
+    "cible": "UC_147868",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-wk-integration-backend::reprocess-buffer.controller::ApiOperation",
+    "cible": "UC_146341",
+    "type": "COVERS",
+    "score": 0.125,
+    "mots_communs": [
+      "buffer"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_147926",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getMesWorkcenters",
+    "cible": "UC_144893",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::getMesWorkcenters",
+    "cible": "UC_119053",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_144893",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_147925",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterial",
+    "cible": "UC_147923",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148674",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_148683",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_147930",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getData23",
+    "cible": "UC_120837",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-ops-auth-proxy::auth.controller::refresh",
+    "cible": "UC_122942",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "refresh"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::material-group-member.controller::ApiOperation",
+    "cible": "UC_148008",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "mode"
+    ]
+  },
+  {
+    "source": "mesx-redis-stream-scaler::metrics.controller::Header",
+    "cible": "UC_147926",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "header"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_147652",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getBalancingOptions",
+    "cible": "UC_147972",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_147652",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_147972",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "balancing"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_148983",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_141432",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_146630",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_148397",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_148523",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::getByUser",
+    "cible": "UC_148523",
+    "type": "COVERS",
+    "score": 0.111,
+    "mots_communs": [
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_122002",
+    "type": "COVERS",
+    "score": 0.105,
+    "mots_communs": [
+      "plant",
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcentersBulk",
+    "cible": "UC_144893",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcentersBulk",
+    "cible": "UC_119053",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_144893",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_147925",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateMaterialsBulk",
+    "cible": "UC_147923",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "material"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcenter",
+    "cible": "UC_144893",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::updateWorkcenter",
+    "cible": "UC_119053",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "workcenter"
+    ]
+  },
+  {
+    "source": "mesx-admin-backend::admin.controller::UseFilters",
+    "cible": "UC_147182",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "resource"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::filter.controller::getData23",
+    "cible": "UC_122942",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-leveling-board-backend::order.controller::getPlantConfigOrder",
+    "cible": "UC_148683",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "config"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147447",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_149047",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146341",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_148021",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146806",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-redis-stream-scaler::metrics.controller::Header",
+    "cible": "UC_147925",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "header"
+    ]
+  },
+  {
+    "source": "mesx-redis-stream-scaler::metrics.controller::Header",
+    "cible": "UC_147923",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "header"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getHourlyAggregation",
+    "cible": "UC_148552",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "hourly"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::getHourlyAggregation",
+    "cible": "UC_123386",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "aggregation"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_146841",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::refreshToken",
+    "cible": "UC_123386",
+    "type": "COVERS",
+    "score": 0.1,
+    "mots_communs": [
+      "refresh"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_122330",
+    "type": "COVERS",
+    "score": 0.095,
+    "mots_communs": [
+      "plant",
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_138204",
+    "type": "COVERS",
+    "score": 0.095,
+    "mots_communs": [
+      "plant",
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::ApiOperation",
+    "cible": "UC_148948",
+    "type": "COVERS",
+    "score": 0.095,
+    "mots_communs": [
+      "plant",
+      "user"
+    ]
+  },
+  {
+    "source": "mesx-downtime-backend::downtime.controller::handleDowntimeUpdate",
+    "cible": "UC_115156",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "ticket",
+      "downtime"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::update",
+    "cible": "UC_142361",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-order-management-api::buffer.controller::update",
+    "cible": "UC_148860",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146794",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_148060",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146839",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146842",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147514",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147627",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_147819",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::getPickingOrderByDate",
+    "cible": "UC_120837",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::validateBalancingRange",
+    "cible": "UC_122942",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "range"
+    ]
+  },
+  {
+    "source": "mesx-resource-api::shift-tracking.controller::hourActionExists",
+    "cible": "UC_144827",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "action",
+      "hour"
+    ]
+  },
+  {
+    "source": "mesx-transfer-api::transfer.controller::UseFilters",
+    "cible": "UC_147833",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "transfer"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::component.controller::findOne",
+    "cible": "UC_146797",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "code"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::auth.controller::refreshToken",
+    "cible": "UC_122942",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "refresh"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::update",
+    "cible": "UC_142361",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::homepage-shortcuts.controller::update",
+    "cible": "UC_148860",
+    "type": "COVERS",
+    "score": 0.091,
+    "mots_communs": [
+      "update"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_148692",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146795",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146799",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_146841",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-order-management-backend::dynamic-sequencer.controller::ApiOperation",
+    "cible": "UC_148134",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "status"
+    ]
+  },
+  {
+    "source": "mesx-proto-docs-gen::picking-order.controller::getPickingOrderByDate",
+    "cible": "UC_122942",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "date"
+    ]
+  },
+  {
+    "source": "mesx-ume-api::app-page-list.controller::ApiOperation",
+    "cible": "UC_148601",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "find"
+    ]
+  },
+  {
+    "source": "mesx-ume-backend::app-page-list.controller::ApiOperation",
+    "cible": "UC_148601",
+    "type": "COVERS",
+    "score": 0.083,
+    "mots_communs": [
+      "find"
+    ]
+  }
+]

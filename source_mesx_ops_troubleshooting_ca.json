@@ -1,0 +1,26 @@
+[
+  {
+    "microservice": "mesx-ops-troubleshooting-ca",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\nvariables:\n  - name: mesx-agent-pool\n    value: ubuntu-2204-vmss-mesx\n\nextends:\n  template: \"jobs/megalinter.yml@pipelines\"\n  parameters:\n    job_pool: $(mesx-agent-pool)\n    megalinter_image_name: oxsecurity/megalinter-ci_light\n    megalinter_configuration:\n      - name: DISABLE\n        value: SPELL\n      - name: DISABLE_LINTERS\n        value: YAML_V8R\n    publish_to_sonarqube: true\n    sonar_process_parameters:\n      - name: agent_pool\n        value: $(mesx-agent-pool)\n",
+    "taille": 761
+  },
+  {
+    "microservice": "mesx-ops-troubleshooting-ca",
+    "chemin": "/.yamllint.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "extends: default\n\nignore-from-file: [.gitignore, .yamlignore]\n\nrules:\n  document-start: disable\n  line-length: disable\n",
+    "taille": 119
+  },
+  {
+    "microservice": "mesx-ops-troubleshooting-ca",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: trblsht\n\nstages:\n- stage: Build\n  jobs:\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/troubleshooting-ca\n      npmauth: false\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
+    "taille": 956
+  }
+]

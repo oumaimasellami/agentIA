@@ -1,0 +1,202 @@
+[
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      agent_pool_prepare: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1825
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nparameters:\n- name: isDebugBuild\n  displayName: 'Build in DEBUG Mode'\n  type: boolean\n  default: false\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: cnerr-ui\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'high'\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      debugBuild: ${{ parameters.isDebugBuild }}\n      repository: mesx/central-error-ui\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1248
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/Auth/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import appLogger from '@/utils/logger/app-logger';\n\nclass Configuration {\n  public getClientId(): string {\n    const clientId = import.meta.env.IDENTITY_PROVIDER_APP_CLIENT_ID;\n    if (!clientId) {\n      throw new Error('CLIENT_ID not found in environment variables.');\n    }\n    return clientId;\n  }\n\n  public getAuthority(): string {\n    const authority = import.meta.env.IDENTITY_PROVIDER_APP_AUTHORITY;\n    if (!authority) {\n      throw new Error('AUTHORITY not found in environment variables.');\n    }\n    appLogger.debug(this);\n    return authority;\n  }\n\n  public getRedirectUri(): string {\n    const redirectUri = import.meta.env.APP_REDIRECT_URI;\n    if (!redirectUri) {\n      throw new Error('REDIRECT_URI not found in environment variables.');\n    }\n    return redirectUri;\n  }\n\n  public getScopes(): string {\n    const scopes = import.meta.env.IDENTITY_PROVIDER_APP_SCOPES;\n    if (!scopes) {\n      throw new Error('SCOPES not found in environment variables.');\n    }\n    appLogger.debug(this);\n    return scopes;\n  }\n\n  public getResponseType(): string {\n    appLogger.debug(this);\n    const code = import.meta.env.IDENTITY_PROVIDER_APP_RESPONSE_TYPE;\n    return code;\n  }\n\n  public getAccessTokenExpiringNotificationTime(): number {\n    appLogger.debug(this);\n    const value =\n      import.meta.env.ACCESS_TOKEN_EXPIRING_REFRESH_SECONDS || '1800';\n    return Number.parseInt(value, 10);\n  }\n}\n\nconst configuration = new Configuration();\n\nexport { configuration };\n",
+    "taille": 1478
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/Auth/store/user-auth-store.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  authenticateUser,\n  authorizeUser,\n  AuthConfigService,\n  ApiService,\n  extractGroupNames,\n  UserAttributesManager,\n} from '@mesx/common-ui-lib';\nimport { User, WebStorageStateStore } from 'oidc-client';\nimport { defineStore } from 'pinia';\nimport { useRouter } from 'vue-router';\nimport { configuration } from '@/Auth/configuration.ts';\nimport { AuthConfigDTO } from '@/types/auth.config.dto.ts';\nimport appLogger from '@/utils/logger/app-logger';\n\ninterface State {\n  profile: string;\n  userAttributes: { [key: string]: string };\n  isLeader: boolean;\n}\n\nconst authconfig = new AuthConfigDTO(\n  configuration.getAuthority(),\n  configuration.getClientId(),\n  configuration.getRedirectUri(),\n  configuration.getResponseType(),\n  configuration.getScopes(),\n  new WebStorageStateStore({ store: window.sessionStorage }),\n  configuration.getAccessTokenExpiringNotificationTime(),\n);\nconst umeBaseUrl = import.meta.env.UME_API_URL;\nconst appName = 'BUFFER-MONITORING';\nlet tokenEnvironment = import.meta.env.TOKEN;\ntokenEnvironment =\n  tokenEnvironment === 'PING_FEDERATE'\n    ? sessionStorage.getItem('id_token')\n    : tokenEnvironment;\nconst pickingRedirectUri = import.meta.env.PICKING_APP_REDIRECT_URI;\nlet appBasePath: string;\nif (pickingRedirectUri) {\n  const parts = pickingRedirectUri.split('/');\n  appBasePath = parts.pop();\n}\nconst authService = new AuthConfigService(authconfig);\nconst apiService = new ApiService(umeBaseUrl, tokenEnvironment, appName);\nconst userAttributesManager = new UserAttributesManager(apiService);\nexport const useProfileStore = defineStore('user', {\n  actions: {\n    async authenticateUser() {\n      await authenticateUser(authService, apiService);\n    },\n    async authorizeUser() {\n      const router = useRouter();\n      const user = await authService.getUser();\n      if (user) {\n        const groupNames = await extractGroupNames(user.profile.groups);\n        const roleNamesString = groupNames.join(',');\n        await authorizeUser(apiService, roleNamesString, router, appBasePath);\n      }\n    },\n    async fetchUserAttributes() {\n      try {\n        const attributes = await userAttributesManager.loadAttributes();\n        const userAttributes =\n          userAttributesManager.transformAttributesToStorageFormat(attributes);\n        if (userAttributes) {\n          this.userAttributes = { ...userAttributes };\n        } else {\n          appLogger.warn('No user attributes found.');\n        }\n      } catch (error) {\n        appLogger.error(`Error fetching user attributes: ${error}`);\n      }\n    },\n    async getUser(): Promise<User | null> {\n      return authService.getUser();\n    },\n    async initializeAuthentication() {\n      const router = useRouter();\n      await authService.initializeAuthentication(router);\n    },\n    async isAuthenticated(): Promise<boolean> {\n      return authService.isAuthenticated();\n    },\n    async logout() {\n      try {\n        localStorage.removeItem('userAuth');\n        localStorage.removeItem('userAttributes');\n        await authService.logout();\n      } catch {\n        appLogger.error('Log out failed');\n      }\n    },\n    async refreshToken() {\n      await authService.refreshToken();\n    },\n    async tryToBecomeLeader(): Promise<boolean> {\n      const isLeader = await authService.becomeLeaderIfElected();\n      this.isLeader = isLeader;\n      return isLeader;\n    },\n\n    async requestTokenFromLeader() {\n      return authService.requestTokenFromLeader();\n    },\n  },\n\n  persist: {\n    key: 'userAttributes',\n    paths: ['userAttributes'],\n  },\n  state: (): State => ({\n    profile: '',\n    userAttributes: {} as { [key: string]: string },\n    isLeader: false,\n  }),\n  getters: {\n    tokenChannel: () => authService.getTokenChannel(),\n    userManager: () => authService.getUserManager(),\n  },\n});\n",
+    "taille": 3797
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/common/ event-bus.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import mitt from 'mitt';\n\ntype Events = Record<string, void>;\n\nexport const eventBus = mitt<Events>();\n",
+    "taille": 103
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/common/helpers/get-row-color.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n *\n * @param color\n */\nexport function getRowColor(color: string | undefined): string {\n  // Check if WKDetail and departureTime are available\n  if (color === 'RED') return 'bg-danger';\n  if (color === 'GREY') return 'bg-grey-4';\n  if (color === 'WHITE') return 'bg-white';\n  return 'bg-white';\n}\n// Export the function to be used in other modules (for Node.js) = formatDepartureTime;\n",
+    "taille": 389
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/global-router/index.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logout } from '@mesx/common-ui-lib';\nimport { User } from 'oidc-client';\nimport { createRouter, createWebHistory } from 'vue-router';\nimport { useProfileStore } from '@/Auth/store/user-auth-store';\nimport unauthorized from '@/global-components/reusable/Unauthorized.vue';\nimport loadingComponent from '@/global-components/reusable/loading.vue';\nimport appLogger from '@/utils/logger/app-logger.ts';\n\nconst routes = [\n  {\n    component: Logout,\n    name: 'Logout',\n    path: '/logout',\n    props: {\n      onLoginAgain: (): void => {\n        const profileStore = useProfileStore();\n        profileStore.initializeAuthentication();\n        router.push('/cnerr-ui');\n      },\n    },\n  },\n  {\n    component: unauthorized,\n\n    name: 'Unauthorized',\n    path: '/unauthorized',\n  },\n  {\n    component: loadingComponent,\n    name: 'LoadingComponent',\n    path: '/loading',\n  },\n];\n\nexport const router = createRouter({\n  history: createWebHistory(),\n  routes,\n});\n\nrouter.beforeEach(async (to, _from, next) => {\n  if (to.meta.requiresAuth) {\n    try {\n      const userAuth = useProfileStore();\n      if (userAuth.isLeader) {\n        await userAuth.initializeAuthentication();\n      } else {\n        const tokenMessage = await new Promise<void | {\n          type: string;\n          user?: User;\n        }>((resolve) => {\n          const handler = (message: { type: string; user?: User }): void => {\n            if (message.type === 'token-update' && message.user) {\n              userAuth.tokenChannel.removeEventListener('message', handler);\n              resolve(message);\n            }\n          };\n\n          userAuth.tokenChannel.addEventListener('message', handler);\n\n          setTimeout(() => {\n            userAuth.tokenChannel.removeEventListener('message', handler);\n            resolve();\n          }, 1000);\n        });\n\n        if (tokenMessage?.user) {\n          await userAuth.userManager.storeUser(tokenMessage.user);\n          appLogger.log('[Follower] Token received and stored from leader');\n        } else {\n          appLogger.log(\n            '[Follower] Token not received, requesting from leader...',\n          );\n          await userAuth.requestTokenFromLeader(); // Ici, le follower demande explicitement le token au leader\n        }\n      }\n\n      await userAuth.authenticateUser();\n      await userAuth.fetchUserAttributes();\n      const isAuth = await userAuth.isAuthenticated();\n      if (!isAuth) {\n        console.warn('User not authenticated. Redirecting to /unauthorized.');\n        return next('/loading');\n      }\n\n      const user = await userAuth.getUser();\n      if (user) {\n        await userAuth.authorizeUser();\n      } else {\n        // Handle the case where the user is null\n        console.error('User not found');\n        return next('/unauthorized'); // Return is added here\n      }\n\n      // Proceed to the route\n      return next(); // Explicit return added\n    } catch (error) {\n      console.error(`Authentication error: ${error}`);\n      return next('/unauthorized');\n    }\n  } else {\n    return next(); // Pas besoin d'auth\n  }\n});\n",
+    "taille": 3086
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/global-service/store.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ref, reactive } from 'vue';\n\n/**\n *\n */\nfunction getValueQ(): string {\n  const storedValue = window.localStorage.getItem('VALUEQ');\n  const parsedValue = storedValue ? JSON.parse(storedValue) : true;\n  return parsedValue;\n}\n\n/**\n *\n */\nfunction getValueE(): string {\n  const storedValue = window.localStorage.getItem('VALUEE');\n  const parsedValue = storedValue ? JSON.parse(storedValue) : true;\n  return parsedValue;\n}\n\nconst state = reactive({\n  valueE: ref(JSON.parse(getValueE())),\n  valueQ: ref(JSON.parse(getValueQ())),\n});\n\n/**\n * Sets the value of valueQ in the state and updates localStorage.\n * @param value - The new value to be set for valueQ.\n */\nfunction setValueQ(value: any): void {\n  state.valueQ = value;\n  window.localStorage.setItem('VALUEQ', JSON.stringify(value));\n}\n\n/**\n * Sets the value of valueE in the state and updates localStorage.\n * @param value - The new value to be set for valueE.\n */\nfunction setValueE(value: any): void {\n  state.valueE = value;\n  window.localStorage.setItem('VALUEE', JSON.stringify(value));\n}\n\n// Export necessary functions and data\nexport { state, setValueQ, setValueE, getValueQ, getValueE };\n",
+    "taille": 1159
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/localStorage/user-attribute.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "const USER_ID_KEY = 'userId';\n\nexport const getUserId = (): number | undefined => {\n  const userId = localStorage.getItem(USER_ID_KEY);\n  return userId ? Number.parseInt(userId, 10) : undefined;\n};\n\nexport const setUserId = (userId: number): void => {\n  localStorage.setItem(USER_ID_KEY, userId.toString());\n};\n",
+    "taille": 311
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/localization/i18n.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// I18n.ts\nimport { createI18n, I18n } from 'vue-i18n';\n// Import { useLocaleStore } from '../modules/picking-screen/store/local-store.ts';\nimport en from './locales/en.json';\nimport fr from './locales/fr.json';\n\n/**\n * Setup the i18n instance with the selected locale and available messages.\n * @returns A promise that resolves to the i18n instance.\n */\nexport async function setupI18n(): Promise<I18n> {\n  // Const localeStore = useLocaleStore();\n  // Await localeStore.setLocale();\n\n  return createI18n({\n    locale: 'en',\n    fallbackLocale: 'en',\n    messages: { en, fr },\n  });\n}\n",
+    "taille": 586
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import mainHeader from '@mesx/common-ui-lib';\nimport { createPinia } from 'pinia';\nimport piniaPluginPersistedstate from 'pinia-plugin-persistedstate';\nimport { Quasar, Notify } from 'quasar';\nimport { createApp } from 'vue';\nimport App from './App.vue';\nimport { useProfileStore } from '@/Auth/store/user-auth-store.ts';\nimport { router } from '@/global-router/index.ts';\nimport { setupI18n } from '@/localization/i18n.ts';\n\nimport '@mesx/common-ui-lib/style.css';\n\n/**\n * Initializes the application by setting up necessary configurations, services, or data.\n * This function is typically called when the app starts.\n * @returns A promise that resolves when the initialization is complete.\n */\nasync function initializeApp(): Promise<void> {\n  const pinia = createPinia();\n  const app = createApp(App);\n  app.use(Quasar, {\n    config: {\n      //   Notify: /* look at QuasarConfOptions from the API card */\n    },\n    plugins: {\n      Notify,\n    },\n  });\n  app.use(pinia);\n  pinia.use(piniaPluginPersistedstate);\n  const userAuth = useProfileStore();\n  await userAuth.tryToBecomeLeader();\n  app.use(router);\n  try {\n    const i18n = await setupI18n();\n    app.use(i18n);\n  } catch (error) {\n    console.error('Failed to initialize i18n:', error);\n  }\n  app.use(mainHeader);\n  app.mount('#app');\n}\ninitializeApp();\n",
+    "taille": 1316
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/quasar-user-options.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import './styles/quasar.sass';\nimport '@quasar/extras/roboto-font/roboto-font.css';\nimport '@quasar/extras/material-icons/material-icons.css';\nimport '@quasar/extras/material-icons-outlined/material-icons-outlined.css';\nimport '@quasar/extras/material-icons-round/material-icons-round.css';\nimport '@quasar/extras/material-icons-sharp/material-icons-sharp.css';\nimport '@quasar/extras/fontawesome-v5/fontawesome-v5.css';\nimport { Notify } from 'quasar';\n// To be used on app.use(Quasar, { ... })\nexport default {\n  config: {},\n  plugins: { Notify },\n};\n",
+    "taille": 553
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/auth.config.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { WebStorageStateStore } from 'oidc-client';\n\nexport class AuthConfigDTO {\n  public authority: string;\n\n  public client_id: string;\n\n  public redirect_uri: string;\n\n  public response_type: string;\n\n  public scope: string;\n\n  public userStore: WebStorageStateStore;\n\n  public accessTokenExpiringNotificationTime?: number;\n\n  public constructor(\n    authority: string,\n    client_id: string,\n    redirect_uri: string,\n    response_type: string,\n    scope: string,\n    userStore: WebStorageStateStore,\n    accessTokenExpiringNotificationTime: number,\n  ) {\n    this.authority = authority;\n    this.client_id = client_id;\n    this.redirect_uri = redirect_uri;\n    this.response_type = response_type;\n    this.scope = scope;\n    this.userStore = userStore;\n    this.accessTokenExpiringNotificationTime =\n      accessTokenExpiringNotificationTime;\n  }\n}\n",
+    "taille": 855
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/table-column-type.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface TableColumn {\n  name: string;\n  label: string;\n  align?: 'left' | 'center' | 'right';\n  visible?: boolean;\n  /* eslint @typescript-eslint/no-explicit-any: \"off\" */\n  field?: string | ((row: unknown) => unknown);\n  /* eslint @typescript-eslint/no-explicit-any: \"off\" */\n  format?: (value: unknown) => string | undefined;\n  required?: boolean;\n  sortable?: boolean;\n  /* eslint @typescript-eslint/no-explicit-any: \"off\" */\n  sort?: (\n    a: unknown,\n    b: unknown,\n    rowA: unknown,\n    rowB: unknown,\n  ) => number | undefined;\n  hidden?: boolean;\n}\n",
+    "taille": 568
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/token.types.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface Token {\n  UserRoles: [];\n  aio: string;\n  aud: string;\n  email: string;\n  exp: number;\n  family_name: string;\n  given_name: string;\n  groups: Array<string>;\n  iat: number;\n  iss: string;\n  name: string;\n  nbf: number;\n  nonce: string;\n  oid: string;\n  preferred_username: string;\n  rh: string;\n  roles: Array<string>;\n  sub: string;\n  tid: string;\n  uti: string;\n  ver: string;\n  wids: Array<string>;\n}\n",
+    "taille": 420
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/user-attribute-type.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface UserAttribute {\n  userAttributeName: string;\n  value: string;\n}\n",
+    "taille": 81
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/user-preference-type.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { User } from './user.ts';\n\nexport interface UserPreference {\n  action: string;\n  addData?: string;\n  appName: string;\n  object?: string;\n  plant: number;\n  user: User;\n  userCriteria?: string;\n}\n",
+    "taille": 203
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/user-type.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface User {\n  firstName: string;\n  lastName: string;\n  email: string;\n  lastLogin: Date;\n}\n",
+    "taille": 103
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/types/user.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface User {\n  userId: string;\n}\n",
+    "taille": 44
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/utils/helpers.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { TableColumn } from '@/types/table-column-type.ts';\n\n/**\n * This function takes a table name and an array of table columns,\n * filters out the columns that are not visible, and returns a\n * semicolon-separated string of the hidden column names appended\n * with the table name.\n * @param tableName - The name of the table.\n * @param columns - An array of TableColumn objects.\n */\nexport function getHiddenColumnNames(\n  tableName: string,\n  columns: Array<TableColumn>,\n): string {\n  const hiddenColumns = columns.filter((column) => column.visible === false);\n  const hiddenColumnNames = hiddenColumns.map(\n    (column) => `${column.name}_${tableName}`,\n  );\n\n  return hiddenColumnNames.join(';');\n}\n\n/**\n *\n */\nexport function get(): string {\n  return 'get';\n}\n",
+    "taille": 769
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/utils/helpers/format-date.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Formats a given date string into an ISO 8601 string without seconds.\n * @param inNewPicking - The date string to be formatted.\n * @returns The formatted ISO 8601 string.\n */\nexport function formatDate(inNewPicking: string): string {\n  const myDate = new Date(Date.parse(inNewPicking));\n  const year = myDate.getFullYear();\n  const month = (myDate.getMonth() + 1).toString().padStart(2, '0');\n  const day = myDate.getDate().toString().padStart(2, '0');\n  const hours = myDate.getHours().toString().padStart(2, '0');\n  const minutes = myDate.getMinutes().toString().padStart(2, '0');\n  const iso8601String = `${year}-${month}-${day}T${hours}:${minutes}:00`;\n  return iso8601String;\n}\n",
+    "taille": 689
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/utils/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "class AppLogger {\n  public log(message: unknown): void {\n    console.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    console.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    console.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public debug(message: unknown): void {\n    console.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public verbose(message: unknown): void {\n    console.info(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n\nexport default new AppLogger();\n",
+    "taille": 620
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/src/vite-env.d.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/// <reference types=\"vite/client\" />\n",
+    "taille": 38
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/vite.config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { defineConfig } from 'vite';\nimport vue from '@vitejs/plugin-vue';\nimport { fileURLToPath, URL } from 'node:url';\nimport importMetaEnv from \"@import-meta-env/unplugin\";\nimport { quasar, transformAssetUrls } from '@quasar/vite-plugin';\n\nconst ASSET_URL = process.env.APP_REDIRECT_URI || '/cnerr-ui';\n\nexport default defineConfig({\n  base: ASSET_URL,\n  plugins: [\n    vue({\n      template: { transformAssetUrls }\n    }),\n    importMetaEnv.vite({ example: \".env.dist\" }),\n    quasar()\n  ],\n  define: {\n    'process.env.NODE_ENV': JSON.stringify('production'),\n  },\n  resolve: {\n    alias: {\n      '@': fileURLToPath(new URL('./src', import.meta.url))\n    }\n  },\n  build: {\n    target: 'esnext', // Add this line to ensure compatibility with top-level await\n  },\n});\n",
+    "taille": 771
+  },
+  {
+    "microservice": "mesx-central-error-ui",
+    "chemin": "/vue.config.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "const { defineConfig } = require('@vue/cli-service')\nmodule.exports = defineConfig({\n  pluginOptions: {\n    quasar: {\n      importStrategy: 'kebab',\n      rtlSupport: false\n    }\n  },\n  transpileDependencies: [\n    'quasar'\n  ]\n})\n",
+    "taille": 231
+  }
+]

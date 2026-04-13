@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppNamePicking: picking-mo\n  caAppNameLevelingBoard: lvl-mo\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/mv-orchestrator\n\n- stage: dev_picking\n  displayName: Dev Picking\n  dependsOn: Build\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppNamePicking)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n- stage: dev_leveling_board\n  displayName: Dev Leveling Board\n  dependsOn: Build\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppNameLevelingBoard)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1809
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"",
+    "taille": 259
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/daprComponents/pubsub.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: pubsub  # Name of the pub/sub component\n  namespace: default\nspec:\n  type: pubsub.redis\n  version: v1\n  metadata:\n  - name: redisHost\n    value: localhost:6379\n  - name: redisPassword\n    secretKeyRef:\n      name: redis\n      key: redis-password\n  # uncomment below for connecting to redis cache instances over TLS (ex - Azure Redis Cache)\n  # - name: enableTLS\n  #   value: true \n",
+    "taille": 444
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/mv-orchestrator');\n    });\n  });\n});\n",
+    "taille": 624
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { ApiExcludeEndpoint } from '@nestjs/swagger';\nimport { AppService } from '@/app.service';\n\n@Controller('')\nexport class AppController {\n  public constructor(private readonly appService: AppService) {}\n\n  @ApiExcludeEndpoint()\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 368
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { ScheduleModule } from '@nestjs/schedule';\nimport { ApiModule } from './common/api/api.module';\nimport { AppLoggerModule } from './common/logger/app-logger.module';\nimport { PublishMessageService } from './common/publish-message/publish-message.service';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { DaprConfigService } from './config/dapr/dapr-config.service';\nimport { EventhubService } from './config/eventhub/eventhub.service';\nimport { observabilityConfiguration } from './config/observability-config/configuration';\nimport { ObservabilityConfigModule } from './config/observability-config/observability-config.module';\nimport { OrchestratorConfigModule } from './config/orchestrator/orchestrator.module';\nimport { RedisConfigModule } from './config/redis/redis-store.module';\nimport { RedisConfigService } from './config/redis/redis-store.service';\nimport { RedisService } from './redis/redis.service';\nimport { DaprModule } from './subscribe/subscribe.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { MutexManagerModule } from '@/common/mutex-manager/mutex-manager.module';\nimport { PublishMessageModule } from '@/common/publish-message/publish-message.module';\nimport { daprConfiguration } from '@/config/dapr/configuration';\nimport { eventHubConfiguration } from '@/config/eventhub/configuration';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { orchestratorConfiguration } from '@/config/orchestrator/configuration';\nimport { redisConfiguration } from '@/config/redis/configuration';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\nimport { OrchestratorModule } from '@/orchestrator/orchestrator.module';\nimport { RedisModule } from '@/redis/redis.module';\nimport { SubscribeMessageService } from '@/subscribe/subscribe.service';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    AppConfigModule,\n    UrlApiConfigModule,\n    ScheduleModule.forRoot(),\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        observabilityConfiguration,\n        urlApiConfiguration,\n        eventHubConfiguration,\n        daprConfiguration,\n        redisConfiguration,\n        orchestratorConfiguration,\n      ],\n    }),\n    PublishMessageModule,\n    EventHubModule,\n    RedisModule,\n    OrchestratorModule,\n    ObservabilityConfigModule,\n    ApiModule,\n    RedisConfigModule,\n    DaprConfigModule,\n    MutexManagerModule,\n    OrchestratorConfigModule,\n    AppLoggerModule,\n    DaprModule,\n  ],\n  providers: [\n    AppService,\n    RedisConfigService,\n    DaprConfigService,\n    RedisService,\n    PublishMessageService,\n    EventhubService,\n    SubscribeMessageService,\n  ],\n})\nexport class AppModule {}\n",
+    "taille": 3064
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/mv-orchestrator';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 201
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/api/api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PlantHierarchyApi } from '@/common/api/plant-hierarchy-api';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { RedisConfigModule } from '@/config/redis/redis-store.module';\n\n@Module({\n  exports: [PlantHierarchyApi],\n  imports: [ConfigModule, RedisConfigModule, EventHubModule, DaprConfigModule],\n  providers: [PlantHierarchyApi],\n})\nexport class ApiModule {}\n",
+    "taille": 552
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/api/plant-hierarchy-api.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpMethod } from '@dapr/dapr';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DaprClient } from 'dapr-client';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\nimport { PlantResponse } from '@/interface/plant-response';\n\n@Injectable()\nexport class PlantHierarchyApi {\n  private readonly daprClient: DaprClient;\n\n  public constructor(\n    private readonly daprConfigService: DaprConfigService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async fetchAllPlants(): Promise<Array<PlantResponse>> {\n    const serviceAppId = this.daprConfigService.bindingplantHierarchy;\n    const serviceMethodSeqnum = `plant/Plants`;\n\n    const context: JobsLogContext = {\n      method: 'fetchAllPlants',\n      service: 'PlantHierarchyApi',\n    };\n\n    try {\n      const options =\n        process.env.TOKEN === ''\n          ? {}\n          : { headers: { authorization: `Bearer ${process.env.TOKEN}` } };\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.GET,\n        undefined,\n        options,\n      );\n\n      if (response) {\n        return response as Array<PlantResponse>;\n      }\n      throw new Error('Invalid response from fetchAllPlants');\n    } catch (error) {\n      this.customLogger.error(\n        `Error fetching all plants: ${error.message}`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n}\n",
+    "taille": 1600
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/constants/dictionary-state.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const dictionaryState = {\n  expired: 'expired',\n  init: 'init',\n  updated: 'updated',\n  updating: 'updating',\n};\n",
+    "taille": 120
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/exec-and-log/exec-and-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { AppLogger } from '../logger/app-logger';\n\ninterface LogTrace {\n  details?: Record<string, unknown>;\n  logType: string;\n  operationName: string;\n  runtime: number;\n  srcLocation: string;\n}\n\n/**\n * Execution function and log runtime\n * @param customLogger Custom application logger\n * @param enabled Appilication config execLog permission\n * @param operation Function to execute\n * @param operationInfo Function properties\n * @param operationInfo.name Function name\n * @param operationInfo.srcLocation Caller code source location\n * @param details (optional)\n * @param startTime starting time\n * @returns function output\n */\nexport async function execAndLog<T>(\n  customLogger: AppLogger,\n  enabled: boolean,\n  operation: () => Promise<T>,\n  operationInfo: {\n    name: string;\n    srcLocation: string;\n  },\n  details?: Record<string, unknown>,\n  startTime = Date.now(),\n): Promise<T> {\n  const result = await operation();\n  if (enabled) {\n    const context: JobsLogContext = {\n      method: operationInfo.name,\n      service: 'ExecAndLogService',\n    };\n\n    const logTrace: LogTrace = {\n      details,\n      logType: 'Exec trace',\n      operationName: operationInfo.name,\n      runtime: Date.now() - startTime,\n      srcLocation: operationInfo.srcLocation,\n    };\n    customLogger.debug(JSON.stringify(logTrace), context);\n  }\n  return result;\n}\n",
+    "taille": 1405
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/helpers/date/convert-date.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Calculate and compare date\n * @param taskPublishTime Task publish time from the record\n * @param ttl The time-to-live (TTL) from the configuration.\n * @returns return a boolean value comparing the duration of the publish with date now\n */\nexport function isExpiredState(taskPublishTime: string, ttl: number): boolean {\n  const taskPublishMillis = new Date(taskPublishTime).getTime();\n  return taskPublishMillis + ttl * 1000 < Date.now();\n}\n",
+    "taille": 447
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/logger/app-logger.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Global, Module } from '@nestjs/common';\nimport { AppLogger } from './app-logger';\nimport { ObservabilityConfigModule } from '@/config/observability-config/observability-config.module';\nimport { ObservabilityConfigService } from '@/config/observability-config/observability-config.service';\n\n@Global()\n@Module({\n  exports: [AppLogger],\n  imports: [ObservabilityConfigModule],\n  providers: [\n    {\n      inject: [ObservabilityConfigService],\n      provide: AppLogger,\n      useFactory: async (\n        observabilityConfigService: ObservabilityConfigService,\n      ): Promise<AppLogger> => {\n        const appLogger = new AppLogger(observabilityConfigService);\n        await appLogger.init(); // Ensure async initialization is handled before returning\n        return appLogger;\n      },\n    },\n  ],\n})\nexport class AppLoggerModule {}\n",
+    "taille": 840
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLoggerService } from '@mesx/common-lib';\nimport { Injectable, LogLevel } from '@nestjs/common';\nimport { ObservabilityConfigService } from '@/config/observability-config/observability-config.service';\n\n@Injectable()\nexport class AppLogger extends JobsLoggerService {\n  public constructor(\n    private readonly observabilityConfigService: ObservabilityConfigService,\n  ) {\n    // Retrieve log level from environment\n    super('log');\n  }\n\n  public async init(minLogLevel?: LogLevel): Promise<void> {\n    const logLevel =\n      minLogLevel ?? (await this.observabilityConfigService.logLevel());\n    super.updateMinLogLevel(logLevel);\n  }\n}\n",
+    "taille": 651
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/mutex-manager/mutex-manager.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { MutexManagerService } from '@/common/mutex-manager/mutex-manager.service';\n\n@Module({\n  exports: [MutexManagerService],\n  providers: [MutexManagerService],\n})\nexport class MutexManagerModule {}\n",
+    "taille": 244
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/mutex-manager/mutex-manager.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Mutex } from 'async-mutex';\n\nexport class MutexManagerService {\n  private readonly mutexes: Map<string, { mutex: Mutex; lastUsed: number }> =\n    new Map();\n\n  // Get or create a mutex for a given cacheKey\n  public getMutex(cacheKey: string | number): Mutex {\n    let mutexEntry = this.mutexes.get(`${cacheKey}`);\n    if (mutexEntry) {\n      mutexEntry.lastUsed = Date.now(); // Update the last used timestamp\n    } else {\n      mutexEntry = { lastUsed: Date.now(), mutex: new Mutex() };\n      this.mutexes.set(`${cacheKey}`, mutexEntry);\n    }\n    return mutexEntry.mutex;\n  }\n}\n",
+    "taille": 589
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/publish-message/interface/publish-cache-task.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface PublishCacheTask {\n  plantCode: number;\n  publishTime: Date;\n}\n",
+    "taille": 80
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/publish-message/publish-message.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PublishMessageService } from '@/common/publish-message/publish-message.service';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\n\n@Module({\n  exports: [PublishMessageService],\n  imports: [EventHubModule, ConfigModule],\n  providers: [PublishMessageService],\n})\nexport class PublishMessageModule {}\n",
+    "taille": 414
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/common/publish-message/publish-message.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { DaprClient } from '@dapr/dapr';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\nimport { TaskMessage } from '@/interface/task-message.interface';\n\n@Injectable()\nexport class PublishMessageService {\n  private readonly eventhubService: EventhubService;\n\n  public constructor(\n    eventhubService: EventhubService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.eventhubService = eventhubService;\n  }\n\n  public async publishMessage(topic: string, data: TaskMessage): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'publishMessage',\n      object: topic,\n      service: 'PublishMessageService',\n    };\n\n    try {\n      const daprClient = new DaprClient();\n      const { pubSubName } = this.eventhubService;\n      const options = {\n        metadata: { partitionKey: String(data.plant) },\n      };\n      await daprClient.pubsub.publish(pubSubName, topic, data, options);\n    } catch (error) {\n      this.customLogger.error(\n        `Failed to publish: ${error.message},${JSON.stringify(data)}`,\n        context,\n        error.stack,\n      );\n    }\n  }\n}\n",
+    "taille": 1265
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, Logger, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  public get appConfigforceinitPropertyName(): string {\n    return (\n      this.configService.get<string>('appConfigforceinitPropertyName') ?? ''\n    );\n  }\n\n  public get appConfigMetricsEnabledPropertyName(): string {\n    return (\n      this.configService.get<string>('appConfigMetricsEnabledPropertyName') ??\n      ''\n    );\n  }\n\n  public get appConfigExecLogEnabledPropertyName(): string {\n    return (\n      this.configService.get<string>('appConfigExecLogEnabledPropertyName') ??\n      ''\n    );\n  }\n\n  public get appConfigLogLevelPropertyName(): string {\n    return (\n      this.configService.get<string>('appConfigLogLevelPropertyName') ?? ''\n    );\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'AppConfigInitialConfigService',\n    };\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n      {\n        key: 'appConfigExecLogEnabledPropertyName',\n        value: this.appConfigExecLogEnabledPropertyName,\n      },\n      {\n        key: 'appConfigMetricsEnabledPropertyName',\n        value: this.appConfigMetricsEnabledPropertyName,\n      },\n      {\n        key: 'propertyNameLogLevel',\n        value: this.appConfigLogLevelPropertyName,\n      },\n      {\n        key: 'appConfigforceinitPropertyName',\n        value: this.appConfigforceinitPropertyName,\n      },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        Logger.error(`Missing configuration value for ${config.key}`, context);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 2432
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, Logger } from '@nestjs/common';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    const context: JobsLogContext = {\n      method: 'keyIsDefined',\n      object: key,\n      service: 'AppConfigService',\n    };\n\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    const context: JobsLogContext = {\n      method: 'getConfigValueFromStore',\n      object: key,\n      service: 'AppConfigService',\n    };\n\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    const context: JobsLogContext = {\n      method: 'reachable',\n      service: 'AppConfigService',\n    };\n\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      Logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 3155
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n  appConfigMetricsEnabledPropertyName: string | undefined;\n  appConfigExecLogEnabledPropertyName: string | undefined;\n  appConfigLogLevelPropertyName: string | undefined;\n  appConfigforceinitPropertyName: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n  appConfigExecLogEnabledPropertyName:\n    process.env.APP_CONFIG_EXECLOG_ENABLED_PROPERTY_NAME,\n  appConfigLogLevelPropertyName: process.env.LOG_LEVEL_PROPERTY_NAME,\n  appConfigMetricsEnabledPropertyName:\n    process.env.APP_CONFIG_METRICS_ENABLED_PROPERTY_NAME,\n  appConfigforceinitPropertyName:\n    process.env.APP_CONFIG_FORCE_INIT_PROPERTY_NAME,\n});\n\nexport { appConfig };\n",
+    "taille": 870
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const daprConfiguration = (): {\n  plantHierarchyApiAppId: string | undefined;\n} => ({\n  plantHierarchyApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n});\n",
+    "taille": 163
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Module({\n  exports: [DaprConfigService],\n  imports: [ConfigModule],\n  providers: [DaprConfigService],\n})\nexport class DaprConfigModule {}\n",
+    "taille": 299
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class DaprConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get bindingplantHierarchy(): string {\n    return (\n      this.configService.get<string>('plantHierarchyApiAppId') ??\n      'mesx-plant-hierarchy-api'\n    );\n  }\n}\n",
+    "taille": 385
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/eventhub/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface EventHubEnvironmentVariableConfig {\n  pubSubName: string | undefined;\n  topicTasks: string | undefined;\n  topicResult: string | undefined;\n  topicPlants: string | undefined;\n  topicOutbound: string | undefined;\n  topicTpaAssignement: string | undefined;\n  topicContainer: string | undefined;\n  topicTransfer: string | undefined;\n  topicWorkcenterUpdates: string | undefined;\n  topicLauncherKpiUpdates: string | undefined;\n  checkPointFrequencyPerPartitionResult: string | undefined;\n  checkPointFrequencyPerPartitionTasks: string | undefined;\n  checkPointFrequencyPerPartitionOutbound: string | undefined;\n  checkPointFrequencyPerPartitionTransfer: string | undefined;\n}\n\nexport const eventHubConfiguration = (): {\n  eventhub: EventHubEnvironmentVariableConfig;\n} => ({\n  eventhub: {\n    checkPointFrequencyPerPartitionOutbound:\n      process.env.CHECKPOINT_FREQUENCY_PER_PARTITION_OUTBOUND_MV_ORCHESTRATOR,\n    checkPointFrequencyPerPartitionResult:\n      process.env.CHECKPOINT_FREQUENCY_PER_PARTITION_RESULT_MV_ORCHESTRATOR,\n    checkPointFrequencyPerPartitionTasks:\n      process.env.CHECKPOINT_FREQUENCY_PER_PARTITION_TASKS_MV_ORCHESTRATOR,\n    checkPointFrequencyPerPartitionTransfer:\n      process.env.CHECKPOINT_FREQUENCY_PER_PARTITION_TRANSFER_MV_ORCHESTRATOR,\n    pubSubName: process.env.PUBSUB_NAME,\n    topicContainer: process.env.TOPIC_CONTAINER,\n    topicLauncherKpiUpdates: process.env.LANCHER_KPI_UPDATES,\n    topicOutbound: process.env.TOPIC_OUTBOUND,\n    topicPlants: process.env.TOPIC_PLANTS,\n    topicResult: process.env.TOPIC_RESULTS,\n    topicTasks: process.env.TOPIC_TASKS,\n    topicTpaAssignement: process.env.TOPIC_TPA_ASSIGNEMENT,\n    topicTransfer: process.env.TOPIC_TRANSFER,\n    topicWorkcenterUpdates: process.env.WORKCENTER_UPDATES,\n  },\n});\n",
+    "taille": 1783
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/eventhub/eventhub.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { EventhubService } from './eventhub.service';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\n\n@Module({\n  exports: [EventhubService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [EventhubService],\n})\nexport class EventHubModule {}\n",
+    "taille": 366
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/eventhub/eventhub.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class EventhubService {\n  private readonly logger = new Logger(EventhubService.name);\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public get pubSubName(): string {\n    return this.configService.get<string>('eventhub.pubSubName') ?? '';\n  }\n\n  public get topicTasks(): string {\n    return this.configService.get<string>('eventhub.topicTasks') ?? '';\n  }\n\n  public get topicResult(): string {\n    return this.configService.get<string>('eventhub.topicResult') ?? '';\n  }\n\n  public get topicPlants(): string {\n    return this.configService.get<string>('eventhub.topicPlants') ?? '';\n  }\n\n  public get topicOutbound(): string {\n    return this.configService.get<string>('eventhub.topicOutbound') ?? '';\n  }\n\n  public get topicTpaAssignement(): string {\n    return this.configService.get<string>('eventhub.topicTpaAssignement') ?? '';\n  }\n\n  public get topicContainer(): string {\n    return this.configService.get<string>('eventhub.topicContainer') ?? '';\n  }\n\n  public get topicTransfer(): string {\n    return this.configService.get<string>('eventhub.topicTransfer') ?? '';\n  }\n\n  public get topicWorkcenterUpdates(): string {\n    return (\n      this.configService.get<string>('eventhub.topicWorkcenterUpdates') ?? ''\n    );\n  }\n\n  public get topicLauncherKpiUpdates(): string {\n    return (\n      this.configService.get<string>('eventhub.topicLauncherKpiUpdates') ?? ''\n    );\n  }\n\n  public async checkPointFrequencyResult(): Promise<string> {\n    let value = this.configService.get<string>(\n      'eventhub.checkPointFrequencyPerPartitionResult',\n    );\n    if (value) {\n      this.logger.warn(\n        `'checkPointFrequencyPerPartitionResult' was read from environment variable`,\n      );\n    } else {\n      value = await this.appConfigService.getConfigurationValue(\n        'CHECKPOINT_FREQUENCY_PER_PARTITION_RESULT_MV_ORCHESTRATOR',\n      );\n    }\n    return value ?? '100';\n  }\n\n  public async checkPointFrequencyTasks(): Promise<string> {\n    let value = this.configService.get<string>(\n      'eventhub.checkPointFrequencyPerPartitionTasks',\n    );\n    if (value) {\n      this.logger.warn(\n        `'checkPointFrequencyPerPartitionTasks' was read from environment variable`,\n      );\n    } else {\n      value = await this.appConfigService.getConfigurationValue(\n        'CHECKPOINT_FREQUENCY_PER_PARTITION_TASKS_MV_ORCHESTRATOR',\n      );\n    }\n    return value ?? '100';\n  }\n\n  public async checkPointFrequencyOutbound(): Promise<string> {\n    let value = this.configService.get<string>(\n      'eventhub.checkPointFrequencyPerPartitionOutbound',\n    );\n    if (value) {\n      this.logger.warn(\n        `'checkPointFrequencyPerPartitionOutbound' was read from environment variable`,\n      );\n    } else {\n      value = await this.appConfigService.getConfigurationValue(\n        'CHECKPOINT_FREQUENCY_PER_PARTITION_OUTBOUND_MV_ORCHESTRATOR',\n      );\n    }\n    return value ?? '100';\n  }\n\n  public async checkPointFrequencyTransfer(): Promise<string> {\n    let value = this.configService.get<string>(\n      'eventhub.checkPointFrequencyPerPartitionTransfer',\n    );\n    if (value) {\n      this.logger.warn(\n        `'checkPointFrequencyPerPartitionTransfer' was read from environment variable`,\n      );\n    } else {\n      value = await this.appConfigService.getConfigurationValue(\n        'CHECKPOINT_FREQUENCY_PER_PARTITION_TRANSFER_MV_ORCHESTRATOR',\n      );\n    }\n    return value ?? '100';\n  }\n}\n",
+    "taille": 3698
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/observability-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ObservabolityEnvironmentVariableConfig {\n  execlogEnabled: string | undefined;\n  metricsEnabled: string | undefined;\n  logLevel: string | undefined;\n  forceInit: string | undefined;\n}\n\nexport const observabilityConfiguration = (): {\n  observability: ObservabolityEnvironmentVariableConfig;\n} => ({\n  observability: {\n    execlogEnabled: process.env.MV_ORCHESTRATOR_EXECLOG_ENABLED,\n    logLevel: process.env.MV_ORCHESTRATOR_LOG_LEVEL,\n    metricsEnabled: process.env.MV_ORCHESTRATOR_METRICS_ENABLED,\n    forceInit: process.env.MV_ORCHESTRATOR_FORCE_INIT,\n  },\n});\n",
+    "taille": 574
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/observability-config/observability-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { ObservabilityConfigService } from './observability-config.service';\n\n@Module({\n  exports: [ObservabilityConfigService],\n  imports: [AppConfigModule, ConfigModule],\n  providers: [ObservabilityConfigService],\n})\nexport class ObservabilityConfigModule {}\n",
+    "taille": 416
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/observability-config/observability-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, Logger, LogLevel } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '../app-config/app-config-initial-config.service';\nimport { AppConfigService } from '../app-config/app-config.service';\n\n@Injectable()\nexport class ObservabilityConfigService {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n    private readonly appConfigInitialConfigService: AppConfigInitialConfigService,\n  ) {}\n\n  public async execlogEnabled(): Promise<boolean> {\n    const value = this.configService.get<string>(\n      'observability.execlogEnabled',\n    );\n\n    if (value === undefined) {\n      const appStoreValue = await this.appConfigService.getConfigurationValue(\n        this.appConfigInitialConfigService.appConfigExecLogEnabledPropertyName,\n      );\n\n      return appStoreValue?.toLowerCase() === 'true';\n    }\n\n    const context: JobsLogContext = {\n      method: 'execlogEnabled',\n      service: 'ObservabilityConfigService',\n    };\n\n    Logger.warn(`'execLogEnabled' was read from environment variable`, context);\n\n    return value?.toLowerCase() === 'true';\n  }\n\n  public async merticsEnabled(): Promise<boolean> {\n    const value = this.configService.get<string>(\n      'observability.metricsEnabled',\n    );\n\n    if (value === undefined) {\n      const appStoreValue = await this.appConfigService.getConfigurationValue(\n        this.appConfigInitialConfigService.appConfigMetricsEnabledPropertyName,\n      );\n\n      return appStoreValue?.toLowerCase() === 'true';\n    }\n\n    const context: JobsLogContext = {\n      method: 'merticsEnabled',\n      service: 'ObservabilityConfigService',\n    };\n\n    Logger.warn(`'merticsEnabled' was read from environment variable`, context);\n\n    return value?.toLowerCase() === 'true';\n  }\n\n  public async forceInit(): Promise<boolean> {\n    const value = this.configService.get<string>('observability.forceInit');\n    if (value === undefined) {\n      const appStoreValue = await this.appConfigService.getConfigurationValue(\n        this.appConfigInitialConfigService.appConfigforceinitPropertyName,\n      );\n      return appStoreValue?.toLowerCase() === 'true';\n    }\n\n    const context: JobsLogContext = {\n      method: 'forceInit',\n      service: 'ObservabilityConfigService',\n    };\n\n    Logger.warn(`'forceInit' was read from environment variable`, context);\n\n    return value?.toLowerCase() === 'true';\n  }\n\n  public async logLevel(): Promise<LogLevel> {\n    const value = this.configService.get<string>(\n      'observability.logLevel',\n    ) as LogLevel;\n\n    if (value === undefined) {\n      const appStoreValue = (await this.appConfigService.getConfigurationValue(\n        this.appConfigInitialConfigService.appConfigLogLevelPropertyName,\n      )) as LogLevel;\n\n      return appStoreValue;\n    }\n\n    const context: JobsLogContext = {\n      method: 'logLevel',\n      service: 'ObservabilityConfigService',\n    };\n\n    Logger.warn(`'logLevel' was read from environment variable`, context);\n\n    return value;\n  }\n}\n",
+    "taille": 3164
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/orchestrator/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const orchestratorConfiguration = (): {\n  mvOrchestratorDelayMilliseconds: string | undefined;\n  mvOrchestratorDelayMillisecondsPropertyName: string | undefined;\n} => ({\n  mvOrchestratorDelayMilliseconds:\n    process.env.MV_ORCHESTRATOR_DELAY_MILLISECONDS,\n  mvOrchestratorDelayMillisecondsPropertyName:\n    process.env.MV_ORCHESTRATOR_DELAY_MILLISECONDS_PROPERTY_NAME,\n});\n",
+    "taille": 381
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/orchestrator/orchestrator.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { OrchestratorConfigService } from './orchestrator.service';\n\n@Module({\n  exports: [OrchestratorConfigService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [OrchestratorConfigService],\n})\nexport class OrchestratorConfigModule {}\n",
+    "taille": 404
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/orchestrator/orchestrator.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class OrchestratorConfigService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public async mvOrchestratorDelayMilliseconds(): Promise<number> {\n    const value = this.configService.get<number>(\n      'mvOrchestratorDelayMilliseconds',\n    );\n\n    if (value === undefined) {\n      const appStoreValue = await this.appConfigService.getConfigurationValue(\n        this.mvOrchestratorDelayMillisecondsPropertyName,\n      );\n\n      const delay = Number(appStoreValue);\n      return Number.isNaN(delay) ? 100 : delay;\n    }\n    return value;\n  }\n\n  public get mvOrchestratorDelayMillisecondsPropertyName(): string {\n    return (\n      this.configService.get<string>(\n        'mvOrchestratorDelayMillisecondsPropertyName',\n      ) ?? ''\n    );\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'OrchestratorConfigService',\n    };\n\n    // List of required configurations\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      {\n        key: 'mvOrchestratorDelayMillisecondsPropertyName',\n        value: this.mvOrchestratorDelayMillisecondsPropertyName,\n      },\n    ];\n\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 2058
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/redis/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const redisConfiguration = (): {\n  redisAmr: string | undefined;\n  redisPlantAmr: string | undefined;\n  ttl: string | undefined;\n} => ({\n  redisAmr: process.env.STATE_STORE_NAME_AMR_ORCHESTRATOR_DICT,\n  redisPlantAmr: process.env.STATE_STORE_NAME_AMR_ORCHESTRATOR_PLANT,\n  ttl: process.env.ORCHESTRATOR_DICT_TTL_SECONDS,\n});\n",
+    "taille": 332
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/redis/redis-store.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { RedisConfigService } from './redis-store.service';\n\n@Module({\n  exports: [RedisConfigService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [RedisConfigService],\n})\nexport class RedisConfigModule {}\n",
+    "taille": 375
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/redis/redis-store.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigService } from '../app-config/app-config.service';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class RedisConfigService implements OnModuleInit {\n  private readonly context: JobsLogContext = {\n    method: '',\n    service: RedisConfigService.name,\n  };\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public get redisStoreAmr(): string {\n    return this.configService.get<string>('redisAmr') ?? '';\n  }\n\n  public get redisPlantAmr(): string {\n    return this.configService.get<string>('redisPlantAmr') ?? '';\n  }\n\n  public get ttlStore(): string {\n    return this.configService.get<string>('ttl') ?? '60';\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      plant: Number(this.redisPlantAmr),\n      service: 'RedisConfigService',\n    };\n    // List of required configurations\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'redisAmr', value: this.redisStoreAmr },\n      { key: 'redisPlantAmr', value: this.redisPlantAmr },\n      { key: 'ttlStore', value: this.ttlStore },\n    ];\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1865
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  urlApi: process.env.URL_MV_ORCHESTRATOR,\n});\n",
+    "taille": 170
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return this.configService.get<string>('urlApi') ?? '';\n  }\n}\n",
+    "taille": 312
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/dtos/result-message-dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ResultMessageDto {\n  plant: number;\n  updateTime: Date;\n  updateDuration: number;\n  uuid: string;\n  orchestratorPublishTime: Date;\n}\n",
+    "taille": 150
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/container-message.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ContainerMessage {\n  pickingOrderId: string;\n  plant: number;\n}\n",
+    "taille": 81
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/dictionary.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface Dictionary {\n  state: string;\n  taskPublishTime: string;\n  updateTime: string;\n  updateDuration: number;\n}\n",
+    "taille": 124
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/launcher-kpi-updates.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface LauncherKpiUpdatesMessage {\n  plant: string;\n  workcenter: string;\n  kpiName: string;\n}\n",
+    "taille": 105
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/outbound-message.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface OutboundMessage {\n  plant: number;\n\n  outbound: string;\n}\n",
+    "taille": 75
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/plant-response.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface PlantResponse {\n  plantId: number;\n\n  plantLink: string;\n\n  languageCode: string;\n\n  timeZone: string;\n}\n",
+    "taille": 122
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/task-message.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface TaskMessage {\n  plant: number;\n  publishTime: string;\n  uuid: string;\n  ttl: number;\n  updateTime: string;\n  updateDuration: number;\n  outbound?: string;\n  tpaAssignement?: number;\n  pickingOrderId?: string;\n  containerId?: string;\n  transferId?: number;\n  workcenterId?: string;\n  workcenter?: string;\n  kpiName?: string;\n}\n",
+    "taille": 342
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/tpa-assignement.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface TpaAssignementMessage {\n  plant: number;\n\n  assignId: number;\n}\n",
+    "taille": 81
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/transfer-message.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface TransferMessage {\n  plant: number;\n  transferId: number;\n  containerId: string;\n}\n",
+    "taille": 99
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/interface/workcenter-updates.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface WorkcenterUpdatesMessage {\n  plant: string;\n  workcenterId: string;\n}\n",
+    "taille": 87
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { NestFactory } from '@nestjs/core';\nimport { NestExpressApplication } from '@nestjs/platform-express';\nimport * as express from 'express';\nimport { AppModule } from '@/app.module';\n\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create<NestExpressApplication>(AppModule, {\n    rawBody: true,\n  });\n  app.use(express.json({ type: 'application/json' }));\n  app.use(express.json({ type: 'application/cloudevents+json' })); // Parse CloudEvent JSON bodies\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 541
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/orchestrator/orchestrator.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprClient, DaprServer } from 'dapr-client';\nimport { ApiModule } from '@/common/api/api.module';\nimport { PublishMessageModule } from '@/common/publish-message/publish-message.module';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { OrchestratorConfigModule } from '@/config/orchestrator/orchestrator.module';\nimport { RedisConfigModule } from '@/config/redis/redis-store.module';\nimport { RedisModule } from '@/redis/redis.module';\nimport { RedisService } from '@/redis/redis.service';\n\n@Module({\n  exports: [],\n  imports: [\n    ConfigModule,\n    RedisConfigModule,\n    EventHubModule,\n    DaprConfigModule,\n    PublishMessageModule,\n    RedisModule,\n    ApiModule,\n    OrchestratorConfigModule,\n  ],\n\n  providers: [\n    { provide: DaprServer, useValue: new DaprServer() },\n    DaprClient,\n    // OrchestratorService,\n    RedisService,\n  ],\n})\nexport class OrchestratorModule {}\n",
+    "taille": 1076
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/orchestrator/orchestrator.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { Interval } from '@nestjs/schedule';\nimport { Mutex } from 'async-mutex';\nimport { RedisService } from 'src/redis/redis.service';\nimport { v4 as uuidv4 } from 'uuid';\nimport { PlantHierarchyApi } from '@/common/api/plant-hierarchy-api';\nimport { dictionaryState } from '@/common/constants/dictionary-state';\nimport { execAndLog } from '@/common/exec-and-log/exec-and-log';\nimport { isExpiredState } from '@/common/helpers/date/convert-date';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { MutexManagerService } from '@/common/mutex-manager/mutex-manager.service';\nimport { PublishMessageService } from '@/common/publish-message/publish-message.service';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\nimport { ObservabilityConfigService } from '@/config/observability-config/observability-config.service';\nimport { OrchestratorConfigService } from '@/config/orchestrator/orchestrator.service';\nimport { RedisConfigService } from '@/config/redis/redis-store.service';\nimport { Dictionary } from '@/interface/dictionary.interface';\nimport { TaskMessage } from '@/interface/task-message.interface';\n\n@Injectable()\nexport class OrchestratorService {\n  private readonly plants: Array<number> = [];\n\n  private readonly plantMutex = new Mutex();\n\n  private lastSnaphotTimestamp = Date.now();\n\n  /**\n   * Snapshot interval in ms\n   */\n  private readonly snapshotInterval = 1000;\n\n  public constructor(\n    private readonly publishMessageService: PublishMessageService,\n    private readonly eventhubService: EventhubService,\n    private readonly redisService: RedisService,\n    private readonly plantHYRApi: PlantHierarchyApi,\n    private readonly redisStoreService: RedisConfigService,\n    private readonly observabilityConfigService: ObservabilityConfigService,\n    private readonly mutexManagerService: MutexManagerService,\n    private readonly orchestratorConfigService: OrchestratorConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  /**\n   * Resynchronize in memory plant\n   * from Service\n   */\n  private async synchronizeInMemoryPlants(): Promise<void> {\n    const plantMutexRelease = await this.plantMutex.acquire();\n\n    const plantsHYRApi = await this.plantHYRApi.fetchAllPlants();\n    const context: JobsLogContext = {\n      method: 'synchronizeInMemoryPlants',\n      service: 'OrchestratorService',\n    };\n\n    const plantsToAdd = plantsHYRApi\n      .map((m) => m.plantId)\n      .filter((p) => !this.plants.includes(p));\n    this.customLogger.debug(\n      `synchronizeInMemoryPlants - plantsToAdd =${JSON.stringify(plantsToAdd)}`,\n      context,\n    );\n    const forceInitEnabled = await this.observabilityConfigService.forceInit();\n    const allRedisKeys = await this.redisService.getAllKeys();\n    const isRedisEmpty = !allRedisKeys || allRedisKeys.length === 0;\n    const promises = plantsToAdd.map(async (plant) => {\n      let release;\n      try {\n        release = await this.mutexManagerService.getMutex(plant).acquire();\n        const existingData = await this.redisService.read(plant.toString());\n        if (\n          forceInitEnabled === false &&\n          ((existingData?.state && existingData.state !== '') || !isRedisEmpty)\n        ) {\n          return;\n        }\n\n        const details: Dictionary = {\n          state: 'init',\n          taskPublishTime: '',\n          updateDuration: 0,\n          updateTime: '',\n        };\n        await this.redisService.write(plant.toString(), details);\n      } catch (error) {\n        this.customLogger.error(\n          `Plant ${plant} - Error during Redis update in ${error.message ?? error.stack}`,\n          context,\n        );\n      } finally {\n        if (release) release();\n      }\n    });\n\n    try {\n      await Promise.allSettled(promises);\n      this.plants.push(...plantsToAdd);\n      this.redisService.saveKeysInRedis(this.plants);\n    } catch (error) {\n      this.customLogger.error(\n        `synchronizeInMemoryPlants - Error =${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (plantMutexRelease) plantMutexRelease();\n    }\n  }\n\n  /**\n   * Processing for a given plant\n   * @param plantKey - plant code\n   */\n  private async processPlant(plantKey: number): Promise<void> {\n    const logOperationInfo = {\n      name: '',\n      srcLocation: 'processPlant',\n    };\n    const logOperationDetails = {\n      plantKey,\n    };\n    const execLogEnabled =\n      await this.observabilityConfigService.execlogEnabled();\n    const ttl = Number(this.redisStoreService.ttlStore);\n    logOperationInfo.name = 'Redis read';\n    const data = await execAndLog(\n      this.customLogger,\n      execLogEnabled,\n      () => this.redisService.read(plantKey.toString()),\n      logOperationInfo,\n      logOperationDetails,\n    );\n    if (\n      [dictionaryState.init, dictionaryState.expired]\n        .map((m) => m.toUpperCase())\n        .includes(data.state.toUpperCase())\n    ) {\n      data.state = dictionaryState.updating;\n      data.taskPublishTime = new Date().toISOString();\n      const message: TaskMessage = {\n        plant: plantKey,\n        publishTime: data.taskPublishTime,\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n      };\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        message,\n      );\n    } else {\n      const isExpiredStatus = isExpiredState(data.taskPublishTime, ttl);\n      if (!isExpiredStatus) return;\n      data.state = dictionaryState.expired;\n    }\n\n    logOperationInfo.name = 'Redis write';\n    await execAndLog(\n      this.customLogger,\n      execLogEnabled,\n      () => this.redisService.write(plantKey.toString(), data),\n      logOperationInfo,\n      logOperationDetails,\n    );\n  }\n\n  @Interval(10_000)\n  public async schedulerInterval(): Promise<void> {\n    if (this.plants.length === 0) {\n      await this.synchronizeInMemoryPlants();\n    }\n\n    const existPlants = await this.redisService.getAllKeys();\n    if (existPlants.length > this.plants.length) {\n      const plantsToAdd = existPlants\n        .map(Number)\n        .filter((p) => !this.plants.includes(p));\n      this.plants.push(...plantsToAdd);\n    }\n\n    const processorPromises = this.plants.map(async (p) => {\n      let release;\n      try {\n        release = await this.mutexManagerService.getMutex(p).acquire();\n        await this.processPlant(p);\n      } catch (error) {\n        const context: JobsLogContext = {\n          method: 'schedulerInterval',\n          plant: p,\n          service: 'OrchestratorService',\n        };\n\n        this.customLogger.error(\n          `Error during processPlant ${p} - ${error.message}`,\n          context,\n          error.stack,\n        );\n      } finally {\n        if (release) release();\n      }\n    });\n\n    // Run all tasks concurrently\n    await Promise.allSettled(processorPromises);\n  }\n\n  private async logDictionnarySnapshot(): Promise<void> {\n    const promises = this.plants.map(async (plant) => {\n      let release;\n      try {\n        release = await this.mutexManagerService.getMutex(plant).acquire();\n        const plantDict = await this.redisService.read(plant.toString());\n\n        const context: JobsLogContext = {\n          method: 'logDictionnarySnapshot',\n          plant,\n          service: 'OrchestratorService',\n        };\n\n        this.customLogger.debug(\n          `Plant ${plant} - Dictionnary snapshot: ${JSON.stringify(plantDict)}`,\n          context,\n        );\n      } finally {\n        if (release) release();\n      }\n    });\n    await Promise.allSettled(promises);\n  }\n\n  public async startOrchestrator(): Promise<void> {\n    try {\n      await this.schedulerInterval();\n      if (Date.now() > this.lastSnaphotTimestamp + this.snapshotInterval) {\n        this.lastSnaphotTimestamp = Date.now();\n        await this.logDictionnarySnapshot();\n      }\n    } catch (error) {\n      const context: JobsLogContext = {\n        method: 'startOrchestrator',\n        service: 'OrchestratorService',\n      };\n\n      this.customLogger.error(\n        `Error schedulerInterval ${error.message ?? error.stack}`,\n        context,\n      );\n    }\n\n    const orchestratorDelay =\n      await this.orchestratorConfigService.mvOrchestratorDelayMilliseconds();\n\n    setTimeout(() => this.startOrchestrator(), orchestratorDelay);\n  }\n}\n",
+    "taille": 8458
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/redis/redis.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprClient, DaprServer } from 'dapr-client';\nimport { ApiModule } from '@/common/api/api.module';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { RedisConfigModule } from '@/config/redis/redis-store.module';\nimport { RedisService } from '@/redis/redis.service';\n\n@Module({\n  exports: [RedisService],\n  imports: [\n    ConfigModule,\n    RedisConfigModule,\n    EventHubModule,\n    DaprConfigModule,\n    ApiModule,\n  ],\n  providers: [\n    { provide: DaprServer, useValue: new DaprServer() },\n    DaprClient,\n    RedisService,\n  ],\n})\nexport class RedisModule {}\n",
+    "taille": 753
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/redis/redis.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DaprClient } from 'dapr-client';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { RedisConfigService } from '@/config/redis/redis-store.service';\nimport { Dictionary } from '@/interface/dictionary.interface';\n\n@Injectable()\nexport class RedisService {\n  private readonly daprClient: DaprClient;\n\n  public constructor(\n    private readonly redisConfigService: RedisConfigService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.daprClient = new DaprClient();\n  }\n\n  /*  Private async migrationPhase(): Promise<boolean> {\n    return this.redisConfigService.migrationPhase();\n  } */\n\n  /**\n   * Get the old and new Redis store names.\n   * @returns An object containing:\n   *   - `newStore`: the new Redis store name\n   */ private getStores(): {\n    newStore: string;\n    newRedisPlant: string;\n  } {\n    return {\n      newStore: this.redisConfigService.redisStoreAmr,\n      newRedisPlant: this.redisConfigService.redisPlantAmr,\n    };\n  }\n\n  public async read(key: string): Promise<Dictionary> {\n    const context: JobsLogContext = {\n      method: 'read',\n      object: key,\n      service: 'RedisService',\n    };\n\n    try {\n      const { newStore } = this.getStores();\n\n      const result = await this.daprClient.state.get(newStore, key);\n\n      let dictionaryResult: Dictionary = {\n        state: '',\n        taskPublishTime: '',\n        updateDuration: 0,\n        updateTime: '',\n      };\n\n      if (Object.values(result.valueOf()).length > 0) {\n        // Attempt to parse the result if it's a string\n        dictionaryResult =\n          typeof result === 'string'\n            ? (JSON.parse(result) as Dictionary)\n            : (result as Dictionary);\n      }\n      return dictionaryResult;\n    } catch (error) {\n      this.customLogger.error(\n        `Error reading from Redis with mutex for key ${key}: ${error.message}`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  /**\n   * Write a key-value pair to Redis based on the migration phase.\n   *\n   * - If migrationPhase is true, the value is written to both the old and new stores (if they exist).\n   * - If migrationPhase is false, the value is written only to the new store.\n   * @param key - The key to write to Redis.\n   * @param value - The value to associate with the key. Must conform to the Dictionary interface.\n   * @returns A Promise that resolves when the value has been successfully saved.\n   * @throws Throws an error if the write operation fails.\n   */\n  public async write(key: string, value: Dictionary): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'write',\n      object: key,\n      service: 'RedisService',\n    };\n\n    try {\n      const { newStore } = this.getStores();\n\n      await this.daprClient.state.save(newStore, [{ key, value }]);\n    } catch (error) {\n      this.customLogger.error(\n        `Redis write for plant ${key} - Error writing to Redis with mutex: ${key} ${error.message}`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  /**\n   * Get all keys from the appropriate Redis store based on the migration phase.\n   *\n   * - If migrationPhase is true, reads from the old store first; falls back to the new store if the old store is empty.\n   * - If migrationPhase is false, reads from the new store only.\n   * @returns A Promise that resolves to an array of strings representing all keys stored in Redis.\n   *          Returns an empty array if no keys are found or if an error occurs.\n   */\n  public async getAllKeys(): Promise<Array<string>> {\n    const context: JobsLogContext = {\n      method: 'getAllKeys',\n      service: 'RedisService',\n    };\n\n    try {\n      const { newRedisPlant } = this.getStores();\n      const store = newRedisPlant;\n\n      if (!store) return [];\n\n      const result = await this.daprClient.state.get(store, 'KEYS');\n      return Array.isArray(result) ? result : [];\n    } catch {\n      this.customLogger.error(\n        'Error fetching keys from Dapr state store:',\n        context,\n      );\n      return [];\n    }\n  }\n\n  public async saveKeysInRedis(keyplant: Array<number>): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'saveKeysInRedis',\n      service: 'RedisService',\n    };\n\n    try {\n      const { newRedisPlant } = this.getStores();\n\n      const existingKeys = await this.getAllKeys();\n      const mergedKeys = [\n        ...new Set([...existingKeys, ...keyplant.map(String)]),\n      ];\n      await this.daprClient.state.save(newRedisPlant, [\n        { key: 'KEYS', value: mergedKeys },\n      ]);\n    } catch (error) {\n      this.customLogger.error(\n        `saveKeysInRedis with mutex for plant ${keyplant} - Error writing to Redis with mutex: ${keyplant} ${error.message ?? error.stack}`,\n        context,\n      );\n      throw error;\n    }\n  }\n}\n",
+    "taille": 4910
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/subscribe/subscribe.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Post, Req } from '@nestjs/common';\nimport { Request } from 'express';\nimport { SubscribeMessageService } from './subscribe.service';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\n\ninterface SubscribeMetaDataDto {\n  pubsubname: string;\n  route: string;\n  topic: string;\n  metadata?: Record<string, string>;\n}\n\nconst topics = {\n  topicContainer: process.env.TOPIC_CONTAINER,\n  topicLauncherKpiUpdates: process.env.LANCHER_KPI_UPDATES,\n  topicOutbound: process.env.TOPIC_OUTBOUND,\n  topicPlants: process.env.TOPIC_PLANTS,\n  topicResult: process.env.TOPIC_RESULTS,\n  topicTpaAssignement: process.env.TOPIC_TPA_ASSIGNEMENT,\n  topicTransfer: process.env.TOPIC_TRANSFER,\n  topicWorkcenterUpdates: process.env.WORKCENTER_UPDATES,\n};\n\n@Controller()\nexport class SubscribeController {\n  public constructor(\n    private readonly subscribeMessageService: SubscribeMessageService,\n    private readonly eventhubService: EventhubService,\n  ) {}\n\n  @Get('/dapr/subscribe')\n  public async subscribeMetaData(): Promise<Array<SubscribeMetaDataDto>> {\n    const subscriptions: Array<SubscribeMetaDataDto> = [];\n\n    if (this.eventhubService.topicResult) {\n      const checkpointFrequency =\n        await this.eventhubService.checkPointFrequencyResult();\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicResult}`,\n        topic: this.eventhubService.topicResult,\n        metadata: {\n          checkPointFrequencyPerPartition: checkpointFrequency,\n        },\n      });\n    }\n\n    if (this.eventhubService.topicPlants) {\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicPlants}`,\n        topic: this.eventhubService.topicPlants,\n      });\n    }\n    if (this.eventhubService.topicOutbound) {\n      const checkpointFrequency =\n        await this.eventhubService.checkPointFrequencyOutbound();\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicOutbound}`,\n        topic: this.eventhubService.topicOutbound,\n        metadata: {\n          checkPointFrequencyPerPartition: checkpointFrequency,\n        },\n      });\n    }\n\n    if (this.eventhubService.topicTpaAssignement) {\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicTpaAssignement}`,\n        topic: this.eventhubService.topicTpaAssignement,\n      });\n    }\n\n    if (this.eventhubService.topicContainer) {\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicContainer}`,\n        topic: this.eventhubService.topicContainer,\n      });\n    }\n\n    if (this.eventhubService.topicTransfer) {\n      const checkpointFrequency =\n        await this.eventhubService.checkPointFrequencyTransfer();\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicTransfer}`,\n        topic: this.eventhubService.topicTransfer,\n        metadata: {\n          checkPointFrequencyPerPartition: checkpointFrequency,\n        },\n      });\n    }\n\n    if (this.eventhubService.topicLauncherKpiUpdates) {\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicLauncherKpiUpdates}`,\n        topic: this.eventhubService.topicLauncherKpiUpdates,\n      });\n    }\n\n    if (this.eventhubService.topicWorkcenterUpdates) {\n      subscriptions.push({\n        pubsubname: this.eventhubService.pubSubName,\n        route: `/${this.eventhubService.topicWorkcenterUpdates}`,\n        topic: this.eventhubService.topicWorkcenterUpdates,\n      });\n    }\n\n    return subscriptions;\n  }\n\n  @Post(`/${topics.topicResult || 'topic-result'}`)\n  public async receiveResult(@Req() request: Request): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessage(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicPlants || 'topic-plants'}`)\n  public async receivePlants(): Promise<string> {\n    await this.subscribeMessageService.handlePlantMessage();\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicOutbound || 'topic-outbound'}`)\n  public async receiveOutbound(@Req() request: Request): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageOutbound(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicTpaAssignement || 'topic-tpa-assignement'}`)\n  public async receiveTpaAssignement(@Req() request: Request): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageTpaAssignement(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicContainer || 'topic-container'}`)\n  public async receiveContainer(@Req() request: Request): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageContainer(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicTransfer || 'topic-transfer'}`)\n  public async receiveTransfer(@Req() request: Request): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageTransfer(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicLauncherKpiUpdates || 'topic-launcher-kpi-updates'}`)\n  public async receiveLauncherKpiUpdates(\n    @Req() request: Request,\n  ): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageLauncherKpiUpdates(data);\n    return 'OK';\n  }\n\n  @Post(`/${topics.topicWorkcenterUpdates || 'topic-workcenter-updates'}`)\n  public async receiveWorkcenterUpdates(\n    @Req() request: Request,\n  ): Promise<string> {\n    const { data } = request.body;\n    await this.subscribeMessageService.handleMessageWorkcenterUpdates(data);\n    return 'OK';\n  }\n}\n",
+    "taille": 5919
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/subscribe/subscribe.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprClient, DaprServer } from 'dapr-client';\nimport { ApiModule } from '@/common/api/api.module';\nimport { AppLoggerModule } from '@/common/logger/app-logger.module';\nimport { MutexManagerModule } from '@/common/mutex-manager/mutex-manager.module';\nimport { PublishMessageModule } from '@/common/publish-message/publish-message.module';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { ObservabilityConfigModule } from '@/config/observability-config/observability-config.module';\nimport { OrchestratorConfigModule } from '@/config/orchestrator/orchestrator.module';\nimport { RedisConfigModule } from '@/config/redis/redis-store.module';\nimport { OrchestratorModule } from '@/orchestrator/orchestrator.module';\nimport { RedisModule } from '@/redis/redis.module';\nimport { SubscribeController } from '@/subscribe/subscribe.controller';\nimport { SubscribeMessageService } from '@/subscribe/subscribe.service';\n\n@Module({\n  controllers: [SubscribeController],\n  imports: [\n    ConfigModule,\n    RedisConfigModule,\n    DaprConfigModule,\n    OrchestratorConfigModule,\n    OrchestratorModule,\n    ApiModule,\n    AppLoggerModule,\n    MutexManagerModule,\n    PublishMessageModule,\n    EventHubModule,\n    ObservabilityConfigModule,\n    RedisModule,\n  ],\n  providers: [\n    { provide: DaprServer, useValue: new DaprServer() },\n    DaprClient,\n    SubscribeMessageService,\n  ],\n  exports: [SubscribeMessageService],\n})\nexport class DaprModule {}\n",
+    "taille": 1629
+  },
+  {
+    "microservice": "mesx-mv-orchestrator",
+    "chemin": "/src/subscribe/subscribe.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { v4 as uuidv4 } from 'uuid';\nimport { PlantHierarchyApi } from '@/common/api/plant-hierarchy-api';\nimport { dictionaryState } from '@/common/constants/dictionary-state';\nimport { execAndLog } from '@/common/exec-and-log/exec-and-log';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { MutexManagerService } from '@/common/mutex-manager/mutex-manager.service';\nimport { PublishMessageService } from '@/common/publish-message/publish-message.service';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\nimport { ObservabilityConfigService } from '@/config/observability-config/observability-config.service';\nimport { OrchestratorConfigService } from '@/config/orchestrator/orchestrator.service';\nimport { RedisConfigService } from '@/config/redis/redis-store.service';\nimport { ResultMessageDto } from '@/dtos/result-message-dto';\nimport { ContainerMessage } from '@/interface/container-message';\nimport { Dictionary } from '@/interface/dictionary.interface';\nimport { LauncherKpiUpdatesMessage } from '@/interface/launcher-kpi-updates';\nimport { OutboundMessage } from '@/interface/outbound-message';\nimport { TaskMessage } from '@/interface/task-message.interface';\nimport { TpaAssignementMessage } from '@/interface/tpa-assignement';\nimport { TransferMessage } from '@/interface/transfer-message';\nimport { WorkcenterUpdatesMessage } from '@/interface/workcenter-updates';\nimport { OrchestratorService } from '@/orchestrator/orchestrator.service';\nimport { RedisService } from '@/redis/redis.service';\n\n@Injectable()\nexport class SubscribeMessageService implements OnModuleInit {\n  public constructor(\n    private readonly plantHYRApi: PlantHierarchyApi,\n    private readonly eventhubService: EventhubService,\n    private readonly redisService: RedisService,\n    private readonly publishMessageService: PublishMessageService,\n    private readonly redisStoreService: RedisConfigService,\n    private readonly observabilityConfigService: ObservabilityConfigService,\n    private readonly mutexManagerService: MutexManagerService,\n    private readonly orchestratorConfigService: OrchestratorConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  private async handleMessageCommon(\n    message:\n      | OutboundMessage\n      | TpaAssignementMessage\n      | ContainerMessage\n      | TransferMessage\n      | WorkcenterUpdatesMessage\n      | LauncherKpiUpdatesMessage,\n  ): Promise<Dictionary> {\n    const logOperationInfo = {\n      name: 'readForhandleMessageCommon',\n      srcLocation: 'handleMessageCommon',\n    };\n    const logOperationDetails = {\n      plant: message.plant,\n    };\n    const execLogEnabled =\n      await this.observabilityConfigService.execlogEnabled();\n    const data = await execAndLog(\n      this.customLogger,\n      execLogEnabled,\n      () => this.redisService.read(message.plant.toString()),\n      logOperationInfo,\n      logOperationDetails,\n    );\n    return data;\n  }\n\n  /**\n   * /!\\ ENSURE that updateDictionary is thread safe callsed\n   * @param data ResultMessageDto\n   */\n  public async updateDictionary(data: ResultMessageDto): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'updateDictionary',\n      plant: data.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    try {\n      const plantKey = data.plant.toString();\n      const result = await this.redisService.read(plantKey);\n      if (result) {\n        result.updateTime = String(data.updateTime);\n        result.updateDuration = data.updateDuration;\n        result.state = dictionaryState.updated;\n      }\n      this.customLogger.debug(\n        `updateDictionary - Update dictionnary ${plantKey} : ${JSON.stringify(result)}`,\n        context,\n      );\n      await this.redisService.write(plantKey, result);\n    } catch (error) {\n      this.customLogger.error(\n        `plant ${data.plant} Error updating dictionary in Redis with mutex: ${error.message}`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async handleMessage(message: ResultMessageDto): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessage',\n      plant: message.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const orchestratorPublishTimeInMillis = new Date(\n        message.orchestratorPublishTime,\n      ).getTime();\n\n      if (!Number.isNaN(orchestratorPublishTimeInMillis)) {\n        this.customLogger.debug(\n          `Plant ${message.plant} - Processor response time ${JSON.stringify({\n            reponseTime: Date.now() - orchestratorPublishTimeInMillis,\n          })}`,\n          context,\n        );\n      }\n\n      // To identify old message that stayed in the hub\n      // When there is a long restart from orchestrator\n      if (\n        Date.now() - orchestratorPublishTimeInMillis > ttl * 1000 &&\n        message.updateDuration <= ttl\n      ) {\n        this.customLogger.debug(\n          `Plant ${message.plant} - Obsolete msg detected orchestratorPublishTimeInMillis=${orchestratorPublishTimeInMillis},updateDuration=${message.updateDuration}, ttl=${ttl}`,\n          context,\n        );\n        return;\n      }\n\n      await this.updateDictionary(message);\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing results message: ${error.message ?? error.stack}`,\n        context,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handlePlantMessage(): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handlePlantMessage',\n      service: 'SubscribeMessageService',\n    };\n\n    try {\n      const plants = await this.plantHYRApi.fetchAllPlants();\n      const existPlants = await this.redisService.getAllKeys();\n\n      const plantsToAdd = plants\n        .map((m) => m.plantId)\n        .filter((p) => !existPlants.includes(String(p)));\n      if (plantsToAdd.length > 0) {\n        const promises = [];\n        for (const plantId of plantsToAdd) {\n          const newDictionary: Dictionary = {\n            state: 'init',\n            taskPublishTime: '',\n            updateDuration: 0,\n            updateTime: '',\n          };\n          const plantkey = String(plantId);\n          promises.push(this.redisService.write(plantkey, newDictionary));\n        }\n        await Promise.allSettled(promises);\n        await this.redisService.saveKeysInRedis(plantsToAdd);\n      }\n    } catch (error) {\n      this.customLogger.error(\n        `Error processing message: ${error.message ?? error.stack}`,\n        context,\n      );\n    }\n  }\n\n  public async handleMessageOutbound(message: OutboundMessage): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageOutbound',\n      plant: message.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received OutboundMessage ${JSON.stringify(message)}`,\n      context,\n    );\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const taskmessage: TaskMessage = {\n        outbound: message.outbound,\n        plant: message.plant,\n        publishTime: new Date().toISOString(),\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n      };\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing outbound message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handleMessageTpaAssignement(\n    message: TpaAssignementMessage,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageTpaAssignement',\n      plant: message.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received TpaAssignementMessage ${JSON.stringify(message)}`,\n      context,\n    );\n\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const taskmessage: TaskMessage = {\n        plant: message.plant,\n        publishTime: new Date().toISOString(),\n        tpaAssignement: message.assignId,\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n      };\n\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing tpa assignement message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handleMessageWorkcenterUpdates(\n    message: WorkcenterUpdatesMessage,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageWorkcenterUpdates',\n      plant: Number(message.plant),\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received WorkcenterUpdatesMessage ${JSON.stringify(message)}`,\n      context,\n    );\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const taskmessage: TaskMessage = {\n        plant: Number(message.plant),\n        publishTime: new Date().toISOString(),\n        ttl: Number(this.redisStoreService.ttlStore),\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n        workcenterId: message.workcenterId,\n      };\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing workcenter updates message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handleMessageLauncherKpiUpdates(\n    message: LauncherKpiUpdatesMessage,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageLauncherKpiUpdates',\n      plant: Number(message.plant),\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received LauncherKpiUpdatesMessage ${JSON.stringify(message)}`,\n      context,\n    );\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const taskmessage: TaskMessage = {\n        kpiName: message.kpiName,\n        plant: Number(message.plant),\n        publishTime: new Date().toISOString(),\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n        workcenter: message.workcenter,\n      };\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing launcher KPI updates message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handleMessageContainer(\n    message: ContainerMessage,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageContainer',\n      plant: message.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received ContainerMessage ${JSON.stringify(message)}`,\n      context,\n    );\n\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const taskmessage: TaskMessage = {\n        pickingOrderId: message.pickingOrderId,\n        plant: message.plant,\n        publishTime: new Date().toISOString(),\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n      };\n\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing container message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public async handleMessageTransfer(message: TransferMessage): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessageTransfer',\n      plant: message.plant,\n      service: 'SubscribeMessageService',\n    };\n\n    this.customLogger.debug(\n      `Received TransferMessage ${JSON.stringify(message)}`,\n      context,\n    );\n\n    let release;\n    try {\n      release = await this.mutexManagerService\n        .getMutex(message.plant)\n        .acquire();\n      const data = await this.handleMessageCommon(message);\n      const ttl = Number(this.redisStoreService.ttlStore);\n      const taskmessage: TaskMessage = {\n        containerId: message.containerId,\n        plant: message.plant,\n        publishTime: new Date().toISOString(),\n        transferId: message.transferId,\n        ttl,\n        updateDuration: data.updateDuration,\n        updateTime: data.updateTime,\n        uuid: uuidv4(),\n      };\n\n      await this.publishMessageService.publishMessage(\n        this.eventhubService.topicTasks,\n        taskmessage,\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Plant ${message.plant} - Error processing container message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    } finally {\n      if (release) release();\n    }\n  }\n\n  public onModuleInit(): void {\n    const context: JobsLogContext = {\n      method: 'onModuleInit',\n      service: 'SubscribeMessageService',\n    };\n\n    try {\n      // Using self scheduler because nestjs is running 2 schedulers in //\n      new OrchestratorService(\n        this.publishMessageService,\n        this.eventhubService,\n        this.redisService,\n        this.plantHYRApi,\n        this.redisStoreService,\n        this.observabilityConfigService,\n        this.mutexManagerService,\n        this.orchestratorConfigService,\n        this.customLogger,\n      ).startOrchestrator();\n\n      this.customLogger.debug('Orchestrator started successfully', context);\n    } catch (error) {\n      this.customLogger.error(\n        `Error starting orchestrator: ${error.message}`,\n        context,\n        error.stack,\n      );\n    }\n  }\n}\n",
+    "taille": 15461
+  }
+]

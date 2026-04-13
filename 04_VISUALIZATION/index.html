@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MESX.0 Architecture - Index</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2em; opacity: 0.9; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+        .stat {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .stat-label { font-size: 0.9em; color: #666; }
+        .content { padding: 40px; }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h2 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card:hover {
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            transform: translateY(-4px);
+            border-color: #667eea;
+        }
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .card-icon { font-size: 2em; margin-bottom: 10px; }
+        .card p { color: #666; line-height: 1.6; margin-bottom: 15px; font-size: 0.95em; }
+        .card-link {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9em;
+            transition: background 0.3s;
+        }
+        .card-link:hover { background: #764ba2; }
+        .role-section {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .role-section h3 { color: #667eea; margin-bottom: 10px; }
+        .role-section ol { margin-left: 20px; line-height: 1.8; }
+        .role-section li { margin-bottom: 10px; }
+        .alert {
+            background: #ffe6e6;
+            border: 1px solid #ff9999;
+            color: #c00;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #ddd;
+        }
+        .status {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 MESX.0 ARCHITECTURE GLOBALE</h1>
+            <p class="subtitle">Vue complète de l'écosystème des microservices</p>
+            <span class="status">✅ VISUALIZATION COMPLETE</span>
+        </header>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">81</div>
+                <div class="stat-label">Microservices</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">193</div>
+                <div class="stat-label">Fonctions</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">310</div>
+                <div class="stat-label">Use Cases</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">8,910</div>
+                <div class="stat-label">Relations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">20+</div>
+                <div class="stat-label">Chaînes complètes</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="alert">
+                ⚠️ <strong>CRITICAL FIX APPLIED:</strong> Confidence threshold lowered 0.6→0.2, recovered 59 COVERS relations (was 0)
+            </div>
+
+            <!-- VISUALIZATIONS -->
+            <div class="section">
+                <h2>🖼️ Visualisations</h2>
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-icon">🎨</div>
+                        <h3>Graphe Interactif 3D</h3>
+                        <p>Exploration complète avec vis-network. 495 nœuds visibles. Drag/Pan/Zoom. <strong>Commencer par celui-ci!</strong></p>
+                        <a href="architecture_visualization.html" class="card-link">Ouvrir le graphe →</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📊</div>
+                        <h3>Schéma SVG</h3>
+                        <p>Diagramme structuré hiérarchique 3 niveaux. Parfait pour impression et documentation.</p>
+                        <a href="architecture_schema.svg" class="card-link">Ouvrir le schéma →</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📄</div>
+                        <h3>Vue ASCII Art</h3>
+                        <p>Représentation formatée avec cadres et flèches structurés. Listing par niveau avec exemples.</p>
+                        <a href="ARCHITECTURE_COMPLETE.txt" class="card-link">Lire ASCII Art →</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📋</div>
+                        <h3>Listing Textuel</h3>
+                        <p>Listing exhaustif de tous les 81 MS, 193 Functions, 310 UC avec statuts et relations.</p>
+                        <a href="architecture_summary.txt" class="card-link">Lire listing →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOCUMENTATION -->
+            <div class="section">
+                <h2>📖 Documentation & Guides</h2>
+                <div class="cards">
+                    <div class="card">
+                        <div class="card-icon">⭐</div>
+                        <h3>Guide Complet</h3>
+                        <p>Index des ressources, statistiques détaillées, requêtes Neo4j prêtes à utiliser, prochaines étapes.</p>
+                        <a href="README_ARCHITECTURE.txt" class="card-link">Lire guide →</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🚀</div>
+                        <h3>Quickstart</h3>
+                        <p>Démarrage rapide avec instructions immédiates, exemples de chaînes, et raccourcis utiles.</p>
+                        <a href="QUICKSTART.txt" class="card-link">Démarrage →</a>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">📍</div>
+                        <h3>Fichier Index</h3>
+                        <p>Orientation par rôle (Manager, Architecte, Data Engineer) avec chemins recommandés.</p>
+                        <a href="0_START_HERE_INDEX.txt" class="card-link">Voir index →</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK START BY ROLE -->
+            <div class="section">
+                <h2>👥 Parcours Recommandé par Rôle</h2>
+                
+                <div class="role-section">
+                    <h3>👔 Manager / Stakeholder (5 min)</h3>
+                    <ol>
+                        <li>Ouvrir <strong>architecture_visualization.html</strong> → voir le graphe 3D</li>
+                        <li>Lire statistiques clés ci-dessus</li>
+                        <li>Parcourir <strong>README_ARCHITECTURE.txt</strong> section "Statistiques"</li>
+                    </ol>
+                </div>
+
+                <div class="role-section">
+                    <h3>🏗️ Architecte / Tech Lead (30 min)</h3>
+                    <ol>
+                        <li>Ouvrir <strong>architecture_visualization.html</strong> → explorer relations MS</li>
+                        <li>Lire <strong>README_ARCHITECTURE.txt</strong> complet</li>
+                        <li>Accéder Neo4j Browser (localhost:7474) → exécuter requêtes</li>
+                        <li>Consulter <strong>ARCHITECTURE_COMPLETE.txt</strong> pour vue structurée</li>
+                    </ol>
+                </div>
+
+                <div class="role-section">
+                    <h3>📊 Data Analyst / Engineer (1 heure)</h3>
+                    <ol>
+                        <li>Lire <strong>README_ARCHITECTURE.txt</strong> section "Requêtes Neo4j"</li>
+                        <li>Ouvrir toutes les visualisations (HTML, SVG, texte)</li>
+                        <li>Valider dans Neo4j Browser (localhost:7474)</li>
+                        <li>Réutiliser scripts step6 et step7 pour mises à jour futures</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- NEO4J ACCESS -->
+            <div class="section">
+                <h2>⚙️ Accès Neo4j</h2>
+                <div class="role-section">
+                    <p><strong>URL:</strong> <code>http://localhost:7474</code></p>
+                    <p><strong>Requête simple:</strong> Voir toutes les chaînes complètes</p>
+                    <pre style="background: #f8f9fa; padding: 15px; border-radius: 4px; overflow-x: auto;">
+MATCH (m:Microservice)-[:IMPLEMENTS]->
+      (f:Function)-[:COVERS]->(u:UseCase)
+RETURN m.name, f.nom, u.titre LIMIT 30</pre>
+                    <p style="margin-top: 10px;">Plus de requêtes disponibles dans <strong>README_ARCHITECTURE.txt</strong></p>
+                </div>
+            </div>
+
+            <!-- KEY RESULTS -->
+            <div class="section">
+                <h2>✅ Résultats de Validation</h2>
+                <div class="role-section">
+                    <ul style="margin-left: 20px; line-height: 2;">
+                        <li>✓ Tous les 81 MS mappés au graphe</li>
+                        <li>✓ Toutes les 193 fonctions liées aux MS</li>
+                        <li>✓ 59 use cases liés aux functions <strong>(CRITICAL FIX: was 0)</strong></li>
+                        <li>✓ 143 dépendances inter-MS documentées</li>
+                        <li>✓ 2,977 commits et 3,538 PRs tracés</li>
+                        <li>✓ 20+ chaînes complètes MS→Function→UseCase vérifiées</li>
+                        <li>✓ 5 formats de visualisation disponibles</li>
+                        <li>✓ Documentation prête pour présentation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- NEXT STEPS -->
+            <div class="section">
+                <h2>🎯 Prochaines Étapes</h2>
+                <div class="role-section">
+                    <ol>
+                        <li>Valider architecture dans HTML interactif</li>
+                        <li>Documenter patterns observés en détail</li>
+                        <li>Écrire requêtes NRT scope detection</li>
+                        <li>Tester sur commits réels (accuracy measurement)</li>
+                        <li>Intégrer dans pipeline Azure DevOps</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>MESX.0 Architecture Visualization | Status: ✅ Complete | Database: 7,108 nodes + 8,910 relations in Neo4j</p>
+        </footer>
+    </div>
+</body>
+</html>

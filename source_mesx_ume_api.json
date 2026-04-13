@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: ume-api\n  cajMigrationJobName: ume-dbm\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/ume-api\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n      migrationContainerAppJobName: caj-gptmpxn01-eun-dev-$(cajMigrationJobName)\n\n",
+    "taille": 1337
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "# apiVersion: dapr.io/v1alpha1\n# kind: Component\n# metadata:\n#   name: bindings-events\n# spec:\n#   type: bindings.kafka\n#   version: v1\n#   metadata:\n#   - name: brokers\n#     value: \"localhost:9092\"\n#   - name: topics\n#     value: \"connect-test\"\n#   - name: direction\n#     value: \"input\"\n#   - name: initialOffset # Optional. Used for input bindings.\n#     value: \"newest\"\n#   - name: authRequired\n#     value: \"false\"\n#   - name: consumerGroup\n#     value: \"group1\"\n",
+    "taille": 469
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/Generics/softdeletetimestamp.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * This class provides timestamp functionality by defining createdAt, updatedAt, and deletedAt columns.\n * It is intended to be extended by other entities to automatically track creation, update, and deletion timestamps.\n */\n\n// Import necessary modules and dependencies\nimport { DeleteDateColumn } from 'typeorm';\nimport { TimeStamp } from '@/Generics/timestamp';\n\nexport class SoftDeleteTimeStamp extends TimeStamp {\n  // Column representing the timestamp when the entity was created\n  @DeleteDateColumn({ name: 'deleted_at' })\n  public deletedAt: Date;\n}\n",
+    "taille": 562
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/Generics/timestamp.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { CreateDateColumn, UpdateDateColumn } from 'typeorm';\n\nexport class TimeStamp {\n  @CreateDateColumn({ name: 'created_at' })\n  public createdAt: Date;\n\n  @UpdateDateColumn({ name: 'updated_at' })\n  public updatedAt: Date;\n}\n",
+    "taille": 231
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/Permission-by-Plant/permission-by-plant.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Entity,\n  PrimaryGeneratedColumn,\n  Column,\n  ManyToOne,\n  JoinColumn,\n} from 'typeorm';\nimport { Permission } from '../permission/permission.entity';\nimport { TimeStamp } from '@/Generics/timestamp';\n\n@Entity()\nexport class PermissionByPlant extends TimeStamp {\n  @PrimaryGeneratedColumn({ name: 'permission_by_plant_id' })\n  public permissionByPlantId: number;\n\n  @Column({ name: 'plant_id' })\n  public plantId: number;\n\n  @ManyToOne(() => Permission, (permission) => permission.permissionByPlants)\n  @JoinColumn({ name: 'permission_id' })\n  public permission: Permission;\n}\n",
+    "taille": 588
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/Permission-by-Plant/permission-by-plant.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { PermissionByPlant } from './permission-by-plant.entity';\n\n@Module({\n  imports: [TypeOrmModule.forFeature([PermissionByPlant])],\n  providers: [],\n  exports: [],\n})\nexport class PermissionByPlantModule {}\n",
+    "taille": 302
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/api-endpoint/api-endpoint.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Param } from '@nestjs/common';\nimport { ApiEndpoint } from './api-endpoint.entity';\nimport { ApiEndpointService } from './api-endpoint.service';\n\n@Controller('api-endpoints')\nexport class ApiEndpointController {\n  public constructor(private readonly apiEndpointService: ApiEndpointService) {}\n\n  @Get(':id')\n  public async findOne(@Param('id') id: number): Promise<ApiEndpoint | null> {\n    return this.apiEndpointService.findOne(id);\n  }\n}\n",
+    "taille": 467
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/api-endpoint/api-endpoint.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';\nimport { Component } from '../component/component.entity';\nimport { TimeStamp } from '@/Generics/timestamp';\n\n@Entity('api_endpoint')\nexport class ApiEndpoint extends TimeStamp {\n  @PrimaryGeneratedColumn({ name: 'api_id' })\n  public apiId: number;\n\n  @Column({ name: 'name', length: 255 })\n  public name: string;\n\n  @Column({ name: 'url', length: 1024 })\n  public url: string;\n\n  @Column({ name: 'query_params', nullable: true })\n  public queryParams: string;\n\n  @Column({ name: 'path_params', nullable: true })\n  public pathParams: string;\n\n  @Column({ name: 'method', length: 10 })\n  public method: string;\n\n  @Column({ name: 'body_template', nullable: true })\n  public bodyTemplate: string;\n\n  @OneToMany(() => Component, (component) => component.api)\n  public components: Array<Component>;\n}\n",
+    "taille": 874
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/api-endpoint/api-endpoint.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { ApiEndpointController } from './api-endpoint.controller';\nimport { ApiEndpoint } from './api-endpoint.entity';\nimport { ApiEndpointService } from './api-endpoint.service';\n\n@Module({\n  controllers: [ApiEndpointController],\n  imports: [TypeOrmModule.forFeature([ApiEndpoint])],\n  providers: [ApiEndpointService],\n  exports: [ApiEndpointService],\n})\nexport class ApiEndpointModule {}\n",
+    "taille": 481
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/api-endpoint/api-endpoint.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\nimport { ApiEndpoint } from './api-endpoint.entity';\n\n@Injectable()\nexport class ApiEndpointService {\n  public constructor(\n    @InjectRepository(ApiEndpoint)\n    private readonly apiEndpointRepository: Repository<ApiEndpoint>,\n  ) {}\n\n  public async findOne(id: number): Promise<ApiEndpoint | null> {\n    return this.apiEndpointRepository.findOne({\n      where: { apiId: id },\n      relations: ['components'],\n    });\n  }\n}\n",
+    "taille": 560
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-list/app-list.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppList } from './app-list.entity';\nimport { AppListService } from './app-list.service';\n\n@Controller('menus')\nexport class AppListController {\n  public constructor(private readonly appListService: AppListService) {}\n\n  @Get()\n  public async getMenu(): Promise<Array<AppList>> {\n    return this.appListService.getMenu();\n  }\n\n  @Get('apps')\n  public async getAppList(): Promise<Array<{ id: number; appName: string }>> {\n    return this.appListService.getAppList();\n  }\n}\n",
+    "taille": 530
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-list/app-list.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Entity,\n  PrimaryGeneratedColumn,\n  Column,\n  Tree,\n  TreeChildren,\n  TreeParent,\n  OneToMany,\n} from 'typeorm';\nimport { AppPagesList } from '../app-page-list/app-page-list.entity';\n\n@Entity()\n@Tree('materialized-path')\nexport class AppList {\n  @PrimaryGeneratedColumn()\n  public id: number;\n\n  @Column({ name: 'app_name' })\n  public appName: string;\n\n  @Column({ name: 'link' })\n  public link: string;\n\n  @Column({ default: 0, name: 'is_me' })\n  public isMe: number;\n\n  @Column({ name: 'order' })\n  public order: number;\n\n  @TreeChildren()\n  public children: Array<AppList>;\n\n  @TreeParent()\n  public parent: AppList | undefined;\n\n  @OneToMany(() => AppPagesList, (page) => page.appListId, { eager: true })\n  public pages?: Array<AppPagesList>;\n\n  public isClickable: boolean;\n\n  @Column({\n    name: 'support_page_url',\n    nullable: true,\n    length: 1024,\n    default: undefined,\n  })\n  public supportPageUrl: string;\n\n  @Column({ name: 'is_validated', type: 'bit', default: () => '1' })\n  public isValidated: boolean;\n\n  public hasNoChildren(): boolean {\n    return this.children && this.children.length === 0;\n  }\n}\n",
+    "taille": 1133
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-list/app-list.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { AppListController } from './app-list.controller';\nimport { AppList } from './app-list.entity';\nimport { AppListService } from './app-list.service';\n\n@Module({\n  controllers: [AppListController],\n  imports: [TypeOrmModule.forFeature([AppList])],\n  providers: [AppListService],\n})\nexport class AppListModule {}\n",
+    "taille": 408
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-list/app-list.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { DataSource } from 'typeorm';\nimport { AppList } from './app-list.entity';\n\n@Injectable()\nexport class AppListService {\n  public constructor(private readonly dataSource: DataSource) {}\n\n  public async getMenu(): Promise<Array<AppList>> {\n    const treeRepository = this.dataSource.getTreeRepository(AppList);\n\n    const topLevelMenus = await treeRepository.findTrees({\n      relations: ['pages'],\n    });\n\n    topLevelMenus.sort((a, b) => a.order - b.order);\n\n    for (const menu of topLevelMenus) {\n      menu.isClickable = menu.hasNoChildren();\n    }\n\n    return topLevelMenus;\n  }\n\n  public async getAppList(): Promise<Array<{ id: number; appName: string }>> {\n    const appListRepository = this.dataSource.getRepository(AppList);\n\n    const appLists = await appListRepository.find({\n      select: ['id', 'appName'],\n      order: { order: 'ASC' },\n    });\n\n    return appLists;\n  }\n}\n",
+    "taille": 940
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-list/dto/menu-item.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface AppPageDto {\n  pageId: number;\n  pageName: string;\n  link: string;\n  supportPageUrl: string;\n  isValidated: boolean;\n}\n\nexport interface MenuItemDto {\n  id: number;\n  appName: string;\n  link: string;\n  isMe: number;\n  order: number;\n  isValidated: boolean;\n  isClickable: boolean;\n  parentId: number | null;\n  supportPageUrl: string | null;\n  children: Array<MenuItemDto>;\n  pages?: Array<AppPageDto>;\n}\n",
+    "taille": 421
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-page-list/app-page-list.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Query } from '@nestjs/common';\nimport { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';\nimport { AppPageListService } from './app-page-list.service';\nimport appLogger from '@/common/logger/app-logger';\n\n@Controller('app-page-list')\nexport class AppPageListController {\n  public constructor(private readonly appPageListService: AppPageListService) {}\n\n  @Get('find-support-url')\n  @ApiOperation({ summary: 'Get support URL by route path' })\n  @ApiQuery({\n    name: 'path',\n    type: String,\n    description: 'The route path to resolve support URL for',\n    required: true,\n  })\n  @ApiResponse({\n    status: 200,\n    description: 'Support URL found',\n    schema: {\n      example: { supportUrl: 'https://example.com/support' },\n    },\n  })\n  @ApiResponse({\n    status: 500,\n    description: 'Internal server error',\n  })\n  public async findSupportUrlByRoute(\n    @Query('path') path: string,\n  ): Promise<{ supportUrl: string | null } | undefined> {\n    try {\n      const supportUrl = await this.appPageListService.getSupportUrl(path);\n      return { supportUrl };\n    } catch (error) {\n      appLogger.error('Error resolving support URL:', error);\n      return undefined;\n    }\n  }\n}\n",
+    "taille": 1222
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-page-list/app-page-list.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Entity,\n  PrimaryGeneratedColumn,\n  Column,\n  ManyToOne,\n  JoinColumn,\n} from 'typeorm';\nimport { AppList } from '@/app-list/app-list.entity';\n\n@Entity('app_pages_list')\nexport class AppPagesList {\n  @PrimaryGeneratedColumn({ name: 'page_id' })\n  public pageId: number;\n\n  @Column({ name: 'page_name' })\n  public pageName: string;\n\n  @Column({ name: 'support_page_url' })\n  public supportPageUrl: string;\n\n  @Column({ name: 'link' })\n  public link: string;\n\n  @Column({ name: 'is_validated', type: 'bit', default: () => '1' })\n  public isValidated: boolean;\n\n  @ManyToOne(() => AppList, { onDelete: 'CASCADE' })\n  @JoinColumn({ name: 'app_list_id' })\n  public appListId: AppList;\n}\n",
+    "taille": 693
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-page-list/app-page-list.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { AppPageListController } from './app-page-list.controller';\nimport { AppPagesList } from './app-page-list.entity';\nimport { AppPageListService } from './app-page-list.service';\n\n@Module({\n  exports: [],\n  imports: [TypeOrmModule.forFeature([AppPagesList])],\n  controllers: [AppPageListController],\n  providers: [AppPageListService],\n})\nexport class AppPageListModule {}\n",
+    "taille": 468
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app-page-list/app-page-list.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\nimport { AppPagesList } from './app-page-list.entity';\n\n@Injectable()\nexport class AppPageListService {\n  public constructor(\n    @InjectRepository(AppPagesList)\n    private readonly appPageListRepository: Repository<AppPagesList>,\n  ) {}\n\n  public async getSupportUrl(currentPath: string): Promise<string | null> {\n    const repo = this.appPageListRepository;\n\n    if (currentPath === '/downtime-ui') {\n      const exact = await repo.findOne({\n        where: { link: '/downtime-ui' },\n        select: ['supportPageUrl'],\n      });\n      return exact?.supportPageUrl ?? null;\n    }\n\n    const allPages = await repo.find({ select: ['link', 'supportPageUrl'] });\n\n    const matches = allPages.filter((page) => currentPath.includes(page.link));\n\n    if (matches.length === 1) {\n      return matches[0].supportPageUrl ?? null;\n    }\n    if (matches.length > 1) {\n      const sortedMatches = [...matches].sort(\n        (a, b) => b.link.length - a.link.length,\n      );\n      const bestMatch = sortedMatches[0];\n\n      return bestMatch?.supportPageUrl ?? null;\n    }\n\n    return null;\n  }\n}\n",
+    "taille": 1220
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport AppController from './app.controller';\nimport AppService from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/ume-api');\n    });\n  });\n});\n",
+    "taille": 608
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport AppService from './app.service';\n\n@Controller()\nexport default class AppController {\n  constructor(private readonly appService: AppService) {}\n\n  @Get()\n  getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 278
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PermissionByPlantModule } from './Permission-by-Plant/permission-by-plant.module';\nimport { ApiEndpointModule } from './api-endpoint/api-endpoint.module';\nimport { AppPageListModule } from './app-page-list/app-page-list.module';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { HomepageShortcutController } from './homepage-shortcuts/homepage-shortcut.controller';\nimport { HomepageShortcutModule } from './homepage-shortcuts/homepage-shortcut.module';\nimport { LayoutModule } from './layout/layout.module';\nimport PermissionController from './permission/permission.controller';\nimport { PermissionDefintionController } from './permission-definition/permission-defintion.controller';\nimport { UserAttributeMappingController } from './user-attribute-mapping/user-attribute-mapping.controller';\nimport { UserAttributeMappingModule } from './user-attribute-mapping/user-attribute-mapping.module';\nimport { AppListModule } from '@/app-list/app-list.module';\nimport AppController from '@/app.controller';\nimport AppService from '@/app.service';\nimport { ComponentModule } from '@/component/component.module';\nimport { daprConfiguration } from '@/config/dapr/configuration';\nimport mssqlConfiguration from '@/config/database/mssql/configuration';\nimport UrlApiConfigModule from '@/config/url-api/url-api.module';\nimport { FilterConfigModule } from '@/filter-config/filter-config.module';\nimport ProbesModule from '@/modules/probes/probes.module';\nimport PermissionModule from '@/permission/permission.module';\nimport PermissionDefinitionModule from '@/permission-definition/permission-definition.module';\nimport MssqlDatabaseProviderModule from '@/providers/database/mssql/mssql.module';\nimport RoleModule from '@/role/role.module';\nimport TokenValidationController from '@/token-validation/token-validation.controller';\nimport TokenValidationModule from '@/token-validation/token-validation.module';\nimport TokenValidationService from '@/token-validation/token-validation.service';\nimport UserController from '@/user/user.controller';\nimport UserModule from '@/user/user.module';\nimport { UserAttribute } from '@/user-attribute/user-attribute.entity';\nimport UserAttributeModule from '@/user-attribute/user-attribute.module';\nimport { UserAttributeController } from '@/user-attribute/user-attributes.controller';\nimport UserSettingsController from '@/user-preference/user-preference.controller';\nimport UserSettingsModule from '@/user-preference/user-preference.module';\n\n@Module({\n  imports: [\n    ConfigModule.forRoot({\n      load: [mssqlConfiguration, daprConfiguration],\n    }),\n    AppListModule,\n    UrlApiConfigModule,\n    ProbesModule,\n    MssqlDatabaseProviderModule,\n    UserSettingsModule,\n    RoleModule,\n    UserModule,\n    PermissionModule,\n    PermissionDefinitionModule,\n    UserAttributeModule,\n    TokenValidationModule,\n    PermissionByPlantModule,\n    UserAttributeMappingModule,\n    DaprConfigModule,\n    HomepageShortcutModule,\n    FilterConfigModule,\n    AppPageListModule,\n    ComponentModule,\n    ApiEndpointModule,\n    LayoutModule,\n  ],\n  controllers: [\n    AppController,\n    UserSettingsController,\n    UserAttributeController,\n    TokenValidationController,\n    UserController,\n    PermissionDefintionController,\n    PermissionController,\n    UserAttributeMappingController,\n    HomepageShortcutController,\n  ],\n  providers: [AppService, UserAttribute, TokenValidationService],\n})\nexport default class AppModule {}\n",
+    "taille": 3566
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport default class AppService {\n  private readonly message = 'mesx/ume-api';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 201
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport default class AppLogger extends Logger {\n  log(message: unknown) {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  error(message: unknown, stack?: string) {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  warn(message: unknown) {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  debug(message: unknown) {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  verbose(message: unknown) {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 587
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/component/component.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Param } from '@nestjs/common';\nimport { Component } from './component.entity';\nimport { ComponentService } from './component.service';\n\n@Controller('components')\nexport class ComponentController {\n  public constructor(private readonly componentService: ComponentService) {}\n\n  @Get()\n  public async findAll(): Promise<Array<Component>> {\n    return this.componentService.findAll();\n  }\n\n  @Get(':code')\n  public async findOne(@Param('code') code: string): Promise<Component | null> {\n    return this.componentService.findOne(code);\n  }\n}\n",
+    "taille": 564
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/component/component.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { TimeStamp } from 'src/Generics/timestamp';\nimport {\n  Entity,\n  Column,\n  PrimaryGeneratedColumn,\n  ManyToOne,\n  JoinColumn,\n} from 'typeorm';\nimport { ApiEndpoint } from '@/api-endpoint/api-endpoint.entity';\n\n@Entity('component')\nexport class Component extends TimeStamp {\n  @PrimaryGeneratedColumn({ name: 'component_id' })\n  public componentId: number;\n\n  @Column({ name: 'label', length: 255, nullable: true })\n  public label: string;\n\n  @Column({ name: 'code', length: 255, unique: true })\n  public code: string;\n\n  @Column({ name: 'config_schema', length: 255, nullable: true })\n  public configSchema: string;\n\n  @Column({ name: 'default_value', length: 255, nullable: true })\n  public defaultValue: string;\n\n  @ManyToOne(() => ApiEndpoint, (apiEndpoint) => apiEndpoint.components, {\n    nullable: true,\n  })\n  @JoinColumn({ name: 'api_id' })\n  public api: ApiEndpoint;\n\n  @Column({ name: 'size', length: 255, nullable: true })\n  public size: string;\n\n  @Column({ name: 'show_label', type: 'bit', default: true })\n  public showLabel: boolean;\n\n  @Column({ name: 'description', length: 255, nullable: true })\n  public description: string;\n\n  @Column({ name: 'apps_list', length: 255, nullable: true })\n  public appsList: string;\n\n  @Column({ name: 'refresh_time', nullable: true, type: 'int' })\n  public refreshTime: number;\n}\n",
+    "taille": 1341
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/component/component.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { ComponentController } from './component.controller';\nimport { Component } from './component.entity';\nimport { ComponentService } from './component.service';\nimport { AppList } from '@/app-list/app-list.entity';\n\n@Module({\n  controllers: [ComponentController],\n  imports: [TypeOrmModule.forFeature([Component, AppList])],\n  providers: [ComponentService],\n  exports: [ComponentService],\n})\nexport class ComponentModule {}\n",
+    "taille": 519
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/component/component.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\nimport { Component } from './component.entity';\nimport { AppList } from '@/app-list/app-list.entity';\n\n@Injectable()\nexport class ComponentService {\n  public constructor(\n    @InjectRepository(Component)\n    private readonly componentRepository: Repository<Component>,\n    @InjectRepository(AppList)\n    private readonly appListRepository: Repository<AppList>,\n  ) {}\n\n  public async findAll(): Promise<Array<Component>> {\n    return this.componentRepository.find({\n      relations: ['api'],\n      order: {\n        componentId: 'ASC',\n      },\n    });\n  }\n\n  public async findOne(code: string): Promise<Component | null> {\n    return this.componentRepository.findOne({\n      where: { code },\n      relations: ['api'],\n    });\n  }\n}\n",
+    "taille": 867
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface DaprConfiguration {\n  plantHierarchyApiAppId: string | undefined;\n}\n\nexport const daprConfiguration = (): DaprConfiguration => ({\n  plantHierarchyApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n});\n",
+    "taille": 210
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigService } from './dapr-config.service';\n\n@Module({\n  exports: [DaprConfigService],\n  imports: [ConfigModule],\n  providers: [DaprConfigService],\n})\nexport class DaprConfigModule {}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class DaprConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get plantHierarchyApiAppId(): string {\n    return (\n      this.configService.get<string>('plantHierarchyApiAppId') ?? 'plt-hry-api'\n    );\n  }\n}\n",
+    "taille": 367
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/database/mssql/abstract.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export default abstract class MssqlConfigurationService {\n  abstract get type(): string;\n\n  abstract get host(): string;\n\n  abstract get port(): number;\n\n  abstract get username(): string;\n\n  abstract get password(): string;\n\n  abstract get database(): string;\n\n  abstract get synchronize(): boolean;\n\n  abstract get useManagedIdentity(): boolean;\n\n  abstract get managedIdentityClientId(): string;\n\n  abstract get encrypt(): boolean;\n\n  abstract get entities(): Array<string>;\n\n  abstract get migrations(): Array<string>;\n\n  abstract get migrationsTableName(): string;\n\n  abstract get migrationsWaitDelayMilliseconds(): number;\n\n  abstract get migrationsWaitRetryLimit(): number;\n}\n",
+    "taille": 683
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/database/mssql/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export default () => ({\n  mssql: {\n    type: 'mssql',\n    host: process.env.DB_HOST,\n    port: Number(process.env.DB_PORT),\n    username: process.env.DB_USERNAME,\n    password: process.env.DB_PASSWORD,\n    database: process.env.DB_NAME,\n    synchronize: process.env.DB_SYNC === 'true', // Whether to automatically synchronize database schema\n    managedIdentityClientId: process.env.DB_MANAGED_ID_CLIENT_ID,\n    entities: ['dist/**/*.entity{.ts,.js}'], // Entity files path\n    migrations: ['dist/**/migration/*{.ts,.js}'], // Migrations files path\n    migrationsTableName: 'migrations_TypeORM', // Name of the migrations table\n    migrationsWaitDelayMilliseconds: Number(\n      process.env.DB_MIGRATION_WAIT_DELAY_MILLISECONDS,\n    ),\n    migrationsWaitRetryLimit: Number(process.env.DB_MIGRATION_WAIT_RETRY_LIMIT),\n    encrypt: process.env.DB_ENCRYPT_CONNECTION === 'true',\n  },\n});\n",
+    "taille": 885
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/database/mssql/default.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import MssqlConfigurationService from '@/config/database/mssql/abstract.mssql.config.service';\n\ninterface MssqlConfigurationObject {\n  type: string;\n  host: string | undefined;\n  port: number;\n  username: string | undefined;\n  password: string | undefined;\n  database: string | undefined;\n  synchronize: boolean;\n  managedIdentityClientId: string | undefined;\n  entities: Array<string>;\n  migrations: Array<string>;\n  migrationsTableName: string;\n  encrypt: boolean;\n  migrationsWaitDelayMilliseconds: number;\n  migrationsWaitRetryLimit: number;\n}\n\nexport default class DefaultMssqlConfigurationService extends MssqlConfigurationService {\n  constructor(private readonly mssqlConfig: MssqlConfigurationObject) {\n    super();\n  }\n\n  get type(): string {\n    return this.mssqlConfig.type ?? '';\n  }\n\n  get host(): string {\n    return this.mssqlConfig.host ?? '';\n  }\n\n  get port(): number {\n    return this.mssqlConfig.port ?? 1433;\n  }\n\n  get username(): string {\n    return this.mssqlConfig.username ?? '';\n  }\n\n  get password(): string {\n    return this.mssqlConfig.password ?? '';\n  }\n\n  get database(): string {\n    return this.mssqlConfig.database ?? '';\n  }\n\n  get synchronize(): boolean {\n    return this.mssqlConfig.synchronize ?? false;\n  }\n\n  get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  get managedIdentityClientId(): string {\n    return this.mssqlConfig.managedIdentityClientId ?? '';\n  }\n\n  get encrypt(): boolean {\n    return this.mssqlConfig.encrypt ?? false;\n  }\n\n  get entities(): Array<string> {\n    return this.mssqlConfig.entities ?? [];\n  }\n\n  get migrations(): Array<string> {\n    return this.mssqlConfig.migrations ?? [];\n  }\n\n  get migrationsTableName(): string {\n    return this.mssqlConfig.migrationsTableName ?? 'migrations_TypeORM';\n  }\n\n  get migrationsWaitDelayMilliseconds(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitDelayMilliseconds)\n      ? 3000\n      : this.mssqlConfig.migrationsWaitDelayMilliseconds;\n  }\n\n  get migrationsWaitRetryLimit(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitRetryLimit)\n      ? 50\n      : this.mssqlConfig.migrationsWaitRetryLimit;\n  }\n}\n",
+    "taille": 2200
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/database/mssql/mssql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport MssqlConfigurationService from '@/config/database/mssql/abstract.mssql.config.service';\nimport NestMssqlConfigurationService from '@/config/database/mssql/nest.mssql.config.service';\n\n@Module({\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true, // Make sure to make the config module global\n    }),\n  ],\n  providers: [\n    {\n      provide: MssqlConfigurationService,\n      useClass: NestMssqlConfigurationService,\n    },\n  ],\n  exports: [MssqlConfigurationService],\n})\nexport default class MssqlModule {}\n",
+    "taille": 611
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/database/mssql/nest.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport MssqlConfigurationService from '@/config/database/mssql/abstract.mssql.config.service';\n\n@Injectable()\nexport default class NestMssqlConfigurationService extends MssqlConfigurationService {\n  constructor(private readonly configService: ConfigService) {\n    super();\n  }\n\n  get type(): string {\n    return this.configService.get<string>('mssql.type') ?? '';\n  }\n\n  get host(): string {\n    return this.configService.get<string>('mssql.host') ?? '';\n  }\n\n  get port(): number {\n    return this.configService.get<number>('mssql.port') ?? 1433;\n  }\n\n  get username(): string {\n    return this.configService.get<string>('mssql.username') ?? '';\n  }\n\n  get password(): string {\n    return this.configService.get<string>('mssql.password') ?? '';\n  }\n\n  get database(): string {\n    return this.configService.get<string>('mssql.database') ?? '';\n  }\n\n  get synchronize(): boolean {\n    return this.configService.get<boolean>('mssql.synchronize') ?? false;\n  }\n\n  get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  get managedIdentityClientId(): string {\n    return (\n      this.configService.get<string>('mssql.managedIdentityClientId') ?? ''\n    );\n  }\n\n  get encrypt(): boolean {\n    return this.configService.get<boolean>('mssql.encrypt') ?? false;\n  }\n\n  get entities(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.entities') ?? [];\n  }\n\n  get migrations(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.migrations') ?? [];\n  }\n\n  get migrationsTableName(): string {\n    return (\n      this.configService.get<string>('mssql.migrationsTableName') ??\n      'migrations_TypeORM'\n    );\n  }\n\n  get migrationsWaitDelayMilliseconds(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitDelayMilliseconds',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 3000 : value;\n  }\n\n  get migrationsWaitRetryLimit(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitRetryLimit',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 50 : value;\n  }\n}\n",
+    "taille": 2235
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export default () => ({\n  urlApi: process.env.URL_UME_API,\n});\n",
+    "taille": 63
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport UrlApiConfigService from '@/config/url-api/url-api.service';\n\n@Module({\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n  exports: [UrlApiConfigService],\n})\nexport default class UrlApiConfigModule {}\n",
+    "taille": 310
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport default class UrlApiConfigService {\n  constructor(private readonly configService: ConfigService) {}\n\n  get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/ume-api/'\n    );\n  }\n}\n",
+    "taille": 360
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/create-user-preference.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString, IsNotEmpty } from 'class-validator';\nimport User from './user.dto';\n\nexport default class CreateUserPreferenceDto {\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  public plant: number;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  public action: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  public appName: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  public addData: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  public object: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  public user: User;\n}\n",
+    "taille": 604
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/create-user.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport {\n  IsNotEmpty,\n  IsString,\n  MaxLength,\n  IsDate,\n  IsEmail,\n} from 'class-validator';\n\nexport default class CreateUserDto {\n  @IsNotEmpty()\n  @IsString()\n  @MaxLength(50)\n  @ApiProperty()\n  firstName: string;\n\n  @IsNotEmpty()\n  @IsString()\n  @MaxLength(50)\n  @ApiProperty()\n  lastName: string;\n\n  @IsNotEmpty()\n  @IsDate()\n  @ApiProperty()\n  lastLogin: Date;\n\n  @IsNotEmpty()\n  @IsEmail()\n  @ApiProperty()\n  email: string;\n}\n",
+    "taille": 481
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/get-user-attribute.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class GetUserAttributeDto {\n  public userAttributeId: number;\n\n  public userAttributeName: string;\n\n  public value: string;\n}\n",
+    "taille": 133
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/plant-type.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// PlantType.ts\n\nexport interface Plant {\n  plantId: number;\n  plantDesc: string | null;\n  languageCode: string | null;\n  plantLink: string | null;\n  timezone?: string;\n}\n",
+    "taille": 171
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/role-permission-live-status-hry-transco.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface RolePermissionLiveStatusHryTranscoDto {\n  role: string;\n  permissions: Array<string>;\n}\n\n// --- Full role-permission mapping ---\nexport const ROLE_PERMISSIONS_LIVE_STATUS_HRY_TRANSCO: Array<RolePermissionLiveStatusHryTranscoDto> =\n  [\n    {\n      role: 'MII_DASHBOARDING',\n      permissions: ['LIVE-STATUS-SCREEN'],\n    },\n    {\n      role: 'MII_GAP_LEADER',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'MII_LOCAL_ADMINISTRATOR',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'MII_REPORTING',\n      permissions: ['LIVE-STATUS-SCREEN'],\n    },\n    {\n      role: 'MII_UAP_MANAGER',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'MII_GENERAL',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'DL-MES-CC-DEV',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'DL-TN-GHA-GTF-MII',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n    {\n      role: 'DL-TN-GHA-MESX-PRODUCTION',\n      permissions: ['LIVE-STATUS-SCREEN', 'HIERARCHY-TRANSCODIFICATION-SCREEN'],\n    },\n  ];\n\n// --- Static roles array ---\nexport const ROLES: Array<string> = [\n  'MII_DASHBOARDING',\n  'MII_GAP_LEADER',\n  'MII_LOCAL_ADMINISTRATOR',\n  'MII_REPORTING',\n  'MII_UAP_MANAGER',\n  'MII_GENERAL',\n  'DL-MES-CC-DEV',\n  'DL-TN-GHA-GTF-MII',\n  'DL-TN-GHA-MESX-PRODUCTION',\n];\n",
+    "taille": 1591
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/role-permission.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface RolePermissionDto {\n  role: string;\n  permissions: Array<string>;\n}\n\n// --- Full role-permission mapping ---\nexport const ROLE_PERMISSIONS: Array<RolePermissionDto> = [\n  {\n    role: 'MII_DASHBOARDING',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_DELIVERY_SUPERVISOR_CONTROL',\n    permissions: ['PICKING-SCREEN', 'LEVELING-BOARD'],\n  },\n  {\n    role: 'MII_GAP_LEADER',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_INVENTORY_SUPERVISOR',\n    permissions: ['PICKING-SCREEN', 'LEVELING-BOARD'],\n  },\n  {\n    role: 'MII_LOCAL_ADMINISTRATOR',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'CUSTOM-ATTRIBUTE',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_LOGISTIC_OPERATOR',\n    permissions: ['PICKING-SCREEN', 'LEVELING-BOARD'],\n  },\n  {\n    role: 'MII_PICKING_OPERATOR',\n    permissions: ['PICKING-SCREEN', 'LEVELING-BOARD'],\n  },\n  {\n    role: 'MII_PLANNER',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_PRODUCTION_ADMIN',\n    permissions: [\n      'PICKING-SCREEN',\n      'ADMIN-UI',\n      'LEVELING-BOARD',\n      'DOWNTIME-SCREEN',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_PRODUCTION_OPERATOR',\n    permissions: ['DOWNTIME-SCREEN', 'PICKING-SCREEN', 'EDASHBOARD-SCREEN'],\n  },\n  {\n    role: 'MII_QUALITY_ADMIN',\n    permissions: ['DOWNTIME-SCREEN', 'ADMIN-UI'],\n  },\n  { role: 'MII_RECEPTION_OPERATOR', permissions: [] },\n  { role: 'MII_RECEPTION_SUPERVISOR', permissions: [] },\n  {\n    role: 'MII_REPORTING',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'DOWNTIME-SCREEN',\n      'BUFFER-MONITORING',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  { role: 'MII_SHIPMENT_PREPARATOR', permissions: ['PICKING-SCREEN'] },\n  { role: 'MII_SMALL_TRAIN_DRIVER', permissions: ['PICKING-SCREEN'] },\n  {\n    role: 'MII_UAP_MANAGER',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'CUSTOM-ATTRIBUTE',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'MII_GENERAL',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n    ],\n  },\n  {\n    role: 'DL-MES-CC-DEV',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n      'CUSTOM-ATTRIBUTE',\n    ],\n  },\n  {\n    role: 'DL-TN-GHA-GTF-MII',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n      'CUSTOM-ATTRIBUTE',\n    ],\n  },\n  {\n    role: 'DL-TN-GHA-MESX-PRODUCTION',\n    permissions: [\n      'PICKING-SCREEN',\n      'LEVELING-BOARD',\n      'BUFFER-MONITORING',\n      'DOWNTIME-SCREEN',\n      'ADMIN-UI',\n      'EDASHBOARD-SCREEN',\n      'CUSTOM-ATTRIBUTE',\n    ],\n  },\n];\n\n// --- Static roles array ---\nexport const ROLES: Array<string> = [\n  'MII_DASHBOARDING',\n  'MII_DELIVERY_SUPERVISOR_CONTROL',\n  'MII_GAP_LEADER',\n  'MII_INVENTORY_SUPERVISOR',\n  'MII_LOCAL_ADMINISTRATOR',\n  'MII_LOGISTIC_OPERATOR',\n  'MII_PICKING_OPERATOR',\n  'MII_PLANNER',\n  'MII_PRODUCTION_ADMIN',\n  'MII_PRODUCTION_OPERATOR',\n  'MII_QUALITY_ADMIN',\n  'MII_RECEPTION_OPERATOR',\n  'MII_RECEPTION_SUPERVISOR',\n  'MII_REPORTING',\n  'MII_SHIPMENT_PREPARATOR',\n  'MII_SMALL_TRAIN_DRIVER',\n  'MII_UAP_MANAGER',\n  'MII_GENERAL',\n  'DL-MES-CC-DEV',\n  'DL-TN-GHA-GTF-MII',\n  'DL-TN-GHA-MESX-PRODUCTION',\n];\n",
+    "taille": 4004
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-attribute-list.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class UserAttributeListDto {\n  @ApiProperty({ description: 'ID of the user attribute', example: 7 })\n  public userAttributeId: number;\n\n  @ApiProperty({ description: 'Name of the user attribute', example: 'plant' })\n  public userAttributeName: string;\n\n  @ApiProperty({\n    description: 'Ui Type of the user attribute',\n    example: 'uiType',\n  })\n  public uiType: string;\n}\n",
+    "taille": 430
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-attribute-response.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class UserAttributeResponseDto {\n  @ApiProperty({ description: 'Value of the user attribute', example: '1146' })\n  public value: string;\n\n  @ApiProperty({ description: 'Name of the user attribute', example: 'plant' })\n  public userAttributeName: string;\n}\n",
+    "taille": 311
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-attribute-save.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class SaveCustomAttributesResponse {\n  @ApiProperty({\n    description: 'Response message',\n    example: 'Custom attributes saved successfully.',\n  })\n  public message: string;\n}\n",
+    "taille": 233
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-attribute.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class UserAttributeDto {\n  @ApiProperty({ description: 'ID of the user attribute', example: 7 })\n  public userAttributeId: number;\n\n  @ApiProperty({ description: 'Value of the user attribute', example: '1146' })\n  public value: string;\n}\n",
+    "taille": 293
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-attributes-delete.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class DeleteCustomAttributesResponse {\n  @ApiProperty({\n    description: 'Response message',\n    example: 'Custom attributes deleted successfully.',\n  })\n  public message: string;\n}\n",
+    "taille": 237
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-preference-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsNotEmpty, IsString } from 'class-validator';\nimport User from './user.dto';\n\nexport class UserPreferenceResponseDto {\n  @IsNotEmpty()\n  @IsString()\n  public plant: number;\n\n  @IsNotEmpty()\n  @IsString()\n  public action: string;\n\n  @IsNotEmpty()\n  @IsString()\n  public appName: string;\n\n  @IsNotEmpty()\n  @IsString()\n  public userCriteria: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  public user: User;\n\n  @ApiProperty()\n  public addData?: string;\n\n  @ApiProperty()\n  public object?: string;\n}\n",
+    "taille": 551
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user-settings.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString, IsNotEmpty } from 'class-validator';\n\nexport default class UserPreferenceDto {\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  action: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  object: string;\n\n  @ApiProperty()\n  @IsNotEmpty()\n  @IsString()\n  addData: string;\n}\n",
+    "taille": 345
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/dto/user.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsNotEmpty, IsNumber } from 'class-validator';\n\nexport default class User {\n  @IsNotEmpty()\n  @IsNumber()\n  @ApiProperty()\n  userId: number;\n}\n",
+    "taille": 199
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/examples/seeding/permissions.seeder.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import * as fs from 'node:fs';\nimport path from 'node:path';\nimport { Injectable } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\nimport { Permission } from '@/permission/permission.entity';\nimport { Role } from '@/role/role.entity';\n\ninterface ScreenRole {\n  appName: string;\n  roles: Array<string>;\n}\n\n@Injectable()\nexport class PermissionSeeder {\n  private readonly screenRolesPath: string;\n\n  public constructor(\n    @InjectRepository(Role)\n    private readonly roleRepository: Repository<Role>,\n    @InjectRepository(Permission)\n    private readonly permissionRepository: Repository<Permission>,\n  ) {\n    this.screenRolesPath = path.join(process.cwd(), 'data/screen-roles.json');\n    fs.watchFile(this.screenRolesPath, async () => {\n      await this.seed();\n    });\n  }\n\n  public async seed(): Promise<void> {\n    const screenRolesPath = path.join(process.cwd(), 'data/screen-roles.json');\n    const screenRoles: Array<ScreenRole> = JSON.parse(\n      fs.readFileSync(screenRolesPath, 'utf8'),\n    );\n\n    const existingPermissions = await this.permissionRepository.find({\n      relations: ['role'],\n    });\n\n    const currentPermissionsSet = new Set<string>();\n\n    for (const screen of screenRoles) {\n      for (const roleName of screen.roles) {\n        currentPermissionsSet.add(`${screen.appName}:${roleName}`);\n      }\n    }\n\n    await Promise.all(\n      existingPermissions.map(async (existingPermission) => {\n        const permissionKey = `${existingPermission.appName}:${existingPermission.role.roleName}`;\n        if (!currentPermissionsSet.has(permissionKey)) {\n          await this.permissionRepository.remove(existingPermission);\n        }\n      }),\n    );\n\n    await Promise.all(\n      screenRoles.map(async (screen) => {\n        await Promise.all(\n          screen.roles.map(async (roleName) => {\n            const existingRole = await this.roleRepository.findOneBy({\n              roleName,\n            });\n            if (existingRole) {\n              const exists = await this.permissionExists(\n                screen.appName,\n                existingRole,\n              );\n              if (!exists) {\n                const newPermission = new Permission();\n                newPermission.appName = screen.appName;\n                newPermission.role = existingRole;\n                await this.permissionRepository.save(newPermission);\n              }\n            }\n          }),\n        );\n      }),\n    );\n  }\n\n  public async permissionExists(appName: string, role: Role): Promise<boolean> {\n    const count = await this.permissionRepository.count({\n      where: {\n        appName,\n        role,\n      },\n    });\n    return count > 0;\n  }\n}\n",
+    "taille": 2730
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/examples/seeding/seeding.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { PermissionSeeder } from './permissions.seeder';\nimport { Permission } from '@/permission/permission.entity';\nimport { Role } from '@/role/role.entity';\n\n@Module({\n  exports: [PermissionSeeder],\n  imports: [TypeOrmModule.forFeature([Role, Permission])],\n  providers: [PermissionSeeder],\n})\nexport class SeedingModule {}\n",
+    "taille": 418
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/filter-config/dtos/get-by-plant.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class GetByPlantDto {\n  @ApiProperty()\n  public plant: string;\n\n  @ApiProperty()\n  public appName: string;\n}\n",
+    "taille": 164
+  },
+  {
+    "microservice": "mesx-ume-api",
+    "chemin": "/src/filter-config/dtos/get-by-user-group.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class GetByUserGroupDto {\n  @ApiProperty()\n  public plant: string;\n\n  @ApiProperty()\n  public groupName: string;\n\n  @ApiProperty()\n  public appName: string;\n}\n",
+    "taille": 214
+  }
+]

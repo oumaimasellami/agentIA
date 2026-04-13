@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Graph Visualization - FORVIA NRT Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --forvia-blue: #0033CC;
+            --forvia-dark: #001a99;
+            --forvia-light: #e6f0ff;
+            --gray-dark: #1a1a1a;
+            --gray-light: #f8f9fa;
+            --accent: #FF6B35;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--gray-dark);
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 20px rgba(0, 51, 204, 0.25);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .navbar-brand-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .navbar-brand-text .primary {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .navbar-brand-text .secondary {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            opacity: 0.95;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after { width: 100%; }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            color: var(--forvia-dark);
+            margin-bottom: 40px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .viz-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        #network {
+            width: 100%;
+            height: 600px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--forvia-light) 100%);
+            border-radius: 12px;
+        }
+
+        .controls {
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 51, 204, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--forvia-blue);
+            border: 2px solid var(--forvia-blue);
+        }
+
+        .btn-secondary:hover {
+            background: var(--forvia-light);
+        }
+
+        .legend {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+        }
+
+        .legend-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--forvia-dark);
+            margin-bottom: 15px;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+        }
+
+        .info-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--forvia-dark);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-content {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        footer {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            #network { height: 400px; }
+            .page-title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <img src="/static/forvia_logo.png" alt="FORVIA Logo" style="height: 70px;">
+                <div class="navbar-brand-text">
+                    <div class="primary">MESX 0</div>
+                    <div class="secondary">NRT</div>
+                </div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
+                <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
+                <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Graph</a></li>
+                <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-title">
+            <i class="fas fa-project-diagram"></i> Dependency Graph Visualization
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <button class="btn" onclick="zoomIn()"><i class="fas fa-search-plus"></i> Zoom In</button>
+                <button class="btn" onclick="zoomOut()"><i class="fas fa-search-minus"></i> Zoom Out</button>
+                <button class="btn btn-secondary" onclick="resetView()"><i class="fas fa-home"></i> Reset View</button>
+                <button class="btn btn-secondary" onclick="togglePhysics()"><i class="fas fa-play"></i> Animate</button>
+            </div>
+        </div>
+
+        <div class="viz-container">
+            <div id="network"></div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-title"><i class="fas fa-key"></i> Legend</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--forvia-blue);"></div>
+                    <span>Commits</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #27AE60;"></div>
+                    <span>Microservices</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--accent);"></div>
+                    <span>Functions</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9B59B6;"></div>
+                    <span>WorkItems</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-panel" style="margin-top: 30px;">
+            <div class="info-title"><i class="fas fa-info-circle"></i> Graph Information</div>
+            <div class="info-content">
+                <p>This graph visualizes the dependency relationships in the NRT system. Click on nodes to highlight their connections, drag to reposition, and use the controls to navigate.</p>
+                <p style="margin-top: 10px;"><strong>Node Types:</strong> Commits represent code changes, Microservices are system modules, Functions are implementations, and WorkItems are user requirements.</p>
+                <p style="margin-top: 10px;"><strong>Edges:</strong> Lines represent relationships: MODIFIES (commits → microservices), IMPLEMENTS (microservices → functions), and COVERS (functions → workitems).</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 FORVIA NRT Scope System | <strong>Automated Non-Regression Test Orchestration</strong></p>
+    </footer>
+
+    <script>
+        let network = null;
+        let nodes = new vis.DataSet();
+        let edges = new vis.DataSet();
+
+        function initializeGraph() {
+            const container = document.getElementById('network');
+            const data = { nodes: nodes, edges: edges };
+            const options = {
+                physics: {
+                    enabled: true,
+                    barnesHut: {
+                        gravitationalConstant: -26000,
+                        centralGravity: 0.3,
+                        springLength: 200
+                    }
+                },
+                nodes: {
+                    shape: 'dot',
+                    scaling: {
+                        label: { enabled: true }
+                    },
+                    font: { size: 12, face: 'Arial' }
+                },
+                edges: {
+                    smooth: { type: 'continuous' },
+                    arrows: 'to',
+                    color: { inherit: 'from' },
+                    width: 2
+                },
+                interaction: {
+                    hover: true,
+                    navigationButtons: true,
+                    keyboard: true
+                }
+            };
+
+            network = new vis.Network(container, data, options);
+
+            // Add sample nodes for demonstration
+            addSampleGraph();
+        }
+
+        function addSampleGraph() {
+            // Sample nodes
+            nodes.add([
+                { id: 1, label: 'Commit ABC123', color: { background: '#0033CC' }, shape: 'box' },
+                { id: 2, label: 'mesx-ume-backend', color: { background: '#27AE60' }, shape: 'dot' },
+                { id: 3, label: 'Function 1', color: { background: '#FF6B35' }, shape: 'dot' },
+                { id: 4, label: 'Function 2', color: { background: '#FF6B35' }, shape: 'dot' },
+                { id: 5, label: 'WorkItem 127835', color: { background: '#9B59B6' }, shape: 'diamond' }
+            ]);
+
+            // Sample edges
+            edges.add([
+                { from: 1, to: 2, label: 'MODIFIES', color: '#0033CC' },
+                { from: 2, to: 3, label: 'IMPLEMENTS', color: '#27AE60' },
+                { from: 2, to: 4, label: 'IMPLEMENTS', color: '#27AE60' },
+                { from: 3, to: 5, label: 'COVERS', color: '#FF6B35' },
+                { from: 4, to: 5, label: 'COVERS', color: '#FF6B35' }
+            ]);
+        }
+
+        function zoomIn() { network && network.focus(1, { scale: 1.5, animation: true }); }
+        function zoomOut() { network && network.focus(1, { scale: 0.5, animation: true }); }
+        function resetView() { network && network.fit({ animation: true }); }
+        function togglePhysics() { network && (network.physics.enabled = !network.physics.enabled); }
+
+        // Initialize on load
+        window.addEventListener('load', initializeGraph);
+    </script>
+</body>
+</html>

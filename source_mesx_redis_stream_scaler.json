@@ -1,0 +1,274 @@
+[
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1736
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: redis-sclr\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/redis-stream-scaler\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1240
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"",
+    "taille": 259
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { StreamMonitorService } from '@/services/stream-monitor.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  const mockStreamMonitorService = {\n    collectMetrics: jest.fn(),\n    getHealthStatus: jest.fn(),\n  };\n\n  const mockAppService = {\n    checkHealth: jest.fn(),\n  };\n\n  const mockAppLogger = {\n    debug: jest.fn(),\n    error: jest.fn(),\n    log: jest.fn(),\n    warn: jest.fn(),\n  };\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [\n        { provide: AppService, useValue: mockAppService },\n        { provide: StreamMonitorService, useValue: mockStreamMonitorService },\n        { provide: AppLogger, useValue: mockAppLogger },\n      ],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n\n  describe('getInfo', () => {\n    it('should return service info', () => {\n      const result = appController.getInfo();\n      expect(result).toEqual({\n        message: 'KEDA External Scaler for Redis Streams - Order Domain',\n        service: 'mesx-redis-stream-scaler',\n      });\n    });\n  });\n\n  describe('getHealth', () => {\n    it('should return health status when redis is healthy', async () => {\n      mockAppService.checkHealth.mockResolvedValue({\n        connected: true,\n        latencyMs: 5,\n      });\n\n      const result = await appController.getHealth();\n\n      expect(result).toHaveProperty('status', 'healthy');\n      expect(result).toHaveProperty('redis');\n      expect((result as Record<string, unknown>).redis).toEqual({\n        connected: true,\n        latencyMs: 5,\n      });\n      expect(result).toHaveProperty('timestamp');\n    });\n\n    it('should return unhealthy status when redis is not connected', async () => {\n      mockAppService.checkHealth.mockResolvedValue({\n        connected: false,\n      });\n\n      const result = await appController.getHealth();\n\n      expect(result).toHaveProperty('status', 'unhealthy');\n      expect((result as Record<string, unknown>).redis).toEqual({\n        connected: false,\n      });\n    });\n  });\n});\n",
+    "taille": 2332
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { StreamMonitorService } from '@/services/stream-monitor.service';\nimport { StreamDetail } from '@/types/scaler.types';\n\n@Controller()\nexport class AppController {\n  private readonly context: JobsLogContext = {\n    method: '',\n    service: AppController.name,\n  };\n\n  public constructor(\n    private readonly appService: AppService,\n    private readonly streamMonitor: StreamMonitorService,\n    private readonly logger: AppLogger,\n  ) {}\n\n  @Get('/')\n  public getInfo(): { message: string; service: string } {\n    this.context.method = 'getInfo';\n    this.logger.debug('Getting service info', this.context);\n    return AppService.getServiceInfo();\n  }\n\n  @Get('/probes/health')\n  public async getHealth(): Promise<object> {\n    const redisHealth = await this.appService.checkHealth();\n\n    return {\n      redis: {\n        connected: redisHealth.connected,\n        latencyMs: redisHealth.latencyMs,\n      },\n      status: redisHealth.connected ? 'healthy' : 'unhealthy',\n      timestamp: new Date().toISOString(),\n    };\n  }\n\n  @Get('/metrics')\n  public async getMetrics(): Promise<object> {\n    const metrics = await this.streamMonitor.collectMetrics();\n\n    return {\n      activeStreamCount: metrics.activeStreamCount,\n      averageMessagesPerStream:\n        Math.round(metrics.averageMessagesPerStream * 100) / 100,\n      domain: 'order',\n      estimatedReplicasNeeded: metrics.estimatedReplicasNeeded,\n      heavyStreamCount: metrics.heavyStreamCount,\n      maxMessagesInStream: metrics.maxMessagesInStream,\n      timestamp: metrics.timestamp.toISOString(),\n      totalPendingMessages: metrics.totalPendingMessages,\n    };\n  }\n\n  @Get('/streams')\n  public async getStreams(): Promise<object> {\n    const metrics = await this.streamMonitor.collectMetrics();\n\n    const streamList = [...metrics.streamDetails.values()]\n      .sort(\n        (a: StreamDetail, b: StreamDetail) => b.messageCount - a.messageCount,\n      )\n      .map((stream: StreamDetail) => ({\n        isHeavy: stream.isHeavy,\n        messageCount: stream.messageCount,\n        streamKey: stream.streamKey,\n      }));\n\n    return {\n      domain: 'order',\n      streams: streamList,\n      timestamp: metrics.timestamp.toISOString(),\n      totalStreams: streamList.length,\n    };\n  }\n}\n",
+    "taille": 2458
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppLoggerModule } from './common/logger/app-logger.module';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { loggerConfig } from './config/logger/configuration';\nimport { LoggerConfigModule } from './config/logger/logger-config.module';\nimport { redisSdkConfiguration } from './config/redis/redis-sdk/configuration';\nimport { RedisProviderModule } from './redis/redis.module';\nimport { StreamMonitorService } from './services/stream-monitor.service';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\nimport { MetricsModule } from '@/metrics/metrics.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    UrlApiConfigModule,\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        urlApiConfiguration,\n        redisSdkConfiguration,\n        loggerConfig,\n      ],\n    }),\n    AppLoggerModule,\n    LoggerConfigModule,\n    AppConfigModule,\n    RedisProviderModule,\n    MetricsModule,\n  ],\n  providers: [AppService, StreamMonitorService],\n})\nexport class AppModule {}\n",
+    "taille": 1368
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { StreamMonitorService } from './services/stream-monitor.service';\n\n@Injectable()\nexport class AppService {\n  public static getServiceInfo(): { message: string; service: string } {\n    return {\n      message: 'KEDA External Scaler for Redis Streams - Order Domain',\n      service: 'mesx-redis-stream-scaler',\n    };\n  }\n\n  public constructor(\n    private readonly streamMonitorService: StreamMonitorService,\n  ) {}\n\n  public async checkHealth(): Promise<{\n    connected: boolean;\n    latencyMs?: number;\n  }> {\n    const health = await this.streamMonitorService.getHealthStatus();\n    return health;\n  }\n}\n",
+    "taille": 658
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/logger/app-logger.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Global, Module } from '@nestjs/common';\nimport { AppLogger } from './app-logger';\nimport { LoggerConfigModule } from '@/config/logger/logger-config.module';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Global()\n@Module({\n  exports: [AppLogger],\n  imports: [LoggerConfigModule],\n  providers: [\n    {\n      inject: [LoggerConfigService],\n      provide: AppLogger,\n      useFactory: async (\n        loggerConfigService: LoggerConfigService,\n      ): Promise<AppLogger> => {\n        const appLogger = new AppLogger(loggerConfigService);\n        await appLogger.init(); // Ensure async initialization is handled before returning\n        return appLogger;\n      },\n    },\n  ],\n})\nexport class AppLoggerModule {}\n",
+    "taille": 749
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLoggerService } from '@mesx/common-lib';\nimport { Injectable, LogLevel } from '@nestjs/common';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Injectable()\nexport class AppLogger extends JobsLoggerService {\n  public constructor(\n    private readonly loggerConfigService: LoggerConfigService,\n  ) {\n    // Retrieve log level from environment\n    super('log');\n  }\n\n  public async init(minLogLevel?: LogLevel): Promise<void> {\n    const logLevel =\n      minLogLevel ??\n      (await this.loggerConfigService.redisStreamScalerLogLevel());\n    super.updateMinLogLevel(logLevel);\n  }\n}\n",
+    "taille": 625
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/logger/utils/log-context.util.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\n\n/**\n * Creates a log context object for job logging.\n * @param serviceName The name of the service generating the log.\n * @param method The method or operation being logged.\n * @param plant (Optional) The plant identifier.\n * @param object (Optional) The object related to the log entry.\n * @param userId (Optional) The user ID associated with the log entry.\n * @returns A JobsLogContext object containing the provided context information.\n */\nexport function createLogContext(\n  serviceName: string,\n  method: string,\n  plant?: number,\n  object?: string,\n  userId?: string,\n): JobsLogContext {\n  return {\n    method,\n    object,\n    plant,\n    service: serviceName,\n    userId,\n  };\n}\n",
+    "taille": 738
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/common/sleep/sleep.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Async sleep\n * @param timeout in ms\n */\nexport async function asyncSleep(timeout: number): Promise<void> {\n  await new Promise((resolve) => {\n    setTimeout(resolve, timeout);\n  });\n}\n",
+    "taille": 191
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (!config.value) {\n        Logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1008
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable, Logger } from '@nestjs/common';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      Logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2654
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/logger/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface LoggerEnvironmentConfig {\n  redisStreamScalerLogLevel: string | undefined;\n}\n\nexport const loggerConfig = (): LoggerEnvironmentConfig => ({\n  redisStreamScalerLogLevel: process.env.REDIS_SCLR_LOG_LEVEL,\n});\n",
+    "taille": 217
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/logger/logger-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { LoggerConfigService } from './logger-config.service';\n\n@Module({\n  exports: [LoggerConfigService],\n  imports: [AppConfigModule],\n\n  providers: [LoggerConfigService],\n})\nexport class LoggerConfigModule {}\n",
+    "taille": 321
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/logger/logger-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, Logger, LogLevel, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigService } from '../app-config/app-config.service';\n\n@Injectable()\nexport class LoggerConfigService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public async redisStreamScalerLogLevel(): Promise<LogLevel> {\n    let value = this.configService.get<string>(\n      'redisStreamScalerLogLevel',\n    ) as LogLevel;\n\n    if (value) {\n      Logger.warn(`'logLevel' was read from environment variable`);\n    } else {\n      value = (await this.appConfigService.getConfigurationValue(\n        'REDIS_SCLR_LOG_LEVEL',\n      )) as LogLevel;\n    }\n\n    return value ?? '';\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      Logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'logLevel', value: await this.redisStreamScalerLogLevel() }];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        Logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    Logger.log('All required logger configurations are properly set');\n  }\n}\n",
+    "taille": 1790
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/redis/redis-sdk/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface MssqlEnvironmentVariableConfig {\n  redisHost: string | undefined;\n  redisHostManagedRedis: string | undefined;\n  redisPort: number | undefined;\n  redisPortManagedRedis: number | undefined;\n  localRedisPassword: string | undefined;\n  useAzureManagedRedis: string | undefined;\n  useRedisLocal: boolean | undefined;\n  useTls: boolean | undefined;\n  username: string | undefined;\n}\nexport const redisSdkConfiguration = (): MssqlEnvironmentVariableConfig => ({\n  localRedisPassword: process.env.LOCAL_REDIS_PASSWORD,\n  redisHost: process.env.STATE_STORE_HOST,\n  redisHostManagedRedis: process.env.STATE_STORE_HOST_MANAGED_REDIS,\n  redisPort: Number(process.env.STATE_STORE_PORT),\n  redisPortManagedRedis: Number(process.env.STATE_STORE_PORT_MANAGED_REDIS),\n  useAzureManagedRedis: process.env.USE_AZURE_MANAGED_REDIS,\n  useRedisLocal: process.env.USE_REDIS_LOCAL === 'true',\n  useTls: process.env.STATE_STORE_USE_TLS === 'true',\n  username: process.env.STATE_STORE_USERNAME,\n});\n",
+    "taille": 984
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/redis/redis-sdk/redis-sdk.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\nimport { RedisConfigService } from '@/config/redis/redis-sdk/redis-sdk.service';\n\n@Module({\n  exports: [RedisConfigService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [RedisConfigService],\n})\nexport class RedisSdkCofigModule {}\n",
+    "taille": 404
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/redis/redis-sdk/redis-sdk.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext, FullRedisConfig } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class RedisConfigService implements OnModuleInit, FullRedisConfig {\n  private readonly context: JobsLogContext = {\n    method: '',\n    service: RedisConfigService.name,\n  };\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public get redisHost(): string {\n    return this.configService.get<string>('redisHost') ?? 'localhost';\n  }\n\n  public get redisPort(): number {\n    return this.configService.get<number>('redisPort') ?? 6379;\n  }\n\n  public get redisHostManagedRedis(): string {\n    return (\n      this.configService.get<string>('redisHostManagedRedis') ?? 'localhost'\n    );\n  }\n\n  public get redisPortManagedRedis(): number {\n    return this.configService.get<number>('redisPortManagedRedis') ?? 10_000;\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('username') ?? '';\n  }\n\n  public get localRedisPassword(): string {\n    return this.configService.get<string>('localRedisPassword') ?? '';\n  }\n\n  public get useTls(): boolean {\n    return this.configService.get<boolean>('useTls') ?? false;\n  }\n\n  public get useRedisLocal(): boolean {\n    return this.configService.get<boolean>('useRedisLocal') ?? false;\n  }\n\n  public get mainAccessKeySecretName(): string {\n    return this.configService.get<string>('mainAccessKeySecretName') ?? '';\n  }\n\n  public extractUsernameFromToken(token: string): string {\n    this.context.method = 'extractUsernameFromToken';\n    const base64Metadata = token.split('.')[1];\n    const { oid } = JSON.parse(\n      Buffer.from(base64Metadata, 'base64').toString('utf8'),\n    );\n    return oid;\n  }\n\n  public async useAzureManagedRedis(): Promise<boolean> {\n    this.context.method = 'useAzureManagedRedis';\n    const value = this.configService.get<string>('useAzureManagedRedis');\n    if (value === undefined) {\n      const useAzureManagedRedis =\n        await this.appConfigService.getConfigurationValue(\n          'USE_AZURE_MANAGED_REDIS',\n        );\n      return useAzureManagedRedis?.toLowerCase() === 'true';\n    }\n    this.customLogger.warn(\n      `'useAzureManagedRedis' was read from environment variable`,\n      this.context,\n    );\n    return value?.toLowerCase() === 'true';\n  }\n\n  public async getMainAccessKeySecretValue(): Promise<string> {\n    return this.configService.get<string>('REDIS_ACCESS_KEY_SECRET_NAME') ?? '';\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    this.context.method = 'checkConfiguration';\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      this.customLogger.error(storeNotReachableMessage, this.context);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      {\n        key: 'redisHost',\n        value: this.redisHost,\n      },\n      {\n        key: 'redisPort',\n        value: this.redisPort,\n      },\n      {\n        key: 'mainAccessKeySecretName',\n        value: this.mainAccessKeySecretName,\n      },\n      {\n        key: 'useAzureManagedRedis',\n        value: await this.useAzureManagedRedis(),\n      },\n      {\n        key: 'redisHostManagedRedis',\n        value: this.redisHostManagedRedis,\n      },\n      {\n        key: 'redisPortManagedRedis',\n        value: this.redisPortManagedRedis,\n      },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          this.context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 4282
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined;\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  urlApi: process.env.URL_JOB_SERVICE,\n});\n",
+    "taille": 166
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/job-be/'\n    );\n  }\n}\n",
+    "taille": 365
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "#!/usr/bin/env node\nimport { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport type { NestExpressApplication } from '@nestjs/platform-express';\nimport * as express from 'express';\nimport { AppLogger } from './common/logger/app-logger';\nimport { AppModule } from '@/app.module';\n\n/**\n * Bootstrap function to initialize the application\n */\nasync function bootstrap(): Promise<void> {\n  // Create the HTTP application\n  const app = await NestFactory.create<NestExpressApplication>(AppModule, {\n    rawBody: true,\n  });\n\n  // Initialize logger\n  const logger = app.get(AppLogger);\n  await logger.init();\n\n  app.use(express.json({ type: 'application/cloudevents+json' }));\n\n  // Global validation pipe\n  app.useGlobalPipes(\n    new ValidationPipe({\n      forbidNonWhitelisted: true,\n      transform: true,\n      whitelist: true,\n    }),\n  );\n\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n\n  // Start HTTP server\n  const httpPort = Number(process.env.HTTP_PORT || 3000);\n  await app.listen(httpPort);\n  logger.log(`HTTP server started on port ${httpPort}`, {\n    method: 'bootstrap',\n    service: 'main',\n  });\n\n  // Handle graceful shutdown\n  process.on('SIGINT', async () => {\n    logger.log('Received SIGINT, shutting down gracefully...', {\n      method: 'shutdown',\n      service: 'main',\n    });\n    await app.close();\n    process.exit(0);\n  });\n\n  process.on('SIGTERM', async () => {\n    logger.log('Received SIGTERM, shutting down gracefully...', {\n      method: 'shutdown',\n      service: 'main',\n    });\n    await app.close();\n    process.exit(0);\n  });\n}\n\nbootstrap().catch((error) => {\n  console.error('Failed to start application:', error);\n  process.exit(1);\n});\n",
+    "taille": 1759
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/metrics/metrics.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Header, Req } from '@nestjs/common';\nimport { Request } from 'express';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { StreamMonitorService } from '@/services/stream-monitor.service';\n\n@Controller('')\nexport class MetricsController {\n  public constructor(\n    private readonly streamMonitor: StreamMonitorService,\n    private readonly logger: AppLogger,\n  ) {}\n\n  // Metrics API endpoint for KEDA\n  @Get('metrics/pending-messages')\n  @Header('Content-Type', 'application/json')\n  public async getPendingMessagesMetric(): Promise<{ metricValue: number }> {\n    try {\n      // Collect current metrics from Redis\n      const metrics = await this.streamMonitor.collectMetrics();\n\n      this.logger.debug('Metrics API called', {\n        method: 'getPendingMessagesMetric',\n        service: MetricsController.name,\n      });\n\n      // Return simple JSON for KEDA metrics-api scaler\n      return {\n        metricValue: metrics.totalPendingMessages,\n      };\n    } catch (error) {\n      this.logger.error(\n        'Failed to get pending messages metric',\n        {\n          method: 'getPendingMessagesMetric',\n          service: MetricsController.name,\n        },\n        error,\n      );\n\n      // Return 0 on error to prevent scaling issues\n      return {\n        metricValue: 0,\n      };\n    }\n  }\n\n  // Active streams count endpoint (optimized)\n  @Get('metrics/active-streams')\n  @Header('Content-Type', 'application/json')\n  public async getActiveStreamsMetric(\n    @Req() request: Request,\n  ): Promise<{ activeStreamsCount: number }> {\n    try {\n      const activeStreamsCount =\n        await this.streamMonitor.getActiveStreamCount();\n\n      const userAgent = request.headers['user-agent'] || 'unknown';\n      const forwarded = request.headers['x-forwarded-for'] || request.ip;\n      // Log request details to identify caller\n      this.logger.debug(\n        `ð Active streams metric: ${activeStreamsCount} | ` +\n          `UA: ${userAgent} | ` +\n          `IP: ${forwarded} | ` +\n          `Host: ${request.headers.host} | ` +\n          `Origin: ${request.headers.origin || 'none'}`,\n        {\n          method: 'getActiveStreamsMetric',\n          service: MetricsController.name,\n        },\n      );\n\n      return { activeStreamsCount };\n    } catch (error) {\n      this.logger.error(\n        'Failed to get active streams metric',\n        { method: 'getActiveStreamsMetric', service: MetricsController.name },\n        error,\n      );\n      return { activeStreamsCount: 0 };\n    }\n  }\n}\n",
+    "taille": 2536
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/metrics/metrics.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { MetricsController } from './metrics.controller';\nimport { AppLoggerModule } from '@/common/logger/app-logger.module';\nimport { RedisProviderModule } from '@/redis/redis.module';\nimport { StreamMonitorService } from '@/services/stream-monitor.service';\n\n@Module({\n  controllers: [MetricsController],\n  imports: [RedisProviderModule, AppLoggerModule],\n  providers: [StreamMonitorService],\n})\nexport class MetricsModule {}\n",
+    "taille": 470
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/redis/redis.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  RedisConnectionService,\n  redisConnectionFactory,\n} from '@mesx/common-lib';\nimport { Module, Global } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { RedisSdkCofigModule } from '@/config/redis/redis-sdk/redis-sdk.module';\nimport { RedisConfigService } from '@/config/redis/redis-sdk/redis-sdk.service';\n\n@Global()\n@Module({\n  exports: [RedisConnectionService],\n  imports: [RedisSdkCofigModule],\n  providers: [\n    {\n      inject: [RedisConfigService, AppLogger],\n      provide: RedisConnectionService,\n      useFactory: async (\n        redisConfig: RedisConfigService,\n        logger: AppLogger,\n      ): Promise<RedisConnectionService> => {\n        const connection = await redisConnectionFactory(\n          redisConfig,\n          undefined,\n          logger,\n        );\n\n        return connection;\n      },\n    },\n  ],\n})\nexport class RedisProviderModule {}\n",
+    "taille": 912
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/services/dto/scan-options.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class ScanOptionsDto {\n  public readonly COUNT: number;\n\n  public readonly MATCH: string;\n\n  public constructor(count: number, match: string) {\n    this.COUNT = count;\n    this.MATCH = match;\n  }\n}\n",
+    "taille": 205
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/services/stream-monitor.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  JobsLogContext,\n  RedisConnectionService,\n  RedisClientInstance,\n} from '@mesx/common-lib';\nimport { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';\nimport { ScanOptionsDto } from './dto/scan-options.dto';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { StreamDetail, StreamMetrics } from '@/types/scaler.types';\n\n@Injectable()\nexport class StreamMonitorService implements OnModuleInit, OnModuleDestroy {\n  private static createEmptyMetrics(): StreamMetrics {\n    return {\n      activeStreamCount: 0,\n      averageMessagesPerStream: 0,\n      estimatedReplicasNeeded: 0,\n      heavyStreamCount: 0,\n      maxMessagesInStream: 0,\n      streamDetails: new Map(),\n      timestamp: new Date(),\n\n      totalPendingMessages: 0,\n    };\n  }\n\n  private readonly context: JobsLogContext = {\n    method: '',\n    service: StreamMonitorService.name,\n  };\n\n  // â­ HARDCODED for ORDER domain POC\n  private readonly streamKeyPattern =\n    process.env.STREAM_KEY_PATTERN || 'order_stream:*'; // Pattern to discover order streams\n\n  private readonly heavyStreamThreshold =\n    Number(process.env.HEAVY_STREAM_THRESHOLD) || 500; // Threshold for heavy stream;\n\n  private redisClient: RedisClientInstance | undefined;\n\n  private readonly cacheTTLMS = 10_000; // 10 seconds\n\n  // Cache for active stream count\n  private cachedActiveStreamCount: number | null = null;\n\n  private lastActiveStreamCountUpdate: Date = new Date(0);\n\n  public constructor(\n    private readonly redisConnectionFactory: RedisConnectionService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.context.method = 'constructor';\n    this.customLogger.debug(\n      `ð¯ Stream monitor initialized for ORDER domain | ` +\n        `pattern=${this.streamKeyPattern}, ` +\n        `heavyThreshold=${this.heavyStreamThreshold}`,\n      this.context,\n    );\n  }\n\n  public async onModuleInit(): Promise<void> {\n    this.context.method = 'onModuleInit';\n    this.redisClient = await this.redisConnectionFactory.getClient();\n  }\n\n  public async onModuleDestroy(): Promise<void> {\n    this.context.method = 'onModuleDestroy';\n    await this.cleanup();\n  }\n\n  /**\n   * Optimized method to get only active stream count (streams with length > 0)\n   * Uses separate cache with shorter TTL for frequent polling\n   * @returns Promise<number> - Count of active streams\n   */\n  public async getActiveStreamCount(): Promise<number> {\n    this.context.method = 'getActiveStreamCount';\n\n    // Return cached count if fresh\n    const now = new Date();\n    const cacheAge = now.getTime() - this.lastActiveStreamCountUpdate.getTime();\n\n    if (this.cachedActiveStreamCount !== null && cacheAge < this.cacheTTLMS) {\n      this.customLogger.debug(\n        `Returning cached active stream count: ${this.cachedActiveStreamCount}`,\n        this.context,\n      );\n      return this.cachedActiveStreamCount;\n    }\n\n    const startTime = Date.now();\n\n    if (!this.redisClient || !this.redisClient.isReady) {\n      throw new Error('Redis client is not initialized or not ready');\n    }\n\n    const streamKeys = await this.discoverStreams(this.streamKeyPattern);\n\n    if (streamKeys.length === 0) {\n      this.customLogger.debug('No order streams found', this.context);\n      this.cachedActiveStreamCount = 0;\n      this.lastActiveStreamCountUpdate = now;\n      return 0;\n    }\n\n    let activeStreams = 0;\n\n    // Only count streams with messages > 0\n    for (const streamKey of streamKeys) {\n      try {\n        const messageCount = await this.redisClient.xLen(streamKey);\n        if (messageCount > 0) {\n          activeStreams += 1;\n        }\n      } catch (error) {\n        this.customLogger.error(\n          `Failed to check stream ${streamKey}`,\n          this.context,\n          error,\n        );\n      }\n    }\n\n    const duration = Date.now() - startTime;\n    this.customLogger.debug(\n      `ð [ORDER] Active streams: ${activeStreams} out of ${streamKeys.length} total [${duration}ms]`,\n      this.context,\n    );\n\n    // Cache the result\n    this.cachedActiveStreamCount = activeStreams;\n    this.lastActiveStreamCountUpdate = now;\n\n    return activeStreams;\n  }\n\n  public async collectMetrics(): Promise<StreamMetrics> {\n    this.context.method = 'collectMetrics';\n    const startTime = Date.now();\n\n    if (!this.redisClient || !this.redisClient.isReady) {\n      throw new Error('Redis client is not initialized or not ready');\n    }\n\n    const streamKeys = await this.discoverStreams(this.streamKeyPattern);\n\n    if (streamKeys.length === 0) {\n      this.customLogger.debug('No order streams found', this.context);\n      const emptyMetrics = StreamMonitorService.createEmptyMetrics();\n      return emptyMetrics;\n    }\n\n    const streamDetails = new Map<string, StreamDetail>();\n    let totalMessages = 0;\n    let activeStreams = 0;\n    let heavyStreams = 0;\n    let maxMessages = 0;\n\n    for (const streamKey of streamKeys) {\n      try {\n        const messageCount = await this.redisClient.xLen(streamKey);\n        if (messageCount > 0) {\n          activeStreams += 1;\n          totalMessages += messageCount;\n          maxMessages = Math.max(maxMessages, messageCount);\n\n          const isHeavy = messageCount > this.heavyStreamThreshold;\n          if (isHeavy) {\n            heavyStreams += 1;\n          }\n\n          streamDetails.set(streamKey, {\n            isHeavy,\n            messageCount,\n            streamKey,\n          });\n        }\n      } catch (error) {\n        this.customLogger.error(\n          `Failed to check stream ${streamKey}`,\n          this.context,\n          error,\n        );\n      }\n    }\n\n    // Calculate replicas needed:\n    // 1. One replica per heavy stream (>threshold messages)\n    // 2. For remaining non-heavy streams: group them and create replicas based on target\n    let nonHeavyStreamMessages = 0;\n\n    for (const detail of streamDetails.values()) {\n      if (!detail.isHeavy) {\n        nonHeavyStreamMessages += detail.messageCount;\n      }\n    }\n\n    // One replica per heavy stream + replicas for grouped non-heavy streams\n    const replicasForHeavyStreams = heavyStreams;\n    const replicasForNonHeavyStreams = Math.ceil(\n      nonHeavyStreamMessages / this.heavyStreamThreshold,\n    );\n    const estimatedReplicas =\n      replicasForHeavyStreams + replicasForNonHeavyStreams;\n\n    const metrics: StreamMetrics = {\n      activeStreamCount: activeStreams,\n      averageMessagesPerStream:\n        activeStreams > 0 ? totalMessages / activeStreams : 0,\n      estimatedReplicasNeeded: estimatedReplicas,\n      heavyStreamCount: heavyStreams,\n      maxMessagesInStream: maxMessages,\n      streamDetails,\n      timestamp: new Date(),\n      totalPendingMessages: totalMessages,\n    };\n\n    const duration = Date.now() - startTime;\n    this.customLogger.debug(\n      `ð [ORDER] Metrics: ${totalMessages} msgs across ${activeStreams} streams ` +\n        `(${heavyStreams} heavy, ${activeStreams - heavyStreams} normal) â ` +\n        `${estimatedReplicas} replicas (${replicasForHeavyStreams} for heavy + ${replicasForNonHeavyStreams} for grouped) [${duration}ms]`,\n      this.context,\n    );\n\n    if (streamDetails.size > 0) {\n      const topStreams = [...streamDetails.values()]\n        .sort((a, b) => b.messageCount - a.messageCount)\n        .slice(0, 5);\n\n      this.customLogger.debug(\n        `[ORDER] Top streams: ${topStreams\n          .map(\n            (s) =>\n              `${s.streamKey.replace('order-stream:', '')}(${s.messageCount})`,\n          )\n          .join(', ')}`,\n        this.context,\n      );\n    }\n\n    return metrics;\n  }\n\n  private async discoverStreams(pattern: string): Promise<Array<string>> {\n    this.context.method = 'discoverStreams';\n\n    if (!this.redisClient || !this.redisClient.isReady) {\n      throw new Error('Redis client is not initialized or not ready');\n    }\n\n    const discoveredKeys: Array<string> = [];\n    let scanCursor = 0;\n\n    do {\n      const scanOptions = new ScanOptionsDto(100, pattern);\n      const scanResult = await this.redisClient.scan(\n        String(scanCursor),\n        scanOptions,\n      );\n      scanCursor = Number(scanResult.cursor);\n      discoveredKeys.push(...scanResult.keys);\n    } while (scanCursor !== 0);\n\n    this.customLogger.debug(\n      `[ORDER] Discovered ${discoveredKeys.length} streams`,\n      this.context,\n    );\n\n    return discoveredKeys;\n  }\n\n  public async getHealthStatus(): Promise<{\n    connected: boolean;\n    latencyMs?: number;\n  }> {\n    this.context.method = 'getHealthStatus';\n\n    try {\n      if (!this.redisClient || !this.redisClient.isReady) {\n        return { connected: false };\n      }\n\n      const start = Date.now();\n      await this.redisClient.ping();\n      const latency = Date.now() - start;\n\n      return { connected: true, latencyMs: latency };\n    } catch (error) {\n      this.customLogger.error('Health check failed', this.context, error);\n      return { connected: false };\n    }\n  }\n\n  public async cleanup(): Promise<void> {\n    this.context.method = 'cleanup';\n\n    if (this.redisClient && this.redisClient.isOpen) {\n      await this.redisClient.quit();\n      this.customLogger.log('Redis client disconnected', this.context);\n    }\n  }\n}\n",
+    "taille": 9187
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/src/types/scaler.types.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ScaledObjectReference {\n  name: string;\n  namespace: string;\n  scalerMetadata: { [key: string]: string };\n}\n\nexport interface IsActiveResponse {\n  result: boolean;\n}\n\nexport interface MetricSpec {\n  metricName: string;\n  targetSize: number;\n  targetSizeFloat?: number;\n}\n\nexport interface GetMetricSpecResponse {\n  metricSpecs: Array<MetricSpec>;\n}\n\nexport interface GetMetricsRequest {\n  scaledObjectRef: ScaledObjectReference;\n  metricName: string;\n}\n\nexport interface MetricValue {\n  metricName: string;\n  metricValue: number;\n  metricValueFloat?: number;\n}\n\nexport interface GetMetricsResponse {\n  metricValues: Array<MetricValue>;\n}\n\nexport interface StreamDetail {\n  streamKey: string;\n  messageCount: number;\n  isHeavy: boolean;\n}\n\nexport interface StreamMetrics {\n  totalPendingMessages: number;\n  activeStreamCount: number;\n  averageMessagesPerStream: number;\n  maxMessagesInStream: number;\n  heavyStreamCount: number;\n  streamDetails: Map<string, StreamDetail>;\n  estimatedReplicasNeeded: number;\n  timestamp: Date;\n}\n",
+    "taille": 1045
+  },
+  {
+    "microservice": "mesx-redis-stream-scaler",
+    "chemin": "/test/app.end2end-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { INestApplication } from '@nestjs/common';\nimport { Test, TestingModule } from '@nestjs/testing';\nimport * as request from 'supertest';\nimport { AppModule } from '../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 628
+  }
+]

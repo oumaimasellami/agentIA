@@ -1,0 +1,1248 @@
+[
+  {
+    "source": "mesx-admin-backend",
+    "cible": "mesx-order-management-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix typo in environment variable name for order management api fix typo in envir"
+  },
+  {
+    "source": "mesx-admin-backend",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update the app id fr apis : fetch and update mes workcenter to planthierarchy..."
+  },
+  {
+    "source": "mesx-admin-backend",
+    "cible": "mesx-order-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "expose order apis to admin backend expose order apis to admin backend refs/heads"
+  },
+  {
+    "source": "mesx-admin-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-ui-lib to version 1.15.6 chore: update @mesx/common-u"
+  },
+  {
+    "source": "mesx-common-ui-lib",
+    "cible": "mesx-epart-board-ui",
+    "via": "PR_file",
+    "fichier": "/mesx-epart-board-ui.code-workspace",
+    "detail": "/mesx-epart-board-ui.code-workspace"
+  },
+  {
+    "source": "mesx-common-ui-lib",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "implement header component in common lib  refs/heads/feature/128052-implement-he"
+  },
+  {
+    "source": "mesx-downtime-backend",
+    "cible": "mesx-ume-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "move gethierarchy from ume backend  to downtime backend move gethierarchy from u"
+  },
+  {
+    "source": "mesx-downtime-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update: bump @mesx/common-ui-lib to version 1.11.1 update: bump @mesx/common-ui-"
+  },
+  {
+    "source": "mesx-downtime-ui",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix losing restriction with common lib ui fix losing restriction with common lib"
+  },
+  {
+    "source": "mesx-epart-board-backend",
+    "cible": "mesx-production-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "feat: add productionapiappid to apiconfiguration and urlapiconfigservice; imp..."
+  },
+  {
+    "source": "mesx-epart-board-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-ui-lib to version 1.15.7 chore: update @mesx/common-u"
+  },
+  {
+    "source": "mesx-ewm-gateway-backend",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update @mesx/common-lib to version 1.4.5 to delete unused logs in telemetry upda"
+  },
+  {
+    "source": "mesx-ewm-gateway-backend",
+    "cible": "mesx-master-api",
+    "via": "PR_file",
+    "fichier": "/src/common/api/master.api.ts",
+    "detail": "/src/common/api/master.api.ts"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-mv-orchestrator",
+    "via": "PR_file",
+    "fichier": "/r-ca-leveling-board-mv-orchestrator.tf",
+    "detail": "/r-ca-leveling-board-mv-orchestrator.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-quality-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-quality-data-ingestion.tf",
+    "detail": "/r-ca-quality-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-admin-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-admin-ui.tf",
+    "detail": "/r-ca-admin-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-admin-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-admin-backend.tf",
+    "detail": "/r-ca-admin-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-datahub",
+    "via": "PR_file",
+    "fichier": "/r-ca-datahub.tf",
+    "detail": "/r-ca-datahub.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-downtime-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-downtime-ui.tf",
+    "detail": "/r-ca-downtime-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-downtime-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-downtime-backend.tf",
+    "detail": "/r-ca-downtime-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-central-error-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-central-error-ui.tf",
+    "detail": "/r-ca-central-error-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-central-error-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-central-error-backend.tf",
+    "detail": "/r-ca-central-error-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-epart-board-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-epart-board-backend.tf",
+    "detail": "/r-ca-epart-board-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-ewm-gateway-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-ewm-gateway-backend.tf",
+    "detail": "/r-ca-ewm-gateway-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-picking-job-service",
+    "via": "PR_file",
+    "fichier": "/r-ca-picking-job-service.tf",
+    "detail": "/r-ca-picking-job-service.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-leveling-board-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-leveling-board-backend.tf",
+    "detail": "/r-ca-leveling-board-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-api.tf",
+    "detail": "/r-ca-order-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-leveling-board-mv-processor",
+    "via": "PR_file",
+    "fichier": "/r-ca-leveling-board-mv-processor.tf",
+    "detail": "/r-ca-leveling-board-mv-processor.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-leveling-board-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-leveling-board-ui.tf",
+    "detail": "/r-ca-leveling-board-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-management-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-management-api.tf",
+    "detail": "/r-ca-order-management-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-job-scheduler-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-job-scheduler-ui.tf",
+    "detail": "/r-ca-job-scheduler-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-data-ingestion.tf",
+    "detail": "/r-ca-order-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-picking-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-picking-backend.tf",
+    "detail": "/r-ca-picking-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-data-ingestion-actor",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-data-ingestion-actor.tf",
+    "detail": "/r-ca-order-data-ingestion-actor.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-management-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-management-backend.tf",
+    "detail": "/r-ca-order-management-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-epart-board-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-epart-board-ui.tf",
+    "detail": "/r-ca-epart-board-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-master-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-master-api.tf",
+    "detail": "/r-ca-master-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-job-scheduler-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-job-scheduler-backend.tf",
+    "detail": "/r-ca-job-scheduler-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-master-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-master-data-ingestion.tf",
+    "detail": "/r-ca-master-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-production-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-production-api.tf",
+    "detail": "/r-ca-production-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-redis-stream-scaler",
+    "via": "PR_file",
+    "fichier": "/r-ca-redis-stream-scaler.tf",
+    "detail": "/r-ca-redis-stream-scaler.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-picking-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-picking-ui.tf",
+    "detail": "/r-ca-picking-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-ume-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-ume-ui.tf",
+    "detail": "/r-ca-ume-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-input-binding",
+    "via": "PR_file",
+    "fichier": "/r-dapr-input-bindings.tf",
+    "detail": "/r-dapr-input-bindings.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-wk-integration-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-wk-integration-backend.tf",
+    "detail": "/r-ca-wk-integration-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-picking-mv-processor",
+    "via": "PR_file",
+    "fichier": "/r-ca-picking-mv-processor.tf",
+    "detail": "/r-ca-picking-mv-processor.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-shipment-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-shipment-api.tf",
+    "detail": "/r-ca-shipment-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-ume-backend",
+    "via": "PR_file",
+    "fichier": "/r-ca-ume-backend.tf",
+    "detail": "/r-ca-ume-backend.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-wk-integration-ui",
+    "via": "PR_file",
+    "fichier": "/r-ca-wk-integration-ui.tf",
+    "detail": "/r-ca-wk-integration-ui.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-resource-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-resource-api.tf",
+    "detail": "/r-ca-resource-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-transfer-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-transfer-data-ingestion.tf",
+    "detail": "/r-ca-transfer-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-quality-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-quality-api.tf",
+    "detail": "/r-ca-quality-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-plant-hierarchy-api.tf",
+    "detail": "/r-ca-plant-hierarchy-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-production-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-production-data-ingestion.tf",
+    "detail": "/r-ca-production-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-plant-hierarchy-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-plant-hierarchy-data-ingestion.tf",
+    "detail": "/r-ca-plant-hierarchy-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-shipment-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-shipment-data-ingestion.tf",
+    "detail": "/r-ca-shipment-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-ume-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-ume-api.tf",
+    "detail": "/r-ca-ume-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-transfer-api",
+    "via": "PR_file",
+    "fichier": "/r-ca-transfer-api.tf",
+    "detail": "/r-ca-transfer-api.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-resource-data-ingestion",
+    "via": "PR_file",
+    "fichier": "/r-ca-resource-data-ingestion.tf",
+    "detail": "/r-ca-resource-data-ingestion.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-master-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update scaling configuration for master api to enhance performance and resour..."
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update scaling configuration for order data ingestion to enhance cpu and memo..."
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-leveling-board-mv-processor",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update scaling configuration for leveling board mv processor update scaling conf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-management-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update order management backend and api conditions for environment handling upda"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-proto-dependency-management",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update azure-pipelines-1.yml for azure pipelines  refs/heads/azure-pipelines ref"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-downtime-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "bug fixing in downtime ui big fixing in downtime ui refs/heads/releases/1.38.4 r"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-transfer-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "remove unused opentelemetry environment variables from transfer data ingestio..."
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-resource-data-ingestion-v2",
+    "via": "PR_file",
+    "fichier": "/r-ca-resource-data-ingestion-v2.tf",
+    "detail": "/r-ca-resource-data-ingestion-v2.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-resource-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "deactivate resource data ingestion v2 and comment out related eventhub consum..."
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-resource-data-ingestion-v2",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "deactivate resource data ingestion v2 and comment out related eventhub consum..."
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-transfer-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix transfer api app id fix transfer api app id refs/heads/features/145688-parti"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-picking-job-service",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "change probe type from liveness to readiness for ca_picking_job_service change p"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-admin-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "revert 'set minreplicas to 1 for admin backend, admin ui, and epart board ui res"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-admin-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "revert 'set minreplicas to 1 for admin backend, admin ui, and epart board ui res"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-epart-board-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "revert 'set minreplicas to 1 for admin backend, admin ui, and epart board ui res"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-data-ingestion-v2",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-data-ingestion-v2.tf",
+    "detail": "/r-ca-order-data-ingestion-v2.tf"
+  },
+  {
+    "source": "mesx-infrastructure",
+    "cible": "mesx-order-data-ingestion-router",
+    "via": "PR_file",
+    "fichier": "/r-ca-order-data-ingestion-router.tf",
+    "detail": "/r-ca-order-data-ingestion-router.tf"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-redis-stream-scaler",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add url prefix for scaler services in dynamic routing add url prefix for scaler "
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-redis-stream-scaler",
+    "via": "PR_file",
+    "fichier": "/dynamic/redis-stream-scaler.yaml",
+    "detail": "/dynamic/redis-stream-scaler.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-order-management-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/order-management-backend.yaml",
+    "detail": "/dynamic/order-management-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-order-management-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add order management api configuration to dynamic routing add order management a"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-epart-board-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/epart-board-ui.yaml",
+    "detail": "/dynamic/epart-board-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-epart-board-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add epart-board-ui configuration to dynamic routing add epart-board-ui configura"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-epart-board-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/epart-board-backend.yaml",
+    "detail": "/dynamic/epart-board-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-epart-board-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add epart-board-backend configuration to dynamic routing add epart-board-backend"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-resource-api",
+    "via": "PR_file",
+    "fichier": "/dynamic/resource-api.yaml",
+    "detail": "/dynamic/resource-api.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-resource-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add resource api configuration to dynamic routing add resource api configuration"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-ewm-gateway-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/ewm-gateway-backend.yaml",
+    "detail": "/dynamic/ewm-gateway-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-wk-integration-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/wk-integration-ui.yaml",
+    "detail": "/dynamic/wk-integration-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-wk-integration-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "wk integration ui route wk integration ui route\n\n #100395 refs/heads/features/10"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-wk-integration-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/wk-integration-backend.yaml",
+    "detail": "/dynamic/wk-integration-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-wk-integration-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "route for wk integration backend #99635 route for wk integration backend #99635 "
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-mv-orchestrator",
+    "via": "PR_file",
+    "fichier": "/dynamic/leveling-board-mv-orchestrator.yaml",
+    "detail": "/dynamic/leveling-board-mv-orchestrator.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-leveling-board-mv-processor",
+    "via": "PR_file",
+    "fichier": "/dynamic/leveling-board-mv-processor.yaml",
+    "detail": "/dynamic/leveling-board-mv-processor.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-mv-orchestrator",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "routes for lvl mv orchestrator and processor routes for lvl mv orchestrator and "
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-picking-mv-processor",
+    "via": "PR_file",
+    "fichier": "/dynamic/picking-mv-processor.yaml",
+    "detail": "/dynamic/picking-mv-processor.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-picking-mv-processor",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "route for picking mv processor route for picking mv processor\n\n  #96252 refs/hea"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-picking-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "removed picking demo config #88123 removed picking demo config #88123 refs/heads"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-admin-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/admin-ui.yaml",
+    "detail": "/dynamic/admin-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-admin-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "route for admin ui route for admin ui\n\n   #93763 refs/heads/features/93763-admin"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-admin-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/admin-backend.yaml",
+    "detail": "/dynamic/admin-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-admin-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "route for admin backend route for admin backend\n\n  #93764 refs/heads/features/93"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-leveling-board-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/leveling-board-backend.yaml",
+    "detail": "/dynamic/leveling-board-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-leveling-board-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/leveling-board-ui.yaml",
+    "detail": "/dynamic/leveling-board-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-leveling-board-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "routes for leveling board ui routes for leveling board ui\n\n #90939 #90544 refs/h"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-ume-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/ume-backend.yaml",
+    "detail": "/dynamic/ume-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-ume-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/ume-ui.yaml",
+    "detail": "/dynamic/ume-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-downtime-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/downtime-ui.yaml",
+    "detail": "/dynamic/downtime-ui.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-downtime-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "route for downtime ui route for downtime ui\n\n #86771 refs/heads/features/86771-r"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-downtime-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/downtime-backend.yaml",
+    "detail": "/dynamic/downtime-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-downtime-backend",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "downtime backend route downtime backend route\n #86772 refs/heads/features/86772-"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-master-api",
+    "via": "PR_file",
+    "fichier": "/dynamic/master-api.yaml",
+    "detail": "/dynamic/master-api.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-datahub",
+    "via": "PR_file",
+    "fichier": "/dynamic/datahub.yaml",
+    "detail": "/dynamic/datahub.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-picking-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/picking-backend.yaml",
+    "detail": "/dynamic/picking-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-order-api",
+    "via": "PR_file",
+    "fichier": "/dynamic/order-api.yaml",
+    "detail": "/dynamic/order-api.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-ume-api",
+    "via": "PR_file",
+    "fichier": "/dynamic/ume-api.yaml",
+    "detail": "/dynamic/ume-api.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-central-error-backend",
+    "via": "PR_file",
+    "fichier": "/dynamic/central-error-backend.yaml",
+    "detail": "/dynamic/central-error-backend.yaml"
+  },
+  {
+    "source": "mesx-infrastructure-app-proxy",
+    "cible": "mesx-central-error-ui",
+    "via": "PR_file",
+    "fichier": "/dynamic/central-error-ui.yaml",
+    "detail": "/dynamic/central-error-ui.yaml"
+  },
+  {
+    "source": "mesx-job-scheduler-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-ui-lib to version 1.15.8 chore: update @mesx/common-u"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-order-api",
+    "via": "PR_file",
+    "fichier": "/src/api/order-api.ts",
+    "detail": "/src/api/order-api.ts"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_file",
+    "fichier": "/src/api/plant-hierarchy-api.ts",
+    "detail": "/src/api/plant-hierarchy-api.ts"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-master-api",
+    "via": "PR_file",
+    "fichier": "/src/api/master-api.ts",
+    "detail": "/src/api/master-api.ts"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-shipment-api",
+    "via": "PR_file",
+    "fichier": "/src/api/shipment-api.ts",
+    "detail": "/src/api/shipment-api.ts"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-shipment-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add empty fields when catching error in shipment api add empty fields when catch"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-infrastructure",
+    "via": "PR_file",
+    "fichier": "/src/infrastructure/dapr/dapr.module.ts",
+    "detail": "/src/infrastructure/dapr/dapr.module.ts"
+  },
+  {
+    "source": "mesx-leveling-board-mv-processor",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.2.14 and add isajob configuration..."
+  },
+  {
+    "source": "mesx-leveling-board-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-ui-lib to version 1.15.8 chore: update @mesx/common-u"
+  },
+  {
+    "source": "mesx-master-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.5 chore: update @mesx/common-lib t"
+  },
+  {
+    "source": "mesx-master-data-ingestion",
+    "cible": "mesx-input-binding",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "renamed input binding env vars input binding environment variable renames #93421"
+  },
+  {
+    "source": "mesx-mv-orchestrator",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_file",
+    "fichier": "/src/common/api/plant-hierarchy-api.ts",
+    "detail": "/src/common/api/plant-hierarchy-api.ts"
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.4 and clean up redis chore: update"
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-input-binding",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix input binding naming fix input binding naming refs/heads/features/127245-fix"
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-order-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "align picking order entity with order api align picking order entity with order "
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib dependency to version 1.4.5 chore: update @mesx/c"
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-order-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "implement order data ingestion actor  refs/heads/features/135507-implement-actor"
+  },
+  {
+    "source": "mesx-order-data-ingestion-router",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.5 chore: update @mesx/common-lib t"
+  },
+  {
+    "source": "mesx-order-data-ingestion-router",
+    "cible": "mesx-order-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "implement order data ingestion router  refs/heads/features/134788-create-base-ro"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "upgrade to common-lib version which handles race condition for fucntional log..."
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-order-api",
+    "via": "PR_file",
+    "fichier": "/src/common/api/order.api.ts",
+    "detail": "/src/common/api/order.api.ts"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-order-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "feat: add workcentersdto and update orderapi to use it for workcenter handling f"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-production-api",
+    "via": "PR_file",
+    "fichier": "/src/common/api/production.api.ts",
+    "detail": "/src/common/api/production.api.ts"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-production-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "feat: add productionapi and downtime cause retrieval functionality feat: add pro"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-shipment-api",
+    "via": "PR_file",
+    "fichier": "/src/common/api/shipment.api.ts",
+    "detail": "/src/common/api/shipment.api.ts"
+  },
+  {
+    "source": "mesx-picking-job-service",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "feat: integrate @mesx/common-lib for enhanced logging and configuration feat: in"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-production-api",
+    "via": "PR_file",
+    "fichier": "/src/api/production-api.ts",
+    "detail": "/src/api/production-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-production-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "remove shipmentapiappid from  productionapi remove shipmentapiappid from  produc"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-shipment-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "remove shipmentapiappid from  productionapi remove shipmentapiappid from  produc"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-master-api",
+    "via": "PR_file",
+    "fichier": "/src/api/master-api.ts",
+    "detail": "/src/api/master-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-shipment-api",
+    "via": "PR_file",
+    "fichier": "/src/api/shipment-api.ts",
+    "detail": "/src/api/shipment-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-order-api",
+    "via": "PR_file",
+    "fichier": "/src/api/order-api.ts",
+    "detail": "/src/api/order-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_file",
+    "fichier": "/src/api/plant-hierarchy-api.ts",
+    "detail": "/src/api/plant-hierarchy-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-infrastructure",
+    "via": "PR_file",
+    "fichier": "/src/infrastructure/dapr/dapr.module.ts",
+    "detail": "/src/infrastructure/dapr/dapr.module.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-transfer-api",
+    "via": "PR_file",
+    "fichier": "/src/api/transfer-api.ts",
+    "detail": "/src/api/transfer-api.ts"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-order-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "revert 'add logging for received messages in subscribecontroller and order fetch"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix lastupdatetask error fix lastupdatetask error refs/heads/features/132765-use"
+  },
+  {
+    "source": "mesx-picking-mv-processor",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "enhance error handling in planthierarchyapi and add errorresponse interface enha"
+  },
+  {
+    "source": "mesx-picking-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-ui-lib to version 1.15.7 chore: update @mesx/common-u"
+  },
+  {
+    "source": "mesx-plant-hierarchy-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "debug azure managed for redis debug azure managed for redis refs/heads/features/"
+  },
+  {
+    "source": "mesx-plant-hierarchy-data-ingestion",
+    "cible": "mesx-input-binding",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "renamed input binding env vars input binding environment variable renames #93421"
+  },
+  {
+    "source": "mesx-production-api",
+    "cible": "mesx-downtime-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "removing interceptor from backen downtime removing interceptor from backen downt"
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update @mesx/common-lib to version 1.4.5 and optimize sql operation tracking... "
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-input-binding",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "renamed input binding env vars input binding environment variable renames #93421"
+  },
+  {
+    "source": "mesx-proto-dependency-management",
+    "cible": "mesx-ume-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "updated _service_versions.json updated _service_versions.json refs/heads/change-"
+  },
+  {
+    "source": "mesx-proto-dependency-mgt-be",
+    "cible": "mesx-order-data-ingestion",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "mesx-proto-order-data-ingestion-v2 - create the sonarqube analysis  refs/heads/f"
+  },
+  {
+    "source": "mesx-proto-dependency-mgt-be",
+    "cible": "mesx-order-data-ingestion-v2",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "mesx-proto-order-data-ingestion-v2 - create the sonarqube analysis  refs/heads/f"
+  },
+  {
+    "source": "mesx-quality-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.5 to delete unused log in telem..."
+  },
+  {
+    "source": "mesx-resource-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.5 chore: update @mesx/common-lib t"
+  },
+  {
+    "source": "mesx-shipment-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "chore: update @mesx/common-lib to version 1.4.5 to delete unused log in telem..."
+  },
+  {
+    "source": "mesx-shipment-data-ingestion",
+    "cible": "mesx-input-binding",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "renamed input binding env vars input binding environment variable renames #93421"
+  },
+  {
+    "source": "mesx-transfer-data-ingestion",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update @mesx/common-lib to version 1.4.5 in package.json and package-lock.json u"
+  },
+  {
+    "source": "mesx-ume-api",
+    "cible": "mesx-picking-ui",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "change picking ui uris change picking ui uris refs/heads/features/110577-change-"
+  },
+  {
+    "source": "mesx-ume-backend",
+    "cible": "mesx-ume-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix vulnerabilities  fix vulnerabilities in ume api refs/heads/features/124746-c"
+  },
+  {
+    "source": "mesx-ume-backend",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_file",
+    "fichier": "/src/apis/plant-hierarchy-api.ts",
+    "detail": "/src/apis/plant-hierarchy-api.ts"
+  },
+  {
+    "source": "mesx-ume-backend",
+    "cible": "mesx-ume-api",
+    "via": "PR_file",
+    "fichier": "/src/apis/ume-api.ts",
+    "detail": "/src/apis/ume-api.ts"
+  },
+  {
+    "source": "mesx-ume-backend",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "add plantheadersdto and user dtos; implement planthierarchyapi and umeapi servic"
+  },
+  {
+    "source": "mesx-ume-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update @mesx/common-ui-lib to version 1.11.1 update @mesx/common-ui-lib to versi"
+  },
+  {
+    "source": "mesx-wk-integration-ui",
+    "cible": "mesx-common-ui-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "update @mesx/common-ui-lib to version 1.11.1 update @mesx/common-ui-lib to versi"
+  },
+  {
+    "source": "mesx-wk-integration-ui",
+    "cible": "mesx-common-lib",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "integrate mainheader from common lib integrate mainheader from common lib refs/h"
+  },
+  {
+    "source": "mesx-wk-integration-ui",
+    "cible": "mesx-plant-hierarchy-api",
+    "via": "PR_text",
+    "fichier": "",
+    "detail": "fix: update plant hierarchy api url in environment configuration fix: update pla"
+  }
+]

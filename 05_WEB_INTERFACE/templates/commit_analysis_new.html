@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commit Analysis - FORVIA NRT Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --forvia-blue: #0033CC;
+            --forvia-dark: #001a99;
+            --forvia-light: #e6f0ff;
+            --gray-dark: #1a1a1a;
+            --gray-light: #f8f9fa;
+            --accent: #FF6B35;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--gray-dark);
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            padding: 15px 0;
+            box-shadow: 0 4px 20px rgba(0, 51, 204, 0.25);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            color: white;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after { width: 100%; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .page-title {
+            font-size: 36px;
+            color: var(--forvia-dark);
+            margin-bottom: 40px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .analysis-panel {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            border: 2px solid var(--forvia-light);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--gray-dark);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--forvia-blue);
+            box-shadow: 0 0 0 3px var(--forvia-light);
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 30px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 51, 204, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border-left: 4px solid var(--forvia-blue);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--forvia-light);
+        }
+
+        .result-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--forvia-dark);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-mode {
+            background: var(--forvia-light);
+            color: var(--forvia-blue);
+        }
+
+        .badge-success {
+            background: #d1f2eb;
+            color: #27AE60;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            padding: 15px;
+            background: var(--forvia-light);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--forvia-blue);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .functions-list {
+            margin-top: 20px;
+        }
+
+        .functions-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: var(--gray-dark);
+        }
+
+        .function-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--gray-light);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 3px solid var(--forvia-blue);
+        }
+
+        .function-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--forvia-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: var(--forvia-blue);
+            font-weight: 600;
+        }
+
+        .function-info {
+            flex: 1;
+        }
+
+        .function-name {
+            font-weight: 600;
+            color: var(--gray-dark);
+            margin-bottom: 3px;
+        }
+
+        .function-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--forvia-light);
+            border-top: 4px solid var(--forvia-blue);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border-left: 4px solid #E74C3C;
+            color: #721c24;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        footer {
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 60px;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .input-grid { grid-template-columns: 1fr; }
+            .page-title { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <i class="fas fa-cube"></i> FORVIA NRT
+            </div>
+            <ul class="nav-links">
+                <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
+                <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
+                <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Graph</a></li>
+                <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-title">
+            <i class="fas fa-code-branch"></i> Commit Impact Analysis
+        </div>
+
+        <div class="analysis-panel">
+            <form id="analysisForm">
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-git"></i> Commit ID</label>
+                        <input type="text" id="commitId" class="form-input" placeholder="ea545bc5ab741dc7d4312cd1b45a251cace3c2dc" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-tasks"></i> WorkItem ID (Optional)</label>
+                        <input type="text" id="workitemId" class="form-input" placeholder="127835 - Leave empty for full impact">
+                    </div>
+                </div>
+                <button type="submit" class="btn"><i class="fas fa-search"></i> Analyze Commit</button>
+            </form>
+        </div>
+
+        <div class="results-section" id="results" style="display: none;">
+            <div class="result-card">
+                <div class="result-header">
+                    <span class="result-title"><i class="fas fa-chart-network"></i> Impact Analysis Results</span>
+                    <div>
+                        <span class="badge badge-mode" id="modeBadge">MODE</span>
+                        <span class="badge badge-success"><i class="fas fa-check-circle"></i> Valid</span>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-number" id="functionCount">0</div>
+                        <div class="stat-label">Functions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="workitemCount">0</div>
+                        <div class="stat-label">WorkItems</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="microserviceCount">0</div>
+                        <div class="stat-label">Microservices</div>
+                    </div>
+                </div>
+
+                <div class="functions-list">
+                    <div class="functions-title"><i class="fas fa-code"></i> Affected Functions</div>
+                    <div id="functionsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 FORVIA NRT Scope System | <strong>Automated Non-Regression Test Orchestration</strong></p>
+    </footer>
+
+    <script>
+        document.getElementById('analysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const commitId = document.getElementById('commitId').value;
+            const workitemId = document.getElementById('workitemId').value;
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Analyzing commit...</p></div>';
+            resultsDiv.style.display = 'block';
+
+            try {
+                const url = `/api/commit/${commitId}${workitemId ? '?workitem=' + workitemId : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultsDiv.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${data.error || 'Error analyzing commit'}</div>`;
+                    return;
+                }
+
+                displayResults(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> Error: ${error.message}</div>`;
+            }
+        });
+
+        function displayResults(data) {
+            const mode = data.workitem_id ? 'SPECIFIC' : 'FULL';
+            document.getElementById('modeBadge').textContent = `MODE: ${mode}`;
+            document.getElementById('functionCount').textContent = data.function_count || 0;
+            document.getElementById('workitemCount').textContent = data.workitem_count || 0;
+            document.getElementById('microserviceCount').textContent = data.microservice_count || 0;
+
+            const functionsList = document.getElementById('functionsList');
+            if (data.functions && data.functions.length > 0) {
+                functionsList.innerHTML = data.functions.map((fn, idx) => `
+                    <div class="function-item">
+                        <div class="function-icon">${idx + 1}</div>
+                        <div class="function-info">
+                            <div class="function-name">⚙️ ${fn.name || 'Unknown Function'}</div>
+                            <div class="function-meta">Microservice: ${fn.microservice || 'N/A'}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                functionsList.innerHTML = '<p style="color: #999;">No functions found</p>';
+            }
+        }
+    </script>
+</body>
+</html>

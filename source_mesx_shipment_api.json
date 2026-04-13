@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n\n",
+    "taille": 1777
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: ship-api\n  cajMigrationJobName: ship-dbm\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'  \n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/shipment-api\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n      migrationContainerAppJobName: caj-gptmpxn01-eun-dev-$(cajMigrationJobName)\n\n",
+    "taille": 1346
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "# apiVersion: dapr.io/v1alpha1\n# kind: Component\n# metadata:\n#   name: bindings-events\n# spec:\n#   type: bindings.kafka\n#   version: v1\n#   metadata:\n#   - name: brokers\n#     value: \"localhost:9092\"\n#   - name: topics\n#     value: \"connect-test\"\n#   - name: direction\n#     value: \"input\"\n#   - name: initialOffset # Optional. Used for input bindings.\n#     value: \"newest\"\n#   - name: authRequired\n#     value: \"false\"\n#   - name: consumerGroup\n#     value: \"group1\"\n",
+    "taille": 469
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/shipment-api');\n    });\n  });\n});\n",
+    "taille": 621
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(private readonly appService: AppService) {}\n\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 288
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { appConfig } from './config/app-config/configuration';\n\nimport { ingestionCleansingJobConfig } from './config/ingestion-cleansing-job/configuration';\nimport { IngestionCleansingJobConfigModule } from './config/ingestion-cleansing-job/ingestion-cleansing-job.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { CustomerModule } from '@/modules/customer/customer.module';\nimport { IngestionEventTrackingModule } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.module';\nimport { OutboundDeliveryModule } from '@/modules/outbound-delivery/outbound-delivery.module';\nimport { PlantconfigModule } from '@/modules/plant-config/plant-config.module';\nimport { ProbesModule } from '@/modules/probes/probes.module';\nimport { TpaAssignmentModule } from '@/modules/tpa-assignment/tpa-assignment.module';\nimport { TpaCodeModule } from '@/modules/tpa-code/tpa-code.module';\nimport { MssqlDatabaseProviderModule } from '@/providers/database/mssql/mssql.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    ProbesModule,\n    OutboundDeliveryModule,\n    IngestionCleansingJobConfigModule,\n    PlantconfigModule,\n    MssqlDatabaseProviderModule,\n    ConfigModule.forRoot({\n      load: [appConfig, mssqlConfiguration, ingestionCleansingJobConfig],\n    }),\n    CustomerModule,\n    TpaCodeModule,\n    TpaAssignmentModule,\n    IngestionEventTrackingModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 1661
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/shipment-api';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 198
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  log(message: unknown) {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  error(message: unknown, stack?: string) {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  warn(message: unknown) {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  debug(message: unknown) {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  verbose(message: unknown) {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 579
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) { }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'appConfigEndpoint', value: this.appConfigEndpoint }];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1229
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2816
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/database/mssql/abstract.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export abstract class MssqlConfigurationService {\n  public abstract get requestTimeout(): number;\n\n  public abstract get type(): string;\n\n  public abstract get host(): string;\n\n  public abstract get port(): number;\n\n  public abstract get username(): string;\n\n  public abstract get password(): string;\n\n  public abstract get database(): string;\n\n  public abstract get synchronize(): boolean;\n\n  public abstract get useManagedIdentity(): boolean;\n\n  public abstract get managedIdentityClientId(): string;\n\n  public abstract get encrypt(): boolean;\n\n  public abstract get entities(): Array<string>;\n\n  public abstract get migrations(): Array<string>;\n\n  public abstract get migrationsTableName(): string;\n\n  public abstract get migrationsWaitDelayMilliseconds(): number;\n\n  public abstract get migrationsWaitRetryLimit(): number;\n}\n",
+    "taille": 829
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/database/mssql/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface MssqlEnvironmentVariableConfig {\n  mssql: {\n    database: string | undefined;\n    encrypt: boolean | undefined;\n    entities: Array<string> | undefined;\n    host: string | undefined;\n    managedIdentityClientId: string | undefined;\n    migrations: Array<string> | undefined;\n    migrationsTableName: string | undefined;\n    migrationsWaitDelayMilliseconds: number;\n    migrationsWaitRetryLimit: number;\n    password: string | undefined;\n    port: number | undefined;\n    synchronize: boolean | undefined;\n    type: string | undefined;\n    username: string | undefined;\n    requestTimeout: number;\n  };\n}\n\nexport const mssqlConfiguration = (): MssqlEnvironmentVariableConfig => ({\n  mssql: {\n    database: process.env.DB_NAME,\n    encrypt: process.env.DB_ENCRYPT_CONNECTION === 'true',\n    entities: ['dist/**/*.entity{.ts,.js}'], // Entity files path\n    host: process.env.DB_HOST,\n    managedIdentityClientId: process.env.DB_MANAGED_ID_CLIENT_ID,\n    migrations: ['dist/**/migration/*{.ts,.js}'], // Migrations files path\n    migrationsTableName: 'migrations_TypeORM', // Name of the migrations table\n    migrationsWaitDelayMilliseconds: Number(\n      process.env.DB_MIGRATION_WAIT_DELAY_MILLISECONDS,\n    ),\n    migrationsWaitRetryLimit: Number(process.env.DB_MIGRATION_WAIT_RETRY_LIMIT),\n    password: process.env.DB_PASSWORD,\n    port: Number(process.env.DB_PORT),\n    requestTimeout: Number(process.env.DB_REQUEST_TIMEOUT),\n    synchronize: process.env.DB_SYNC === 'true', // Whether to automatically synchronize database schema\n    type: 'mssql',\n    username: process.env.DB_USERNAME,\n  },\n});\n",
+    "taille": 1611
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/database/mssql/default.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\ninterface MssqlConfigurationObject {\n  database: string | undefined;\n  encrypt: boolean | undefined;\n  entities: Array<string> | undefined;\n  host: string | undefined;\n  managedIdentityClientId: string | undefined;\n  migrations: Array<string> | undefined;\n  migrationsTableName: string | undefined;\n  migrationsWaitDelayMilliseconds: number;\n  migrationsWaitRetryLimit: number;\n  password: string | undefined;\n  port: number | undefined;\n  requestTimeout: number;\n  synchronize: boolean | undefined;\n  type: string | undefined;\n  username: string | undefined;\n}\n\nexport class DefaultMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly mssqlConfig: MssqlConfigurationObject) {\n    super();\n  }\n\n  public get type(): string {\n    return this.mssqlConfig.type ?? '';\n  }\n\n  public get host(): string {\n    return this.mssqlConfig.host ?? '';\n  }\n\n  public get port(): number {\n    return this.mssqlConfig.port ?? 1433;\n  }\n\n  public get username(): string {\n    return this.mssqlConfig.username ?? '';\n  }\n\n  public get password(): string {\n    return this.mssqlConfig.password ?? '';\n  }\n\n  public get database(): string {\n    return this.mssqlConfig.database ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.mssqlConfig.synchronize ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return this.mssqlConfig.managedIdentityClientId ?? '';\n  }\n\n  public get encrypt(): boolean {\n    return this.mssqlConfig.encrypt ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.mssqlConfig.entities ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.mssqlConfig.migrations ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return this.mssqlConfig.migrationsTableName ?? 'migrations_TypeORM';\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitDelayMilliseconds)\n      ? 3000\n      : this.mssqlConfig.migrationsWaitDelayMilliseconds;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    return Number.isNaN(this.mssqlConfig.migrationsWaitRetryLimit)\n      ? 50\n      : this.mssqlConfig.migrationsWaitRetryLimit;\n  }\n\n  public get requestTimeout(): number {\n    return Number.isNaN(this.mssqlConfig.requestTimeout)\n      ? 90_000\n      : this.mssqlConfig.requestTimeout;\n  }\n}\n",
+    "taille": 2576
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/database/mssql/mssql.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { NestMssqlConfigurationService } from '@/config/database/mssql/nest.mssql.config.service';\n\n@Module({\n  exports: [MssqlConfigurationService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true, // Make sure to make the config module global\n    }),\n  ],\n  providers: [\n    {\n      provide: MssqlConfigurationService,\n      useClass: NestMssqlConfigurationService,\n    },\n  ],\n})\nexport class MssqlModule {}\n",
+    "taille": 611
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/database/mssql/nest.mssql.config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\n\n@Injectable()\nexport class NestMssqlConfigurationService extends MssqlConfigurationService {\n  public constructor(private readonly configService: ConfigService) {\n    super();\n  }\n\n  public get type(): string {\n    return this.configService.get<string>('mssql.type') ?? '';\n  }\n\n  public get host(): string {\n    return this.configService.get<string>('mssql.host') ?? '';\n  }\n\n  public get port(): number {\n    return this.configService.get<number>('mssql.port') ?? 1433;\n  }\n\n  public get username(): string {\n    return this.configService.get<string>('mssql.username') ?? '';\n  }\n\n  public get password(): string {\n    return this.configService.get<string>('mssql.password') ?? '';\n  }\n\n  public get database(): string {\n    return this.configService.get<string>('mssql.database') ?? '';\n  }\n\n  public get synchronize(): boolean {\n    return this.configService.get<boolean>('mssql.synchronize') ?? false;\n  }\n\n  public get useManagedIdentity(): boolean {\n    return this.managedIdentityClientId?.trim().length > 0;\n  }\n\n  public get managedIdentityClientId(): string {\n    return (\n      this.configService.get<string>('mssql.managedIdentityClientId') ?? ''\n    );\n  }\n\n  public get encrypt(): boolean {\n    return this.configService.get<boolean>('mssql.encrypt') ?? false;\n  }\n\n  public get entities(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.entities') ?? [];\n  }\n\n  public get migrations(): Array<string> {\n    return this.configService.get<Array<string>>('mssql.migrations') ?? [];\n  }\n\n  public get migrationsTableName(): string {\n    return (\n      this.configService.get<string>('mssql.migrationsTableName') ??\n      'migrations_TypeORM'\n    );\n  }\n\n  public get migrationsWaitDelayMilliseconds(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitDelayMilliseconds',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 3000 : value;\n  }\n\n  public get migrationsWaitRetryLimit(): number {\n    const value = this.configService.get<number>(\n      'mssql.migrationsWaitRetryLimit',\n    );\n\n    return Number.isNaN(value) || value === undefined ? 50 : value;\n  }\n\n  public get requestTimeout(): number {\n    const value = this.configService.get<number>('mssql.requestTimeout');\n\n    return Number.isNaN(value) || value === undefined ? 120_000 : value;\n  }\n}\n",
+    "taille": 2536
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/ingestion-cleansing-job/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  dataIngestionWorkdataRetentionDays: string | undefined;\n}\n\nconst ingestionCleansingJobConfig = (): Config => ({\n  dataIngestionWorkdataRetentionDays:\n    process.env.DATA_INGESTION_WORKDATA_RETENTION_DAYS,\n});\n\nexport { ingestionCleansingJobConfig };\n",
+    "taille": 272
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { IngestionCleansingJobConfigService } from './ingestion-cleansing-job.service';\nimport { AppConfigModule } from '@/config/app-config/app-config.module';\n\n@Module({\n  exports: [IngestionCleansingJobConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n    AppConfigModule,\n  ],\n\n  providers: [IngestionCleansingJobConfigService],\n})\nexport class IngestionCleansingJobConfigModule {}\n",
+    "taille": 510
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/config/ingestion-cleansing-job/ingestion-cleansing-job.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class IngestionCleansingJobConfigService implements OnModuleInit {\n  private readonly logger: AppLogger = new AppLogger(\n    IngestionCleansingJobConfigService.name,\n  );\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) { }\n\n  public async dataIngestionWorkdataRetentionDays(): Promise<number> {\n    const retentionDaysEnvironment = this.configService.get<string>(\n      'dataIngestionWorkdataRetentionDays',\n    );\n\n    if (retentionDaysEnvironment === undefined) {\n      const appStoreValue = Number(\n        await this.appConfigService.getConfigurationValue(\n          'SHIPMENT_DATA_INGESTION_WORKDATA_RETENTION_DAYS',\n        ),\n      );\n      return Number.isNaN(appStoreValue) ? 1 : appStoreValue ?? 1;\n    }\n    const retentionDays = Number(retentionDaysEnvironment);\n    return Number.isNaN(retentionDays) ? 1 : retentionDays ?? 1;\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      this.logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n        {\n          key: 'dataIngestionWorkdataRetentionDays',\n          value: await this.dataIngestionWorkdataRetentionDays(),\n        },\n      ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n  }\n}\n",
+    "taille": 2175
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Main.ts\nimport * as process from 'node:process';\nimport { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';\nimport { AppModule } from '@/app.module';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { MssqlConfigurationService } from '@/config/database/mssql/abstract.mssql.config.service';\nimport { MssqlDatabaseChecker } from '@/providers/database/mssql/mssql.database.checker';\n\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  process.env.TZ = 'UTC';\n  const app = await NestFactory.create(AppModule);\n  app.useGlobalPipes(\n    new ValidationPipe({\n      forbidNonWhitelisted: true,\n      transform: true,\n      whitelist: true,\n    }),\n  );\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n  const config = new DocumentBuilder()\n    .setTitle('shipment-api Swagger Documentation')\n    .setDescription(\n      \"In this page you'll find all of the necessary informations about the microservice shipment-api  and it's different endpoints.\",\n    )\n    .setVersion('1.0')\n    .addServer('https://mesx-ppr.app.corp/ship-api/', 'pre-production') // It will replaced by environment variable\n\n    .build();\n  const document = SwaggerModule.createDocument(app, config);\n  SwaggerModule.setup('api', app, document);\n\n  const databaseConfig = app.get(MssqlConfigurationService);\n  const { migrationsWaitDelayMilliseconds, migrationsWaitRetryLimit } =\n    databaseConfig;\n  const logger = new AppLogger(bootstrap.name);\n  const mssqlDatabaseChecker = app.get(MssqlDatabaseChecker);\n\n  await mssqlDatabaseChecker.waitForMigrations(\n    logger,\n    migrationsWaitDelayMilliseconds,\n    migrationsWaitRetryLimit,\n  );\n\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 1816
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration.data.source.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import 'dotenv/config';\nimport { DataSource } from 'typeorm';\nimport { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';\nimport { mssqlConfiguration } from '@/config/database/mssql/configuration';\nimport { DefaultMssqlConfigurationService } from '@/config/database/mssql/default.mssql.config.service';\nimport { getDatabaseConnectionProperties } from '@/providers/database/mssql/mssql.connection.factory';\n\nconst mssqlConfig = mssqlConfiguration().mssql;\n\nconst connectionProperties = getDatabaseConnectionProperties(\n  new DefaultMssqlConfigurationService(mssqlConfig),\n);\nconst dataSource = new DataSource({\n  ...connectionProperties,\n  logging: true,\n} as SqlServerConnectionOptions);\n\nexport { dataSource };\n",
+    "taille": 750
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1714493469208-first-migration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n/* eslint class-methods-use-this: \"off\" */\n\nexport default class FirstMigration1714493469208 implements MigrationInterface {\n  name = 'FirstMigration1714493469208';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"outbound_delivery\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_c4a68fd2e2c8865b952dce92039\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_7e86e46d5dc372c249f567f5d2e\" DEFAULT getdate(), \"deleted_at\" datetime2, \"outbound\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"tpa_code\" nvarchar(255), \"shipping_point\" nvarchar(255), \"ship_to\" nvarchar(255), CONSTRAINT \"PK_36a091be8b90a0c241497ba92e5\" PRIMARY KEY (\"outbound\", \"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"outbound_delivery\"`);\n  }\n}\n",
+    "taille": 934
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1716473174531-add-table-change-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class AddTableChangeLog1716473174531\n  implements MigrationInterface\n{\n  name = 'AddTableChangeLog1716473174531';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" nvarchar(20) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"table_change_log\"`);\n  }\n}\n",
+    "taille": 897
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1717065269605-modify-change-last-lsn-to-binary-10.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/* eslint-disable class-methods-use-this */\nimport { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport default class ModifyChangeLastLsnToBinary101717065269605\n  implements MigrationInterface\n{\n  name = 'ModifyChangeLastLsnToBinary101717065269605';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" binary(10) NOT NULL`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" DROP COLUMN \"change_last_lsn\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"table_change_log\" ADD \"change_last_lsn\" nvarchar(20) NOT NULL`,\n    );\n  }\n}\n",
+    "taille": 843
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1724249454383-add-plant-config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddPlantConfig1724249454383 implements MigrationInterface {\n  public name = 'AddPlantConfig1724249454383';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"plant-config\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_e2020bfe6b0cca9e24234730bb5\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_45e62d4c86d3f92057bf32a939d\" DEFAULT getdate(), \"deleted_at\" datetime2, \"plantconfig\" nvarchar(10) NOT NULL, \"plant\" int NOT NULL, \"past_late_acceptance\" int, CONSTRAINT \"PK_c0253fe14a61b0cf9cbea95ce76\" PRIMARY KEY (\"plantconfig\", \"plant\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"plant-config\"`);\n  }\n}\n",
+    "taille": 831
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1724411581177-plant-config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class PlantConfig1724411581177 implements MigrationInterface {\n  public name = 'PlantConfig1724411581177';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP CONSTRAINT \"PK_c0253fe14a61b0cf9cbea95ce76\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" ADD CONSTRAINT \"PK_a0885c7179d6d0304c0d23d1d31\" PRIMARY KEY (\"plant\")`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP COLUMN \"plantconfig\"`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" ADD \"plantconfig\" nvarchar(10) NOT NULL`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP CONSTRAINT \"PK_a0885c7179d6d0304c0d23d1d31\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" ADD CONSTRAINT \"PK_c0253fe14a61b0cf9cbea95ce76\" PRIMARY KEY (\"plantconfig\", \"plant\")`,\n    );\n  }\n}\n",
+    "taille": 1061
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1726162215455-add-table-customer.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddTableCustomer1726162215455 implements MigrationInterface {\n  public name = 'AddTableCustomer1726162215455';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"customer_def\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_03709ca6d1dcf6bf5a7da999f29\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_5f098caa2f61bf904037d4145c9\" DEFAULT getdate(), \"deleted_at\" datetime2, \"customer_code\" nvarchar(10) NOT NULL, \"name1\" nvarchar(35), \"name2\" nvarchar(35), \"city\" nvarchar(35), \"postal_code\" nvarchar(10), \"region\" nvarchar(3), \"country\" nvarchar(30), \"street\" nvarchar(35), \"tel\" nvarchar(16), \"fax\" nvarchar(31), \"language\" nvarchar(2), \"country_code\" nvarchar(3), \"address\" nvarchar(10), CONSTRAINT \"PK_1ee5dea7075cea9e8442c079fe2\" PRIMARY KEY (\"customer_code\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"customer_def\"`);\n  }\n}\n",
+    "taille": 1058
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1726741589131-add-table-tpa-code-assignment.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddTableTpaCodeAssignment1726741589131\n  implements MigrationInterface\n{\n  public name = 'AddTableTpaCodeAssignment1726741589131';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"tpa_assignment\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_fb262064cf0a8a4ae8082f0f801\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_828693a6bfb3474e32b44b27f65\" DEFAULT getdate(), \"deleted_at\" datetime2, \"assign_id\" int NOT NULL, \"plant\" int NOT NULL, \"tpa_id\" int NOT NULL, \"customer\" nvarchar(10) NOT NULL, \"begin_prep\" datetime NOT NULL, \"end_prep\" datetime NOT NULL, \"truck_departure\" datetime NOT NULL, \"tpa_code\" nvarchar(10) NOT NULL, CONSTRAINT \"PK_bc4a0521916040e2d1135efebce\" PRIMARY KEY (\"assign_id\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `CREATE TABLE \"tpa_code\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_afcaf4946896a7cbc0bb1babba9\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_d49ef2816b561bbce51fb23d4d5\" DEFAULT getdate(), \"deleted_at\" datetime2, \"tpaId\" int NOT NULL, \"plant\" int NOT NULL, \"tpa_code\" nvarchar(10) NOT NULL, \"tpa_desc\" nvarchar(20), \"inactive\" bit NOT NULL CONSTRAINT \"DF_aaa660d4e573fc7a0fb37d4207b\" DEFAULT 0, \"backup_tpa\" bit NOT NULL CONSTRAINT \"DF_e73b938ca5c56c2b5e63f5123ea\" DEFAULT 0, CONSTRAINT \"PK_114ad969cf27cb7c3ebbd92a395\" PRIMARY KEY (\"tpaId\", \"plant\"))`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"tpa_assignment\" ADD CONSTRAINT \"FK_c2ded2196792b6eddc476170830\" FOREIGN KEY (\"tpa_id\", \"plant\") REFERENCES \"tpa_code\"(\"tpaId\",\"plant\") ON DELETE NO ACTION ON UPDATE NO ACTION`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"tpa_assignment\" DROP CONSTRAINT \"FK_c2ded2196792b6eddc476170830\"`,\n    );\n    await queryRunner.query(`DROP TABLE \"tpa_code\"`);\n    await queryRunner.query(`DROP TABLE \"tpa_assignment\"`);\n  }\n}\n",
+    "taille": 2041
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1726768626076-update-tpacode-tpassign-to-remove-cercular-cycle.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class UpdateTpacodeTpassignToRemoveCercularCycle1726768626076\n  implements MigrationInterface\n{\n  public name = 'UpdateTpacodeTpassignToRemoveCercularCycle1726768626076';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `EXEC sp_rename \"SHP.dbo.tpa_code.tpaId\", \"tpa_id\"`,\n      await queryRunner.query(\n        `EXEC sp_rename \"SHP.dbo.tpa_code.PK_114ad969cf27cb7c3ebbd92a395\", \"PK_46ee963497220fe490eeb2e4001\"`,\n      ),\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `EXEC sp_rename \"SHP.dbo.tpa_code.PK_46ee963497220fe490eeb2e4001\", \"PK_114ad969cf27cb7c3ebbd92a395\"`,\n    );\n    await queryRunner.query(\n      `EXEC sp_rename \"SHP.dbo.tpa_code.tpa_id\", \"tpaId\"`,\n    );\n  }\n}\n",
+    "taille": 858
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1728573452339-add-columns-four-outbound-and-plant-config-tables.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddColumnsFourOutboundAndPlantConfigTables1728573452339\n  implements MigrationInterface\n{\n  name = 'AddColumnsFourOutboundAndPlantConfigTables1728573452339';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" ADD \"block_neo_logistic_modification\" bit NOT NULL CONSTRAINT \"DF_8e224bccc9f7267ef4190d380a7\" DEFAULT 0`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" ADD \"mandatory_dates_from_preactor\" bit NOT NULL CONSTRAINT \"DF_059b4425c58a9ee471007232aed\" DEFAULT 0`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" ADD \"parts\" nvarchar(18)`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" ADD \"hd_status\" nvarchar(10)`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP COLUMN \"hd_status\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP COLUMN \"parts\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP CONSTRAINT \"DF_059b4425c58a9ee471007232aed\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP COLUMN \"mandatory_dates_from_preactor\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP CONSTRAINT \"DF_8e224bccc9f7267ef4190d380a7\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"plant-config\" DROP COLUMN \"block_neo_logistic_modification\"`,\n    );\n  }\n}\n",
+    "taille": 1601
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1728660913875-remove-parts-from-outbd.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RemovePartsFromOutbd1728660913875 implements MigrationInterface {\n  public name = 'RemovePartsFromOutbd1728660913875';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP COLUMN \"parts\"`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" ADD \"parts\" nvarchar(18)`,\n    );\n  }\n}\n",
+    "taille": 527
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1729612480638-add-exp-ship-in-outbd-del.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddExpShipInOutbdDel1729612480638 implements MigrationInterface {\n  public name = 'AddExpShipInOutbdDel1729612480638';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" ADD \"exp_ship\" datetime`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP COLUMN \"exp_ship\"`,\n    );\n  }\n}\n",
+    "taille": 529
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1729778250447-create-table-outbound-del-dtl.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class CreateTableOutboundDelDtl1729778250447\n  implements MigrationInterface\n{\n  public name = 'CreateTableOutboundDelDtl1729778250447';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"outbound_delivery_dtl\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_ddc435862eb0f940daaf4bb310e\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_7d3180e06874a26d69284011072\" DEFAULT getdate(), \"deleted_at\" datetime2, \"plant\" int NOT NULL, \"outbound\" nvarchar(10) NOT NULL, \"material_number\" int NOT NULL, \"material\" nvarchar(16), CONSTRAINT \"PK_544dd4c2eaaaacaf7f02d93f432\" PRIMARY KEY (\"plant\", \"outbound\", \"material_number\"))`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"outbound_delivery_dtl\"`);\n  }\n}\n",
+    "taille": 915
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1732613533950-update-material-length.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class UpdateMaterialLength1732613533950 implements MigrationInterface {\n  public name = 'UpdateMaterialLength1732613533950';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`\n          ALTER TABLE outbound_delivery_dtl\n          ALTER COLUMN material NVARCHAR(18)\n        `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`\n          ALTER TABLE outbound_delivery_dtl\n          ALTER COLUMN material NVARCHAR(16)\n        `);\n  }\n}\n",
+    "taille": 590
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1734693125982-drop-table-change-log-add-ingestion-event-tracking.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class DropTableChangeLogAddIngestionEventTracking1732544491973\n  implements MigrationInterface\n{\n  public name = 'DropTableChangeLogAddIngestionEventTracking1732544491973';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE TABLE \"ingestion_event_tracking\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_395bbcdbaf782420c08deb984d7\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_b59b47e3f14a85cdf499873040b\" DEFAULT getdate(), \"deleted_at\" datetime2, \"hash_key\" char(64) NOT NULL, \"keys\" nvarchar(1236) NOT NULL, \"source_table\" nvarchar(50) NOT NULL, \"destination_table\" nvarchar(50), \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_399631b334958d1f3d7e006eca0\" PRIMARY KEY (\"hash_key\")) ;\n      DROP TABLE \"table_change_log\";`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(`DROP TABLE \"ingestion_event_tracking\";\n        CREATE TABLE \"table_change_log\" (\"created_at\" datetime2 NOT NULL CONSTRAINT \"DF_744be386ea4189b5f4454cb84e0\" DEFAULT getdate(), \"updated_at\" datetime2 NOT NULL CONSTRAINT \"DF_e9eb402a8cca95244bea744d5c6\" DEFAULT getdate(), \"deleted_at\" datetime2, \"table\" nvarchar(50) NOT NULL, \"change_last_lsn\" binary(10) NOT NULL, \"last_timestamp \" bigint NOT NULL, CONSTRAINT \"PK_5b08a70b310cbfafb5c304faf7c\" PRIMARY KEY (\"table\"))`);\n  }\n}\n",
+    "taille": 1491
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1741096086409-add-new-index-to-tpa-assignment.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddNewIndexToTpaAssignment1741096086409\n  implements MigrationInterface\n{\n  public name = 'AddNewIndexToTpaAssignment1741096086409';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `CREATE INDEX \"IDX_TPA_PLANT_TRUCK_DEPARTURE_CUSTOMER\" ON \"tpa_assignment\" (\"plant\", \"truck_departure\", \"customer\") `,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `DROP INDEX \"IDX_TPA_PLANT_TRUCK_DEPARTURE_CUSTOMER\" ON \"tpa_assignment\"`,\n    );\n  }\n}\n",
+    "taille": 620
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1745327270026-add-processed-outbd-del.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddProcessedOutbdDel1745327270026 implements MigrationInterface {\n  public name = 'AddProcessedOutbdDel1745327270026';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    // Add new column processed\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" ADD \"processed\" bit NOT NULL CONSTRAINT \"DF_7a62f0584f1bf2c0a3ed5c816e1\" DEFAULT 0`,\n    );\n    // Update existing records older than 2 months to avoid processing old and non-relevant data\n    await queryRunner.query(\n      `UPDATE \"outbound_delivery\" SET \"processed\" = 1 WHERE \"hd_status\" = 'CLOSEDSAP'`,\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP CONSTRAINT \"DF_7a62f0584f1bf2c0a3ed5c816e1\"`,\n    );\n    await queryRunner.query(\n      `ALTER TABLE \"outbound_delivery\" DROP COLUMN \"processed\"`,\n    );\n  }\n}\n",
+    "taille": 968
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1762531425653-add-sap-server-to-table-customer.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddSapServerToTableCustomer1762531425653\n  implements MigrationInterface\n{\n  public name = 'AddSapServerToTableCustomer1762531425653';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    // Step 1: Add the new column sap_server with NOT NULL and default\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      ADD sap_server NVARCHAR(3) NOT NULL CONSTRAINT DF_customer_def_sap_server DEFAULT 'FC1';\n    `);\n\n    // Step 2: Retrieve the current primary key constraint name dynamically\n    const pkResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('customer_def')\n    `);\n\n    const pkName = pkResult[0].name;\n\n    // Step 3: Drop the existing primary key dynamically\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      DROP CONSTRAINT [${pkName}];\n    `);\n\n    // Step 4: Create a new composite primary key (customer_code, sap_server)\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      ADD CONSTRAINT PK_customer_def PRIMARY KEY (customer_code, sap_server);\n    `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    // Step 1: Drop the composite primary key\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      DROP CONSTRAINT PK_customer_def;\n    `);\n\n    // Step 2: Restore the original primary key dynamically\n    const pkResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('customer_def')\n    `);\n\n    const originalPkName =\n      pkResult.length > 0 ? pkResult[0].name : 'PK_customer_def';\n\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      ADD CONSTRAINT [${originalPkName}] PRIMARY KEY (customer_code);\n    `);\n\n    // Step 3: Drop the default constraint on sap_server\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      DROP CONSTRAINT DF_customer_def_sap_server;\n    `);\n\n    // Step 4: Drop the sap_server column\n    await queryRunner.query(`\n      ALTER TABLE customer_def\n      DROP COLUMN sap_server;\n    `);\n  }\n}\n",
+    "taille": 2206
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1763992053487-add-sap-server-to-outbound-tables.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddSapServerToOutboundTables1763992053487\n  implements MigrationInterface\n{\n  public name = 'AddSapServerToOutboundTables1763992053487';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    // === OUTBOUND_DELIVERY ===\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      ADD sap_server NVARCHAR(3) NOT NULL CONSTRAINT DF_outbound_delivery_sap_server DEFAULT 'FC1';\n    `);\n\n    const pkDeliveryResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('outbound_delivery')\n    `);\n\n    const pkDeliveryName = pkDeliveryResult[0].name;\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      DROP CONSTRAINT [${pkDeliveryName}];\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      ADD CONSTRAINT PK_outbound_delivery PRIMARY KEY (outbound, plant ,sap_server);\n    `);\n\n    // === OUTBOUND_DELIVERY_DTL ===\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      ADD sap_server NVARCHAR(3) NOT NULL CONSTRAINT DF_outbound_delivery_dtl_sap_server DEFAULT 'FC1';\n    `);\n\n    const pkDtlResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('outbound_delivery_dtl')\n    `);\n\n    const pkDtlName = pkDtlResult[0].name;\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      DROP CONSTRAINT [${pkDtlName}];\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      ADD CONSTRAINT PK_outbound_delivery_dtl PRIMARY KEY (outbound,plant,material_number,sap_server);\n    `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    // === OUTBOUND_DELIVERY ===\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      DROP CONSTRAINT PK_outbound_delivery;\n    `);\n\n    const pkDeliveryResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('outbound_delivery')\n    `);\n\n    const originalPkDeliveryName =\n      pkDeliveryResult.length > 0\n        ? pkDeliveryResult[0].name\n        : 'PK_outbound_delivery';\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      ADD CONSTRAINT [${originalPkDeliveryName}] PRIMARY KEY (outbound);\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      DROP CONSTRAINT DF_outbound_delivery_sap_server;\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      DROP COLUMN sap_server;\n    `);\n\n    // === OUTBOUND_DELIVERY_DTL ===\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      DROP CONSTRAINT PK_outbound_delivery_dtl;\n    `);\n\n    const pkDtlResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('outbound_delivery_dtl')\n    `);\n\n    const originalPkDtlName =\n      pkDtlResult.length > 0 ? pkDtlResult[0].name : 'PK_outbound_delivery_dtl';\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      ADD CONSTRAINT [${originalPkDtlName}] PRIMARY KEY (outbound);\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      DROP CONSTRAINT DF_outbound_delivery_dtl_sap_server;\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery_dtl\n      DROP COLUMN sap_server;\n    `);\n  }\n}\n",
+    "taille": 3557
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1763993411767-drop-plant-column-from-outbound.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class DropPlantColumnFromOutbound1763993411767\n  implements MigrationInterface\n{\n  public name = 'DropPlantColumnFromOutbound1763993411767';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    const pkResult = await queryRunner.query(`\n      SELECT name \n      FROM sys.key_constraints\n      WHERE type = 'PK' AND parent_object_id = OBJECT_ID('outbound_delivery')\n    `);\n\n    const pkName = pkResult[0].name;\n    // Step 3: Drop the existing primary key dynamically\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery\n      DROP CONSTRAINT [${pkName}];\n    `);\n\n    // Drop the plant column\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery DROP COLUMN plant\n    `);\n\n    // Add new PK constraint\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery ADD CONSTRAINT PK_outbound_delivery_new PRIMARY KEY (outbound, sap_server)\n    `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    // Drop new PK\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery DROP CONSTRAINT PK_outbound_delivery_new\n    `);\n\n    // Re-add plant column\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery ADD plant int NOT NULL\n    `);\n\n    // Restore old PK\n    await queryRunner.query(`\n      ALTER TABLE outbound_delivery ADD CONSTRAINT PK_outbound_delivery PRIMARY KEY (outbound, plant, sap_server)\n    `);\n  }\n}\n",
+    "taille": 1466
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1763994267788-add-sap-server-to-table-plant-config.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class AddSapServerToTablePlantConfig1763994267788\n  implements MigrationInterface\n{\n  public name = 'AddSapServerToTablePlantConfig1763994267788';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    // 1. Add nullable column with default constraint\n    await queryRunner.query(`\n      ALTER TABLE [plant-config]\n      ADD sap_server NVARCHAR(3) NULL\n      CONSTRAINT DF_plant_config_sap_server DEFAULT 'FC1';\n    `);\n\n    // 2. Update existing rows to apply default\n    await queryRunner.query(`\n      UPDATE [plant-config]\n      SET sap_server = 'FC1'\n      WHERE sap_server IS NULL;\n    `);\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    // Reverse order: drop default â drop column\n    await queryRunner.query(`\n      ALTER TABLE [plant-config]\n      DROP CONSTRAINT DF_plant_config_sap_server;\n    `);\n\n    await queryRunner.query(`\n      ALTER TABLE [plant-config]\n      DROP COLUMN sap_server;\n    `);\n  }\n}\n",
+    "taille": 1022
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/migration/1771419734961-remove-delete-column.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { MigrationInterface, QueryRunner } from 'typeorm';\n\nexport class RemoveDeleteColumn1771419734961 implements MigrationInterface {\n  public readonly name = 'RemoveDeleteColumn1771419734961';\n\n  public async up(queryRunner: QueryRunner): Promise<void> {\n    const tables = [\n      'tpa_code',\n      'plant-config',\n      'outbound_delivery_dtl',\n      'tpa_assignment',\n      'outbound_delivery',\n      'ingestion_event_tracking',\n      'customer_def',\n    ];\n\n    await Promise.all(\n      tables.map(async (table) => {\n        const hasDeletedAtColumn = await queryRunner.hasColumn(\n          table,\n          'deleted_at',\n        );\n\n        if (hasDeletedAtColumn) {\n          await queryRunner.query(\n            `ALTER TABLE \"${table}\" DROP COLUMN \"deleted_at\"`,\n          );\n        }\n      }),\n    );\n  }\n\n  public async down(queryRunner: QueryRunner): Promise<void> {\n    const tables = [\n      'customer_def',\n      'ingestion_event_tracking',\n      'outbound_delivery',\n      'tpa_assignment',\n      'outbound_delivery_dtl',\n      'plant-config',\n      'tpa_code',\n    ];\n\n    await Promise.all(\n      tables.map(async (table) => {\n        const hasDeletedAtColumn = await queryRunner.hasColumn(\n          table,\n          'deleted_at',\n        );\n\n        if (!hasDeletedAtColumn) {\n          await queryRunner.query(\n            `ALTER TABLE \"${table}\" ADD \"deleted_at\" datetime2`,\n          );\n        }\n      }),\n    );\n  }\n}\n",
+    "taille": 1446
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/customer.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Body,\n  Controller,\n  Get,\n  InternalServerErrorException,\n  NotFoundException,\n  Param,\n  Post,\n  Res,\n  UseFilters,\n} from '@nestjs/common';\nimport {\n  ApiBody,\n  ApiOkResponse,\n  ApiOperation,\n  ApiParam,\n} from '@nestjs/swagger';\nimport { Response } from 'express';\nimport { CustomerService } from './customer.service';\nimport { CustomerCodesDTO } from './dtos/customer-codes.dto';\nimport { CustomerParameterDTO } from './dtos/customer-parameter.dto';\nimport { CustomerResponseDTO } from './dtos/customer-response.dto';\nimport { MesGenericErrorFilter } from '@/common/filters/mes-generic-error.filter';\n\n// Controller for handling customer-related requests\n@Controller('customer')\nexport class CustomerController {\n  public constructor(private readonly customerService: CustomerService) {}\n\n  @ApiOperation({\n    description:\n      'This endpoint allows you to retrieve the details of a customer based on a specific customer code.',\n    summary: 'Get details of customer by customer code',\n  })\n  @ApiOkResponse({\n    description: 'The customer details',\n    type: CustomerResponseDTO,\n  })\n  @ApiParam({\n    example: 'C1',\n    name: 'customerCode',\n    required: true,\n    type: String,\n  })\n  @Get('/getCustomerByCode/:customerCode')\n  public async getCustomerByCode(\n    @Param() parameters: CustomerParameterDTO,\n  ): Promise<CustomerResponseDTO> {\n    try {\n      const customer = await this.customerService.getCustomerByCode(\n        parameters.customerCode,\n      );\n      return customer;\n    } catch (error) {\n      throw new NotFoundException(error.message);\n    }\n  }\n\n  @ApiOperation({\n    description:\n      'Retrieve details of multiple customers based on a list of customer codes provided in the request body.',\n    summary: 'Get details of multiple customers by customer codes',\n  })\n  @ApiOkResponse({\n    description: 'Details of the requested customers',\n    type: [CustomerResponseDTO],\n  })\n  @ApiBody({\n    description: 'List of customer codes to retrieve details for',\n    type: CustomerCodesDTO,\n  })\n  @Post('/getCustomersByCodes')\n  public async getCustomersByCodes(\n    @Body()\n    customerParameters: {\n      customerCodes: Array<string>;\n      sapServer: string;\n    },\n  ): Promise<Array<CustomerResponseDTO>> {\n    try {\n      const { sapServer, customerCodes } = customerParameters;\n      // Retrieve customers based on the array of codes\n      const customers = await this.customerService.getCustomersByCodes(\n        customerCodes,\n        sapServer,\n      );\n\n      return customers;\n    } catch (error) {\n      const errorNotFoundException =\n        error instanceof NotFoundException\n          ? error\n          : new InternalServerErrorException(\n              'An error occurred while fetching customer details',\n              error,\n            );\n      throw errorNotFoundException;\n    }\n  }\n\n  @ApiOperation({\n    description:\n      'Retrieve details of multiple customers based on a list of customer codes provided in the request body.',\n    summary: 'Get details of multiple customers by customer codes',\n  })\n  @ApiOkResponse({\n    description: 'Details of the requested customers',\n    schema: {\n      type: 'object',\n      additionalProperties: { type: 'string' }, // The response is an object represent Record<string,string>\n    },\n  })\n  @ApiBody({\n    description: 'List of customer codes to retrieve details for',\n    type: Array<string>,\n  })\n  @UseFilters(MesGenericErrorFilter)\n  @Post('/getCustomersByCodesList')\n  public async getCustomersByCodesList(\n    @Body()\n    customerParameters: { sapServer: string; customerCodes: Array<string> },\n    @Res() response: Response,\n  ): Promise<Response> {\n    const { sapServer, customerCodes } = customerParameters;\n\n    // Call service to retrieve customers\n    const customers = await this.customerService.getCustomerDescByCustomerCodes(\n      sapServer,\n      customerCodes,\n    );\n\n    return response.json(customers);\n  }\n}\n",
+    "taille": 3943
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/customer.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Entity, Column, PrimaryColumn } from 'typeorm';\nimport { TimeStamp } from '@/modules/generics/timestamp';\n\n@Entity({ name: 'customer_def' })\nexport class Customer extends TimeStamp {\n  @PrimaryColumn({\n    length: 10,\n    name: 'customer_code',\n    nullable: false,\n    type: 'nvarchar',\n  })\n  public customerCode: string;\n\n  @Column({ length: 35, name: 'name1', nullable: true, type: 'nvarchar' })\n  public name1?: string;\n\n  @Column({ length: 35, name: 'name2', nullable: true, type: 'nvarchar' })\n  public name2?: string;\n\n  @Column({ length: 35, name: 'city', nullable: true, type: 'nvarchar' })\n  public city?: string;\n\n  @Column({ length: 10, name: 'postal_code', nullable: true, type: 'nvarchar' })\n  public postalCode?: string;\n\n  @Column({ length: 3, name: 'region', nullable: true, type: 'nvarchar' })\n  public region?: string;\n\n  @Column({ length: 30, name: 'country', nullable: true, type: 'nvarchar' })\n  public country?: string;\n\n  @Column({ length: 35, name: 'street', nullable: true, type: 'nvarchar' })\n  public street?: string;\n\n  @Column({ length: 16, name: 'tel', nullable: true, type: 'nvarchar' })\n  public tel?: string;\n\n  @Column({ length: 31, name: 'fax', nullable: true, type: 'nvarchar' })\n  public fax?: string;\n\n  @Column({ length: 2, name: 'language', nullable: true, type: 'nvarchar' })\n  public language?: string;\n\n  @Column({ length: 3, name: 'country_code', nullable: true, type: 'nvarchar' })\n  public countryCode?: string;\n\n  @Column({ length: 10, name: 'address', nullable: true, type: 'nvarchar' })\n  public address?: string;\n\n  @PrimaryColumn({ length: 3, name: 'sap_server', nullable: false })\n  public sapServer: string;\n}\n",
+    "taille": 1674
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/customer.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { CustomerController } from './customer.controller';\nimport { Customer } from './customer.entity';\nimport { CustomerService } from './customer.service';\n\n@Module({\n  controllers: [CustomerController],\n  imports: [TypeOrmModule.forFeature([Customer])],\n  providers: [CustomerService, ConfigService],\n})\nexport class CustomerModule {}\n",
+    "taille": 478
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/customer.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import {\n  Injectable,\n  InternalServerErrorException,\n  NotFoundException,\n} from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { In, Repository } from 'typeorm';\nimport { Customer } from './customer.entity';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class CustomerService {\n  private readonly logger = new AppLogger(CustomerService.name);\n\n  public constructor(\n    @InjectRepository(Customer)\n    private readonly customerRepository: Repository<Customer>,\n  ) {}\n\n  // Fetch customer details by customerCode\n  public async getCustomerByCode(customerCode: string): Promise<Customer> {\n    try {\n      const customer = await this.customerRepository.findOne({\n        where: { customerCode },\n      });\n\n      if (!customer) {\n        const newCustomer = new Customer();\n        newCustomer.name1 = '';\n        newCustomer.name2 = '';\n        newCustomer.street = '';\n        newCustomer.city = '';\n        newCustomer.postalCode = '';\n        newCustomer.country = '';\n        newCustomer.customerCode = '';\n        return newCustomer;\n      }\n\n      return customer;\n    } catch (error) {\n      const customer = new Customer();\n      customer.name1 = '';\n      customer.name2 = '';\n      customer.street = '';\n      customer.city = '';\n      customer.postalCode = '';\n      customer.country = '';\n      customer.customerCode = '';\n      this.logger.error(\n        `Failed to retrieve Customer Details: ${error.message}`,\n      );\n      return customer;\n    }\n  }\n\n  public async getCustomersByCodes(\n    customerCodes: Array<string>,\n    sapServer: string,\n  ): Promise<Array<Customer>> {\n    try {\n      // Retrieve multiple customers by matching any customerCode in the provided list\n      const customers = await this.customerRepository.find({\n        where: { customerCode: In(customerCodes), sapServer },\n      });\n      return customers;\n    } catch (error) {\n      this.logger.error(\n        `Failed to retrieve customers by codes: ${error.message}`,\n      );\n      const errorNotFound =\n        error instanceof NotFoundException\n          ? error\n          : new InternalServerErrorException(\n              'Failed to retrieve customers by codes',\n              error,\n            );\n      throw errorNotFound;\n    }\n  }\n\n  public async getCustomerDescByCustomerCodes(\n    sapServer: string,\n    customerCodes: Array<string>,\n  ): Promise<Record<string, string>> {\n    const responseMap: Record<string, string> = {};\n\n    try {\n      if (customerCodes.length === 0) {\n        return responseMap; // No codes provided\n      }\n\n      // Retrieve customers matching the provided codes and SAP server\n      const customers = await this.customerRepository.find({\n        where: { customerCode: In(customerCodes), sapServer },\n      });\n\n      if (customers.length === 0) {\n        throw new NotFoundException('No customers found');\n      }\n\n      // Map each requested customer code to its corresponding name\n      for (const customerCode of customerCodes) {\n        const customer = customers.find((c) => c.customerCode === customerCode);\n        responseMap[customerCode] = customer ? String(customer.name1) : '';\n      }\n    } catch (error) {\n      this.logger.error(\n        `Failed to retrieve customer descriptions: ${error.message}`,\n      );\n\n      throw error instanceof NotFoundException\n        ? error\n        : new InternalServerErrorException(\n            'Failed to retrieve customer descriptions',\n            error,\n          );\n    }\n\n    return responseMap;\n  }\n}\n",
+    "taille": 3556
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/dtos/customer-codes.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsArray, IsString } from 'class-validator';\n\nexport class CustomerCodesDTO {\n  @ApiProperty({\n    description: 'Array of customer codes',\n    example: ['C1', 'C2', 'C3'],\n    type: [String],\n  })\n  @IsArray()\n  @IsString({ each: true })\n  public customerCodes: Array<string>;\n}\n",
+    "taille": 334
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/dtos/customer-description-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString } from 'class-validator';\n\nexport class CustomerDescriptionResponseDTO {\n  @ApiProperty({\n    description: 'The unique customer code',\n    example: 'C1',\n  })\n  @IsString()\n  public name1: string;\n}\n",
+    "taille": 264
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/dtos/customer-parameter.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString, Length } from 'class-validator';\n\nexport class CustomerParameterDTO {\n  @ApiProperty({\n    description: 'The unique customer code',\n    example: 'C1',\n  })\n  @IsString()\n  @Length(1, 10)\n  public customerCode: string;\n}\n",
+    "taille": 286
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/dtos/customer-parameters.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsArray, IsString } from 'class-validator';\n\nexport class CustomerParametersDTO {\n  @ApiProperty({\n    description: 'The unique customer code',\n    example: 'C1',\n  })\n  @IsArray()\n  @IsString({ each: true })\n  @ApiProperty({\n    example: ['0000000028', '0000000029'],\n    required: false,\n    type: [String],\n  })\n  public customerCodes: Array<string>;\n}\n",
+    "taille": 412
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/customer/dtos/customer-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\n\nexport class CustomerResponseDTO {\n  @ApiProperty({\n    description: 'The unique code of the customer',\n    example: 'C1',\n  })\n  public customerCode: string;\n\n  @ApiProperty({\n    description: 'The first name of the customer',\n    example: 'John',\n  })\n  public name1?: string;\n\n  @ApiProperty({\n    description: 'The second name of the customer',\n    example: 'Doe',\n  })\n  public name2?: string;\n\n  @ApiProperty({\n    description: 'The city where the customer is located',\n    example: 'New York',\n  })\n  public city?: string;\n\n  @ApiProperty({\n    description: 'The postal code of the customer',\n    example: '10001',\n  })\n  public postalCode?: string;\n\n  @ApiProperty({\n    description: 'The region of the customer',\n    example: 'NY',\n  })\n  public region?: string;\n\n  @ApiProperty({\n    description: 'The country of the customer',\n    example: 'USA',\n  })\n  public country?: string;\n\n  @ApiProperty({\n    description: 'The street address of the customer',\n    example: '123 Elm Street',\n  })\n  public street?: string;\n\n  @ApiProperty({\n    description: 'The telephone number of the customer',\n    example: '+1234567890',\n  })\n  public tel?: string;\n\n  @ApiProperty({\n    description: 'The fax number of the customer',\n    example: '+0987654321',\n  })\n  public fax?: string;\n\n  @ApiProperty({\n    description: 'The language spoken by the customer',\n    example: 'EN',\n  })\n  public language?: string;\n\n  @ApiProperty({\n    description: 'The country code of the customer',\n    example: '001',\n  })\n  public countryCode?: string;\n\n  @ApiProperty({\n    description: 'Additional address information for the customer',\n    example: 'Suite 500',\n  })\n  public address?: string;\n}\n",
+    "taille": 1728
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/generics/softdeletetimestamp.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * This class provides timestamp functionality by defining createdAt, updatedAt, and deletedAt columns.\n * It is intended to be extended by other entities to automatically track creation, update, and deletion timestamps.\n */\n\n// Import necessary modules and dependencies\nimport { DeleteDateColumn } from 'typeorm';\nimport { TimeStamp } from '@/modules/generics/timestamp';\n\nexport class SoftDeleteTimeStamp extends TimeStamp {\n  // Column representing the timestamp when the entity was created\n  @DeleteDateColumn({ name: 'deleted_at' })\n  public deletedAt: Date;\n}\n",
+    "taille": 570
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/generics/timestamp.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * This class provides timestamp functionality by defining createdAt, updatedAt, and deletedAt columns.\n * It is intended to be extended by other entities to automatically track creation, update, and deletion timestamps.\n */\n\n// Import necessary modules and dependencies\nimport { CreateDateColumn, UpdateDateColumn } from 'typeorm';\n\nexport class TimeStamp {\n  // Column representing the timestamp when the entity was created\n  @CreateDateColumn({ name: 'created_at' })\n  public createdAt: Date;\n\n  // Column representing the timestamp when the entity was last updated\n  @UpdateDateColumn({ name: 'updated_at' })\n  public updatedAt: Date;\n}\n",
+    "taille": 645
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/ingestion-event-tracking/ingestion-event-tracking.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Delete, HttpException, HttpStatus } from '@nestjs/common';\nimport {\n  ApiInternalServerErrorResponse,\n  ApiOperation,\n  ApiResponse,\n  ApiTags,\n} from '@nestjs/swagger';\nimport { IngestionEventTrackingService } from './ingestion-event-tracking.service';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@ApiTags('Data Ingestion')\n@Controller('data-ingestion')\nexport class IngestionEventTrackingController {\n  private readonly logger = new AppLogger(\n    IngestionEventTrackingController.name,\n  );\n\n  public constructor(\n    private readonly ingestionEventTrackingService: IngestionEventTrackingService,\n  ) {}\n\n  @Delete('deleteExpiredIngestionEventTracking')\n  @ApiOperation({\n    description:\n      'Deletes Ingestion Event Tracking  that are older than the defined retention time (1 day after launchDatetime).',\n    summary: 'Delete expired Ingestion Event Tracking records',\n  })\n  @ApiResponse({\n    description:\n      'Successfully deleted expired Ingestion Event Tracking records',\n    schema: {\n      example: {\n        deletedCount: 5,\n      },\n    },\n    status: HttpStatus.OK,\n  })\n  @ApiInternalServerErrorResponse({\n    description: 'Internal Server Error.',\n    status: 500,\n  })\n  public async deleteExpiredIngestionEventTracking(): Promise<string> {\n    try {\n      const result =\n        await this.ingestionEventTrackingService.deleteExpiredIngestionEventTracking();\n      return `Expired ingestion event tracking deleted successfully ${result.deletedCount}`;\n    } catch (error) {\n      this.logger.error(\n        `Failed to delete expired ingestion event tracking records: ${error.message}`,\n        error.stack,\n      );\n      throw new HttpException(\n        `Failed to delete expired ingestion event tracking records: ${error.message}`,\n        HttpStatus.INTERNAL_SERVER_ERROR,\n      );\n    }\n  }\n}\n",
+    "taille": 1854
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/ingestion-event-tracking/ingestion-event-tracking.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Column, Entity, PrimaryColumn } from 'typeorm';\nimport { TimeStamp } from '@/modules/generics/timestamp';\n\n@Entity('ingestion_event_tracking')\nexport class IngestionEventTracking extends TimeStamp {\n  @PrimaryColumn({\n    length: 64,\n    name: 'hash_key',\n    nullable: false,\n    type: 'char',\n  })\n  public hashKey: string; // Hash of sourceTable + keys +destinationTable.\n\n  @Column({ length: 1236, name: 'keys', nullable: false }) // 1236 is the max length of the keys max MII KEY 412 * 3 = 1236\n  public keys: string;\n\n  @Column({ length: 50, name: 'source_table', nullable: false })\n  public sourceTable: string;\n\n  @Column({ length: 50, name: 'destination_table', nullable: true })\n  public destinationTable: string;\n\n  @Column({\n    length: 10,\n    name: 'change_last_lsn',\n    nullable: false,\n    type: 'binary',\n  })\n  public changeLastLsn: Buffer;\n\n  @Column({ name: 'last_timestamp ', nullable: false, type: 'bigint' })\n  public lastTimestamp: number;\n}\n",
+    "taille": 976
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/ingestion-event-tracking/ingestion-event-tracking.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { TypeOrmModule } from '@nestjs/typeorm';\nimport { IngestionEventTrackingService } from './ingestion-event-tracking.service';\nimport { IngestionCleansingJobConfigModule } from '@/config/ingestion-cleansing-job/ingestion-cleansing-job.module';\nimport { IngestionEventTrackingController } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.controller';\nimport { IngestionEventTracking } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.entity';\n\n@Module({\n  controllers: [IngestionEventTrackingController],\n  imports: [\n    TypeOrmModule.forFeature([IngestionEventTracking]),\n    IngestionCleansingJobConfigModule,\n  ],\n  providers: [IngestionEventTrackingService],\n})\nexport class IngestionEventTrackingModule {}\n",
+    "taille": 792
+  },
+  {
+    "microservice": "mesx-shipment-api",
+    "chemin": "/src/modules/ingestion-event-tracking/ingestion-event-tracking.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { InjectRepository } from '@nestjs/typeorm';\nimport { Repository } from 'typeorm';\nimport { IngestionEventTracking } from './ingestion-event-tracking.entity';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { IngestionCleansingJobConfigService } from '@/config/ingestion-cleansing-job/ingestion-cleansing-job.service';\n\n@Injectable()\nexport class IngestionEventTrackingService {\n  private readonly logger = new AppLogger(IngestionEventTrackingService.name);\n\n  public constructor(\n    @InjectRepository(IngestionEventTracking)\n    private readonly ingestionEventTrackingRepository: Repository<IngestionEventTracking>,\n    private readonly ingestionCleansingJobConfigService: IngestionCleansingJobConfigService,\n  ) { }\n\n  public async deleteExpiredIngestionEventTracking(): Promise<{\n    deletedCount: number;\n  }> {\n    try {\n      const retentionDays =\n        -(await this.ingestionCleansingJobConfigService.dataIngestionWorkdataRetentionDays()); // Adjust the retention period as needed\n      const result = await this.ingestionEventTrackingRepository\n        .createQueryBuilder()\n        .delete()\n        .from(IngestionEventTracking)\n        .where(\n          'updated_at < DATEADD(DAY, :retentionDays, CURRENT_TIMESTAMP) ',\n          {\n            retentionDays,\n          },\n        )\n        .execute();\n      return { deletedCount: result.affected ?? 0 };\n    } catch (error) {\n      this.logger.error(\n        'Failed to delete expired ingestion event tracking records',\n        error.stack,\n      );\n      throw new Error(\n        'Failed to delete expired ingestion event tracking records',\n      );\n    }\n  }\n}\n",
+    "taille": 1694
+  }
+]

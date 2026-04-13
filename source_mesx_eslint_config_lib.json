@@ -1,0 +1,50 @@
+[
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\nextends:\n  template: \"jobs/megalinter.yml@pipelines\"\n  parameters:\n    megalinter_image_name: oxsecurity/megalinter-formatters\n    megalinter_configuration:\n      - name: DISABLE\n        value: SPELL\n    publish_to_sonarqube: true\n",
+    "taille": 516
+  },
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "parameters:\n- name: force_publish\n  displayName: 'Force publish of the npm package when branch is not \"main\"'\n  type: boolean\n  default: false\n\ntrigger:\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\njobs:\n- job: 'publish_npm_package'\n  pool: ubuntu-2204-vmss-mesx\n  steps:\n  - task: npmAuthenticate@0\n    inputs:\n      workingFile: .npmrc\n    displayName: Authenticate Private npm Registry\n\n  - script: |\n      npm install -D\n    displayName: Install npm Dependencies\n\n  - script: |\n      npm audit\n    displayName: Check For Vulnerable Dependencies\n\n  - script: |\n      npm publish\n    displayName: Publish npm Package\n    condition: ${{ or(eq(parameters.force_publish, true), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}\n\n",
+    "taille": 778
+  },
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/backend.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {\n  plugins: [\n    'filenames'\n  ],\n  extends: [\n    'plugin:@typescript-eslint/recommended',\n    'airbnb-base',\n    'airbnb-typescript/base',\n    './prettier-override.js'\n  ],\n  rules: {\n    '@typescript-eslint/explicit-function-return-type': 'error',\n    '@typescript-eslint/explicit-module-boundary-types': 'error',\n    'filenames/match-regex': ['error', '^[a-z][a-z0-9.-]+$', false],\n    'object-curly-newline': 'off',\n    'linebreak-style': 'off',\n    'import/extensions': 'off',\n  },\n  overrides: [\n    {\n      files: [ 'src/**/*.ts', 'test/**/*.ts' ],\n      rules: {\n        'import/prefer-default-export': 'off'\n      }\n    },\n    {\n      files: [ 'src/migration/**/*.ts' ],\n      rules: {\n        'class-methods-use-this': 'off',\n        'filenames/match-regex': ['error', '^[0-9]+[a-z0-9.-]+$', false],\n      }\n    }\n  ]\n};\n",
+    "taille": 851
+  },
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/frontend.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {\n  extends: [\n    'plugin:@typescript-eslint/recommended',\n    'plugin:vue/vue3-essential',\n    '@vue/eslint-config-typescript',\n    '@vue/eslint-config-airbnb',\n    './prettier-override.js',\n  ],\n  rules: {\n    'no-unused-vars': 'off',\n    'linebreak-style': 'off',\n    'vuejs-accessibility/alt-text': 'off',\n    'vuejs-accessibility/anchor-has-content': 'off',\n    'vuejs-accessibility/click-events-have-key-events': 'off',\n    'vuejs-accessibility/mouse-events-have-key-events': 'off',\n    'import/extensions': 'off',\n    '@typescript-eslint/no-unused-vars': ['error'],\n    '@typescript-eslint/explicit-function-return-type': 'error',\n    '@typescript-eslint/explicit-module-boundary-types': 'error',\n    'vue/no-static-inline-styles': [\n      'error', {\n        'allowBinding': false\n      }\n    ],\n    'vue/component-api-style': [\n      'error',\n      ['script-setup']\n    ],\n  },\n  overrides: [\n    {\n      files: [\n        '*.vue',\n        '*.js',\n        '*.jsx',\n        '*.cjs',\n        '*.mjs',\n        '*.ts',\n        '*.tsx',\n        '*.cts',\n        '*.mts'\n      ],\n      rules: {\n        'import/prefer-default-export': 'off'\n      }\n    }\n  ]\n};\n",
+    "taille": 1181
+  },
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/index.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {}",
+    "taille": 19
+  },
+  {
+    "microservice": "mesx-eslint-config-lib",
+    "chemin": "/prettier-override.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {\n  extends: [\n    'plugin:prettier/recommended'\n  ],\n  rules: {\n    'linebreak-style': 'off',\n    'implicit-arrow-linebreak': 'off',\n    'object-curly-newline': [\n      'error',\n      {\n        'ObjectExpression': { 'consistent': true, 'multiline': true },\n        'ObjectPattern': { 'consistent': true, 'multiline': true },\n        'ImportDeclaration': 'never',\n        'ExportDeclaration': 'never'\n      }\n    ],\n    'prettier/prettier': [\n      'error',\n      {\n        'endOfLine': 'auto'\n      },\n    ]\n  }\n};\n",
+    "taille": 533
+  }
+]

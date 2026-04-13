@@ -1,0 +1,90 @@
+[
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/.eslintrc.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "module.exports = {\n  parser: '@typescript-eslint/parser',\n  parserOptions: {\n    project: 'tsconfig.json',\n    tsconfigRootDir: __dirname,\n    sourceType: 'module',\n  },\n  plugins: ['@typescript-eslint/eslint-plugin'],\n  extends: [\n    'plugin:@typescript-eslint/recommended',\n    'plugin:prettier/recommended',\n  ],\n  root: true,\n  env: {\n    node: true,\n    jest: true,\n  },\n  ignorePatterns: ['.eslintrc.js'],\n  rules: {\n    '@typescript-eslint/interface-name-prefix': 'off',\n    '@typescript-eslint/explicit-function-return-type': 'off',\n    '@typescript-eslint/explicit-module-boundary-types': 'off',\n    '@typescript-eslint/no-explicit-any': 'off',\n  },\n};\n",
+    "taille": 663
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: input-dis\n\nstages:\n- stage: Build\n  jobs:\n \n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/input-binding\n      npmauth: false\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-input-di\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
+    "taille": 951
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/daprComponents/shop-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: bindings-wip-dbo-shop-order-input-di\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: eventHubNamespace\n    value: ehn-gptmpxn01-eun-dev-core-01.servicebus.windows.net\n  - name: eventHub\n    value: \"dbz.wip.wip.dbo.shop_order\"\n  - name: consumerGroup\n    value: \"test\"\n  - name: enableInOrderMessageDelivery\n    value: \"true\"\n  - name: enableEntityManagement\n    value: \"false\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: getAllMessageProperties\n    value: \"true\"\n  - name: direction\n    value: \"input\"",
+    "taille": 687
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/daprComponents/shop-order-pubsub.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "# apiVersion: dapr.io/v1alpha1\n# kind: Component\n# metadata:\n#   name: eventhubs-pubsub\n#   maxMessagesCount:\t3\n#   maxAwaitDurationMs:\t4000\n#   checkPointFrequencyPerPartition: 10\n# spec:\n#   type: pubsub.azure.eventhubs\n#   version: v1\n#   metadata:\n#     - name: eventHubNamespace\n#       value: ehn-gptmpxn01-eun-dev-core-01.servicebus.windows.net\n#     - name: eventHub\n#       value: \"dbz.wip.wip.dbo.shop_order\"\n#     - name: consumerGroup\n#       value: \"test\"\n#     - name: enableInOrderMessageDelivery\n#       value: \"true\"\n#     # Checkpoint store attributes\n#     - name: storageAccountName\n#       value: \"statgptmpxn01mes01\"\n#     - name: storageContainerName\n#       value: \"dapr-bindings\"\n    ",
+    "taille": 709
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/daprComponents/subscription.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "# apiVersion: dapr.io/v2alpha1\n# kind: Subscription\n# metadata:\n#   name: order-pub-sub\n# spec:\n#   topic: 'dbz.wip.wip.dbo.shop_order'\n#   routes:\n#     default: /eventhubs-pubsub\n#   pubsubname: eventhubs-pubsub\n#   metadata:\n#     bulkSubscribe: true\n#     maxMessagesCount: 3\n#     maxAwaitDurationMs: 1000\n#     checkPointFrequencyPerPartition: 1\n# scopes:\n# - mesx-input-binding",
+    "taille": 384
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n\n  describe('root', () => {\n    it('should return \"Hello World!\"', () => {\n      expect(appController.getHello()).toBe('Hello World!');\n    });\n  });\n});\n",
+    "taille": 617
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get, Logger, Post, Req, Res } from '@nestjs/common';\nimport { AppService } from './app.service';\nimport { DaprClient } from '@dapr/dapr';\nimport { Request, Response } from 'express';\nimport axios from 'axios';\n\nconst INPUT_BINDING_ROUTE =\n  process.env.INPUT_BINDING_NAME || 'bindings-wip-dbo-shop-order-input-di';\n\nconst UNS_PUBSUB = process.env.UNS_PUBSUB || 'uns-pubsub-topic';\n\nconst DAPR_CHECK_URL =\n  process.env.DAPR_CHECK_URL ?? 'http://localhost:3500/v1.0/healthz';\n\nconst CHECK_TIMEOUT_MS = process.env.CHECK_TIMEOUT_MS ?? '30000';\n\n@Controller()\nexport class AppController {\n  constructor(private readonly appService: AppService) {}\n\n  @Get()\n  getHello(): string {\n    return this.appService.getHello();\n  }\n\n  @Get('health')\n  async health(@Res() resp: Response): Promise<void> {\n    try {\n      const response = await axios.get(DAPR_CHECK_URL, {\n        timeout: Number(CHECK_TIMEOUT_MS),\n      });\n      const statusCode = response.status;\n      resp.status(200).json(`Status Code: ${statusCode}`);\n    } catch (error) {\n      const statusCode = error.response?.status ?? 'Unknown';\n\n      if (statusCode !== 'Unknown') {\n        const responseBody = error.response?.data ?? 'No response body';\n        resp.status(500).json({ statusCode, responseBody });\n        Logger.error(\n          `Health check failed with status code: ${statusCode}, response body: ${responseBody}`,\n        );\n      } else {\n        resp.status(500).json({});\n        Logger.error(\n          `Health check failed with error: ${error.message}`,\n          error.stack,\n        );\n      }\n    }\n  }\n\n  @Post(INPUT_BINDING_ROUTE)\n  public async receiveEvent(@Req() request: Request): Promise<string> {\n    Logger.log(`==============  Start =======================`);\n    try {\n      const sequenceNumber =\n        request.headers['x-opt-sequence-number'] ||\n        request.headers['X-Opt-Sequence-Number'];\n\n      const event = JSON.parse(JSON.stringify(request.body));\n\n      Logger.log(`Received event Time: ${event.__ts_ms}`);\n      Logger.log(`SeqNum : ${sequenceNumber}`);\n      Logger.log(`Received event: ${event.HANDLE}`);\n      // const randomNumber = Math.floor(Math.random() * (5000 - 100 + 1)) + 100;\n      // this.sleep(randomNumber);\n      //throw new Error('Error Processing');\n      return 'Event Received';\n    } finally {\n      Logger.log(`==============  END =======================`);\n    }\n  }\n\n  @Post(UNS_PUBSUB)\n  public async publishUns(@Req() request: Request): Promise<string> {\n    Logger.log(`============== Start UNS Publishing =======================`);\n    try {\n      const status = request.body;\n      Logger.log(`Publishing to pubsub: ${UNS_PUBSUB}, topic: downtime/status`);\n      Logger.log(`Status payload: ${JSON.stringify(status)}`);\n\n      const daprClient = new DaprClient();\n      await daprClient.pubsub.publish(UNS_PUBSUB, `downtime/status`, status);\n\n      Logger.log(`Successfully published status to UNS_PUBSUB`);\n      return 'Status published successfully';\n    } catch (error) {\n      Logger.error(\n        `Failed to publish to UNS_PUBSUB: ${error.message}`,\n        error.stack,\n      );\n      throw new Error(`UNS publish failed: ${error.message}`);\n    } finally {\n      Logger.log(`============== END UNS Publishing =======================`);\n    }\n  }\n  private sleep(ms: number): void {\n    const start = Date.now();\n    while (Date.now() - start < ms) {\n      // Busy-wait loop to simulate synchronous sleep\n    }\n  }\n}\n",
+    "taille": 3488
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\n@Module({\n  imports: [],\n  controllers: [AppController],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 249
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  getHello(): string {\n    return 'Hello World!';\n  }\n}\n",
+    "taille": 142
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { NestFactory } from '@nestjs/core';\nimport { AppModule } from './app.module';\n\nasync function bootstrap() {\n  const app = await NestFactory.create(AppModule);\n\n  await app.listen(3000);\n}\nbootstrap();\n",
+    "taille": 209
+  },
+  {
+    "microservice": "mesx-input-binding",
+    "chemin": "/test/app.e2e-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { INestApplication } from '@nestjs/common';\nimport * as request from 'supertest';\nimport { AppModule } from './../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 630
+  }
+]

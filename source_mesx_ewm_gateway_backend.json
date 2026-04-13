@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 20.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1776
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: ewmgtw-be\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/ewm-gateway-backend\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1239
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/dapr-components/dapr-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"\n   \n",
+    "taille": 264
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/dapr-components/ekanban-temp.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: bindings-ekanban-temp\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: eventHubNamespace\n    value: ehn-gptmpxn01-eun-dev-core-01.servicebus.windows.net\n  - name: eventHub\n    value: \"dbz.mes.mes_faurecia.dbo.ekanban_temp\"\n  - name: consumerGroup\n    value: \"$Default\"\n  # - name: enableEntityManagement\n  #   value: \"false\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"dapr-bindings\"\n  - name: direction\n    value: \"input\"",
+    "taille": 571
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/dapr-components/hu-dtl-binding.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: bindings-hu-dtl\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: eventHubNamespace\n    value: ehn-gptmpxn01-eun-dev-core-01.servicebus.windows.net\n  - name: eventHub\n    value: \"dbz.mes.mes_faurecia.dbo.hu_dtl_content\"\n  - name: consumerGroup\n    value: \"$Default\"\n  # - name: enableEntityManagement\n  #   value: \"false\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"dapr-bindings\"\n  - name: direction\n    value: \"input\"",
+    "taille": 567
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/dapr-components/output-binding.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: bindings-mesx-ewm-events\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"\"\n  - name: eventHub\n    value: \"evh-gptmpxn01-eun-dev-mesx-ewm-events\"\n  # - name: consumerGroup\n  #   value: \"$Default\"\n  # - name: storageAccountName\n  #   value: \"statgptmpxn01mes01\"\n  # - name: storageContainerName\n  #   value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"output\"",
+    "taille": 491
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/dapr-components/transfer-log-binding.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: bindings-transfer-log\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: eventHubNamespace\n    value: ehn-gptmpxn01-eun-dev-core-01.servicebus.windows.net\n  - name: eventHub\n    value: \"dbz.mes.mes_faurecia.dbo.transfer_log\"\n  - name: consumerGroup\n    value: \"$Default\"\n  # - name: enableEntityManagement\n  #   value: \"false\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"dapr-bindings\"\n  - name: direction\n    value: \"input\"",
+    "taille": 571
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\nimport { EventhubService } from './config/eventhub/eventhub.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [\n        AppService,\n        {\n          provide: EventhubService,\n          useValue: {\n            pubSubName: 'test-pubsub',\n          },\n        },\n      ],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/ewm-gateway-backend');\n    });\n  });\n});\n",
+    "taille": 846
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { ApiExcludeEndpoint } from '@nestjs/swagger';\nimport { EventhubService } from './config/eventhub/eventhub.service';\nimport { SubscribeMetaDataDto } from './dapr/dtos/subscribe-metadata.dto';\nimport { AppService } from '@/app.service';\n\n@Controller('')\nexport class AppController {\n  public constructor(\n    private readonly appService: AppService,\n    private readonly pubSubService: EventhubService,\n  ) {}\n\n  @ApiExcludeEndpoint()\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n\n  @Get('/dapr/subscribe')\n  public subscribeMetaData(): Array<SubscribeMetaDataDto> {\n    return [\n      {\n        pubsubname: this.pubSubService.pubSubName,\n        route: `/${this.pubSubService.topicPlants}`,\n        topic: this.pubSubService.topicPlants,\n      },\n      {\n        pubsubname: this.pubSubService.pubSubName,\n        route: `/${this.pubSubService.topicMaterials}`,\n        topic: this.pubSubService.topicMaterials,\n      },\n      {\n        pubsubname: this.pubSubService.pubSubName,\n        route: `/${this.pubSubService.topicStorageLocations}`,\n        topic: this.pubSubService.topicStorageLocations,\n      },\n      {\n        pubsubname: this.pubSubService.pubSubName,\n        route: `/${this.pubSubService.topicWorkcenters}`,\n        topic: this.pubSubService.topicWorkcenters,\n      },\n    ];\n  }\n}\n",
+    "taille": 1394
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { EventEmitterModule } from '@nestjs/event-emitter';\nimport { AppLoggerModule } from './common/logger/app-logger.module';\nimport { MappingModule } from './common/mapping/mapping.module';\nimport { PublishMessageModule } from './common/publish-message/publish-message.module';\nimport { SendEventModule } from './common/send-event/send-event.module';\nimport { SubscribeModule } from './common/subscribe/subscribe.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { eventHubConfiguration } from './config/eventhub/configuration';\nimport { eventHubSdkConfig } from './config/eventhub-sdk/configuration';\nimport { EventhubSdkConfigModule } from './config/eventhub-sdk/eventhub-sdk-config.module';\nimport { fileShareConfiguration } from './config/file-share/configuration';\nimport { FileShareConfigModule } from './config/file-share/file-share.module';\nimport { loggerConfig } from './config/logger/configuration';\nimport { LoggerConfigModule } from './config/logger/logger-config.module';\nimport { probesConfiguration } from './config/probes/configuration';\nimport { ProbesConfigModule } from './config/probes/probes.module';\nimport { redisSdkConfiguration } from './config/redis/redis-sdk/configuration';\nimport { RedisSdkCofigModule } from './config/redis/redis-sdk/redis-sdk.module';\nimport { redisConfiguration } from './config/redis/redis-store/configuration';\nimport { RedisConfigModule } from './config/redis/redis-store/redis-store.module';\nimport { telemetryConfiguration } from './config/telemetry/telemetry.config';\nimport { TelemetryCofigModule } from './config/telemetry/telemetry.module';\nimport { CosmosDatabaseModule } from './cosmos-db/cosmos.database.module';\nimport { DaprModule } from './dapr/dapr.module';\nimport { EventhubSdkModule } from './eventhub-sdk/eventhub-sdk.module';\nimport { ContainerModule } from './modules/container/container.module';\nimport { EkanbanTemporaryModule } from './modules/ekanban-temp/ekanban-temporary.module';\nimport { IngestionEventTrackingModule } from './modules/ingestion-event-tracking/ingestion-event-tracking.module';\nimport { ProbesModule } from './modules/probes/probes.module';\nimport { TransferLogModule } from './modules/transfer-log/transfer-log.module';\nimport { RedisProviderModule } from './providers/cache/redis/redis.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { ApiModule } from '@/common/api/api.module';\nimport { cosmosDBConfiguration } from '@/config/cosmos-db/configuration';\nimport { CosmosDatabaseConfigModule } from '@/config/cosmos-db/cosmos.database.module';\nimport { daprConfigurationVariable } from '@/config/dapr/configuration';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\nimport { EwmPlantCacheModule } from '@/modules/ewm-plant-cache/ewm-plant-cache.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        probesConfiguration,\n        redisConfiguration,\n        eventHubConfiguration,\n        fileShareConfiguration,\n        cosmosDBConfiguration,\n        redisSdkConfiguration,\n        daprConfigurationVariable,\n        loggerConfig,\n        eventHubSdkConfig,\n        telemetryConfiguration,\n      ],\n    }),\n    AppLoggerModule,\n    LoggerConfigModule,\n    ProbesModule,\n    ProbesConfigModule,\n    DaprModule,\n    EventEmitterModule.forRoot(),\n    CosmosDatabaseModule,\n    MappingModule,\n    DaprConfigModule,\n    FileShareConfigModule,\n    RedisConfigModule,\n    ContainerModule,\n    RedisProviderModule,\n    RedisSdkCofigModule,\n    IngestionEventTrackingModule,\n    SubscribeModule,\n    PublishMessageModule,\n    CosmosDatabaseConfigModule,\n    SubscribeModule,\n    EventHubModule,\n    EwmPlantCacheModule,\n    ApiModule,\n    DaprConfigModule,\n    TransferLogModule,\n    SendEventModule,\n    EkanbanTemporaryModule,\n    EventhubSdkConfigModule,\n    EventhubSdkModule,\n    TelemetryCofigModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 4203
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/ewm-gateway-backend';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 205
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/bootstrap/environment.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import * as dotenv from 'dotenv';\n\n/**\n *\n */\nexport function loadEnvironment(): void {\n  dotenv.config();\n}\n",
+    "taille": 109
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/bootstrap/start-app.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n *\n */\nexport async function startApp(): Promise<void> {\n  const { NestFactory } = await import('@nestjs/core');\n  const express = await import('express');\n  const { AppModule } = await import('../app.module');\n\n  const app = await NestFactory.create(AppModule, {\n    rawBody: true,\n  });\n\n  app.use(express.json({ type: 'application/json' }));\n  app.use(express.json({ type: 'application/cloudevents+json' }));\n  app.enableShutdownHooks();\n\n  await app.listen(3000);\n}\n",
+    "taille": 474
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/bootstrap/telemetry.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface TelemetryConfig {\n  enableAzureSdkInstrumentation?: boolean;\n  enableTelemetry: boolean;\n  enableTraceBasedSamplingForLogs?: boolean;\n  enableRedisInstrumentation?: boolean;\n  enablePerformanceCounters?: boolean;\n  enableLiveMetrics?: boolean;\n  enableMetrics?: boolean;\n  connectionString: string;\n  serviceName: string;\n  samplingRatio?: number;\n  hostName?: string;\n}\n\n/**\n * Gets telemetry configuration from environment variables.\n * @returns The telemetry configuration object.\n */\nfunction getTelemetryConfigFromEnvironment(): TelemetryConfig {\n  return {\n    connectionString: process.env.APPLICATIONINSIGHTS_CONNECTION_STRING ?? '',\n    enableAzureSdkInstrumentation:\n      process.env.ENABLE_AZURE_SDK_INSTRUMENTATION === 'true',\n    enableLiveMetrics: process.env.ENABLE_LIVE_METRICS === 'true',\n    enableMetrics: process.env.ENABLE_METRICS === 'true',\n    enablePerformanceCounters:\n      process.env.ENABLE_PERFORMANCE_COUNTERS === 'true',\n    enableRedisInstrumentation:\n      process.env.ENABLE_REDIS_INSTRUMENTATION === 'true',\n    enableTelemetry: process.env.ENABLE_APP_INSIGHTS_TELEMETRY === 'true',\n    enableTraceBasedSamplingForLogs:\n      process.env.ENABLE_TRACE_BASED_SAMPLING_FOR_LOGS === 'true',\n    hostName: process.env.HOSTNAME,\n    samplingRatio: process.env.TELEMETRY_SAMPLING_RATIO\n      ? Number(process.env.TELEMETRY_SAMPLING_RATIO)\n      : undefined,\n    serviceName: process.env.SERVICE_NAME ?? '',\n  };\n}\n\n/**\n * Initializes telemetry based on environment configuration.\n * @returns Promise that resolves when telemetry is initialized.\n */\nexport async function initTelemetry(): Promise<void> {\n  const config = getTelemetryConfigFromEnvironment();\n\n  const { initializeTelemetry, telemetryMetrics } = await import(\n    '@mesx/common-lib/telemetry'\n  );\n\n  const result = initializeTelemetry(config);\n  if (result.success && config.enableTelemetry) {\n    telemetryMetrics.initialize({\n      serviceName: config.serviceName,\n      hostName: config.hostName,\n    });\n  }\n}\n",
+    "taille": 2020
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { MasterApi } from '@/common/api/master.api';\nimport { PlantHierarchyApi } from '@/common/api/plt-hry.api';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\n\n@Module({\n  exports: [PlantHierarchyApi, MasterApi],\n  imports: [ConfigModule, EventHubModule, DaprConfigModule],\n  providers: [PlantHierarchyApi, MasterApi],\n})\nexport class ApiModule {}\n",
+    "taille": 529
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/dtos/material.response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsNotEmpty, IsOptional, IsString } from 'class-validator';\n\nexport class MaterialResponseDTO {\n  @ApiProperty()\n  @IsString()\n  @IsNotEmpty()\n  public materialId: string;\n\n  @ApiProperty()\n  @IsString()\n  @IsOptional()\n  public autoTransfer: string;\n}\n",
+    "taille": 308
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/dtos/plant.response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class PlantsResponseDto {\n  public plantId: number;\n\n  public languageCode: string;\n\n  public timeZone: string;\n\n  public plantLink: string;\n\n  public bufferization: boolean;\n}\n",
+    "taille": 184
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/dtos/request.headers.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class RequestHeadersDto {\n  public 'content-type': string;\n\n  public constructor(contentType: string) {\n    this['content-type'] = contentType;\n  }\n}\n",
+    "taille": 157
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/dtos/workcenter.response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsString } from 'class-validator';\n\nexport class WorkcenterResponseDTO {\n  @ApiProperty()\n  @IsString()\n  public workcenterId: string;\n}\n",
+    "taille": 193
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/master.api.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpMethod } from '@dapr/dapr';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DaprClient } from 'dapr-client';\nimport { AppLogger } from '../logger/app-logger';\nimport { MaterialResponseDTO } from './dtos/material.response.dto';\nimport { RequestHeadersDto } from './dtos/request.headers.dto';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Injectable()\nexport class MasterApi {\n  private readonly daprClient: DaprClient;\n\n  public constructor(\n    private readonly daprConfigService: DaprConfigService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async fetchEwmMaterial(\n    sapServers: Array<string>,\n  ): Promise<Record<number, Array<string>>> {\n    const context: JobsLogContext = {\n      method: 'fetchEwmMaterial',\n      service: 'MasterApi',\n    };\n    const serviceAppId = this.daprConfigService.masterApiAppId;\n    const serviceMethodSeqnum = `material/GetEwmMaterialList`;\n    const headersDto = new RequestHeadersDto('application/json');\n    const token = `Bearer ${process.env.TOKEN}`;\n    const options = {\n      headers: {\n        ...headersDto,\n        authorization: token,\n      },\n    };\n    const plantArray = Array.isArray(sapServers) ? sapServers : [sapServers];\n\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.POST,\n        plantArray,\n        options,\n      );\n      // Return the valid response\n      return response as Record<number, Array<string>>;\n    } catch (error) {\n      this.customLogger.error(\n        `Error in fetch Ewm Material by plants [ ${sapServers} ]: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return [];\n    }\n  }\n\n  public async getSapServerByPlant(\n    plant: number | Array<number>,\n  ): Promise<{ sapServer: string | Array<string> }> {\n    const token = `Bearer ${process.env.TOKEN}`;\n    const options = { headers: { authorization: token } };\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethod = `/plant/getSapServerByPlant/${plant}`;\n    const response = await this.daprClient.invoker.invoke(\n      serviceAppId,\n      serviceMethod,\n      HttpMethod.GET,\n      undefined,\n      options,\n    );\n    if (response) {\n      return response as { sapServer: string };\n    }\n    throw new Error('Invalid response from getSapServerByPlant');\n  }\n\n  public async getEwmMaterialsByPlants(\n    plants: Array<number>,\n  ): Promise<Record<number, Array<string>>> {\n    const context = {\n      method: 'getEwmMaterialsByPlants',\n      service: 'EwmGateway',\n    };\n\n    try {\n      // Step 1: Get SAP servers for all plants (1:1 mapping)\n      const sapServers = await this.getSapServerByPlant(plants); // Returns string[] matching plants[]\n\n      const serverList: Array<string> = Array.isArray(sapServers.sapServer)\n        ? sapServers.sapServer\n        : [sapServers.sapServer];\n\n      // Step 2: Fetch materials per server\n      const materialsByServer: Record<\n        string,\n        Array<string>\n      > = await this.fetchEwmMaterial(serverList);\n\n      // Step 3: Map each plant to its server's materials\n      const result: Record<number, Array<string>> = {};\n\n      for (const [index, plant] of plants.entries()) {\n        const server = serverList[index];\n        result[plant] = server ? (materialsByServer[server] ?? []) : [];\n      }\n\n      return result;\n    } catch (error) {\n      this.customLogger.error(\n        `Error retrieving EWM materials for plants [${plants.join(', ')}]: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return {};\n    }\n  }\n\n  public async fetchEwmStorageLocations(\n    plantList: Array<number>,\n  ): Promise<Record<number, Array<string>>> {\n    const context: JobsLogContext = {\n      method: 'fetchEwmStorageLocations',\n      service: 'MasterApi',\n    };\n    const token = `Bearer ${process.env.TOKEN}`;\n    const serviceAppId = this.daprConfigService.masterApiAppId;\n    const serviceMethodSeqnum = `/storage-location/GetEwmStorageLocationList`;\n    const headersDto = new RequestHeadersDto('application/json');\n    const options = {\n      headers: {\n        ...headersDto,\n        authorization: token,\n      },\n    };\n    const plantArray = Array.isArray(plantList) ? plantList : [plantList];\n\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.POST,\n        plantArray,\n        options,\n      );\n      // Return the valid response\n      return response as Record<number, Array<string>>;\n    } catch (error) {\n      this.customLogger.error(\n        `Error in fetch Ewm Storage Locations by plants [ ${plantList} ]: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return [];\n    }\n  }\n\n  public async fetchMaterialByMaterialIdAndPlant(\n    materialId: string,\n    plant: number,\n  ): Promise<string> {\n    const context: JobsLogContext = {\n      method: 'fetchMaterialByMaterialIdAndPlant',\n      service: 'MasterApi',\n    };\n    const serviceAppId = this.daprConfigService.masterApiAppId;\n    const serviceMethodSeqnum = `/material-dtl/getMaterialDtlById/${plant}/${materialId}`;\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.GET,\n      );\n      // Return the valid response\n      const materialResponse = response as MaterialResponseDTO;\n      return materialResponse.autoTransfer;\n    } catch (error) {\n      this.customLogger.error(\n        `Error in fetch material details [ ${plant}, ${materialId}]: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return '';\n    }\n  }\n}\n",
+    "taille": 5843
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/api/plt-hry.api.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { HttpMethod } from '@dapr/dapr';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DaprClient } from 'dapr-client';\nimport { AppLogger } from '../logger/app-logger';\nimport { RequestHeadersDto } from './dtos/request.headers.dto';\nimport { PlantsResponseDto } from '@/common/api/dtos/plant.response.dto';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Injectable()\nexport class PlantHierarchyApi {\n  private readonly daprClient: DaprClient;\n\n  public constructor(\n    private readonly daprConfigService: DaprConfigService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async fetchEwmWorkcenter(\n    plantList: Array<number>,\n  ): Promise<Record<number, Array<string>>> {\n    const context: JobsLogContext = {\n      method: 'fetchEwmWorkcenter',\n      service: 'PlantHRYApi',\n    };\n\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethodSeqnum = `workcenter/GetEwmWorkcenterList`;\n    const headersDto = new RequestHeadersDto('application/json');\n    const token = `Bearer ${process.env.TOKEN}`;\n    const options = {\n      headers: {\n        ...headersDto,\n        authorization: token,\n      },\n    };\n    const plantArray = Array.isArray(plantList) ? plantList : [plantList];\n\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.POST,\n        plantArray,\n        options,\n      );\n      // Return the valid response\n      return response as Record<number, Array<string>>;\n    } catch (error) {\n      this.customLogger.error(\n        `Error in fetch Ewm Workcenter by plant [ ${plantList} ]: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return [];\n    }\n  }\n\n  public async fetchEwmPlant(): Promise<Array<PlantsResponseDto>> {\n    const context: JobsLogContext = {\n      method: 'fetchEwmPlant',\n      service: 'PlantHRYApi',\n    };\n    const serviceAppId = this.daprConfigService.plantHierarchyApiAppId;\n    const serviceMethodSeqnum = `plant/GetEwmPlantList`;\n    const headersDto = new RequestHeadersDto('application/json');\n    const token = `Bearer ${process.env.TOKEN}`;\n    const options = {\n      headers: {\n        ...headersDto,\n        authorization: token,\n      },\n    };\n    try {\n      const response = await this.daprClient.invoker.invoke(\n        serviceAppId,\n        serviceMethodSeqnum,\n        HttpMethod.GET,\n        undefined,\n        options,\n      );\n      // Return the valid response\n      return response as Array<PlantsResponseDto>;\n    } catch (error) {\n      this.customLogger.error(\n        `Error in fetch Ewm plants : ${error.message}`,\n        context,\n        error.stack,\n      );\n      return [];\n    }\n  }\n}\n",
+    "taille": 2854
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/exec-and-log/exec-and-log.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { AppLogger } from '../logger/app-logger';\nimport { getPendingMessagesCount } from '@/helpers/statistics/pending-message-stats';\n\ninterface LogTrace {\n  details?: Record<string, unknown>;\n  logType: string;\n  operationName: string;\n  runtime: number;\n  srcLocation: string;\n  waitingMsgCount: number;\n}\n\n/**\n * Execution function and log runtime\n * @param logger Application logger\n * @param operation Function to execute\n * @param operationInfo Function properties\n * @param operationInfo.name Function name\n * @param operationInfo.srcLocation Caller code source location\n * @param details (optional)\n * @param startTime starting time\n * @returns function output\n */\nexport async function execAndLog<T>(\n  logger: AppLogger,\n  operation: () => Promise<T>,\n  operationInfo: {\n    name: string;\n    srcLocation: string;\n  },\n  details?: Record<string, unknown>,\n  startTime = Date.now(),\n): Promise<T> {\n  const context: JobsLogContext = {\n    method: 'logExecAndLog',\n    service: 'execAndLog',\n  };\n  const result = await operation();\n  const logTrace: LogTrace = {\n    details,\n    logType: 'Exec trace',\n    operationName: operationInfo.name,\n    runtime: Date.now() - startTime,\n    srcLocation: operationInfo.srcLocation,\n    waitingMsgCount: getPendingMessagesCount(),\n  };\n  logger.debug(JSON.stringify(logTrace), context);\n  return result;\n}\n",
+    "taille": 1408
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/helpers/redis-auth-helper.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Determines whether the given Redis error requires reauthentication.\n *\n * Checks the error message against a list of known critical Redis connection/authentication errors.\n * @param error - The error thrown by the Redis client.\n * @returns True if the error suggests that reauthentication should be attempted; otherwise, false.\n */\nexport function shouldReauthenticate(error: Error): boolean {\n  const criticalErrors = [\n    'WRONGPASS',\n    'NOAUTH',\n    'invalid username-password',\n    'user is disabled',\n    'Socket closed unexpectedly',\n    'ECONNRESET',\n    'Connection lost',\n    'Redis connection lost',\n  ];\n\n  return criticalErrors.some((message) => error.message.includes(message));\n}\n",
+    "taille": 704
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/logger/app-logger.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Global, Module } from '@nestjs/common';\nimport { AppLogger } from './app-logger';\nimport { LoggerConfigModule } from '@/config/logger/logger-config.module';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Global()\n@Module({\n  exports: [AppLogger],\n  imports: [LoggerConfigModule],\n  providers: [\n    {\n      inject: [LoggerConfigService],\n      provide: AppLogger,\n      useFactory: async (\n        loggerConfigService: LoggerConfigService,\n      ): Promise<AppLogger> => {\n        const appLogger = new AppLogger(loggerConfigService);\n        await appLogger.init(); // Ensure async initialization is handled before returning\n        return appLogger;\n      },\n    },\n  ],\n})\nexport class AppLoggerModule {}\n",
+    "taille": 749
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLoggerService } from '@mesx/common-lib';\nimport { Injectable, LogLevel } from '@nestjs/common';\nimport { LoggerConfigService } from '@/config/logger/logger-config.service';\n\n@Injectable()\nexport class AppLogger extends JobsLoggerService {\n  public constructor(\n    private readonly loggerConfigService: LoggerConfigService,\n  ) {\n    // Retrieve log level from environment\n    super('log');\n  }\n\n  public async init(minLogLevel?: LogLevel): Promise<void> {\n    const logLevel =\n      minLogLevel ?? (await this.loggerConfigService.ewmGateWayLogLevel());\n    super.updateMinLogLevel(logLevel);\n  }\n}\n",
+    "taille": 612
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/mapping/interface/mapping.model.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ContainerDto } from '@/modules/container/dtos/container.dto';\nimport { EkanbanTemporaryDto } from '@/modules/ekanban-temp/dtos/ekanban-temporary.dto';\nimport { TransferLogDto } from '@/modules/transfer-log/dtos/transfer-log.dto';\n\nexport interface Mapping {\n  /**\n   * Source table in SAP DMC\n   */\n  source: string;\n\n  /**\n   * Target table in MESX\n   */\n  destination: string;\n\n  /**\n   * Key fields source and associated column in target structure\n   */\n  keys: Array<KeyMapping>;\n\n  /**\n   * Column mapping\n   */\n  columnMappings: Array<ColumnMapping>;\n}\n\nexport interface KeyMapping {\n  /**\n   * Source field\n   */\n  keySource: string;\n\n  /**\n   * Target field\n   */\n  keyDestination: string;\n}\n\nexport interface ColumnMapping {\n  /**\n   * Source field\n   */\n  columnSource: string;\n\n  /**\n   * Target field\n   */\n  columnDestination: string;\n  /**\n   * Type field\n   */\n  type?: string;\n}\n\nexport type MappedOutput = ContainerDto | TransferLogDto | EkanbanTemporaryDto;\n",
+    "taille": 985
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/mapping/mapping.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { MappingService } from '@/common/mapping/service/mapping.service';\nimport { MappingUtilsService } from '@/common/mapping/utils/mapping.utils';\n\n@Module({\n  exports: [MappingService],\n  providers: [MappingService, MappingUtilsService],\n})\nexport class MappingModule {}\n",
+    "taille": 317
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/mapping/service/mapping.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import * as crypto from 'node:crypto';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\n\nimport { PlantsResponseDto } from '@/common/api/dtos/plant.response.dto';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport {\n  MappedOutput,\n  Mapping,\n} from '@/common/mapping/interface/mapping.model';\nimport { MappingUtilsService } from '@/common/mapping/utils/mapping.utils';\n\nimport { CombinedDtoWithIndex } from '@/dapr/dtos/combined.dto';\nimport { IngestionEventTrackingDTO } from '@/modules/ingestion-event-tracking/ingestion-event-tracking.dto.';\n\n@Injectable()\nexport class MappingService {\n  private readonly mappings: Array<Mapping>;\n\n  public constructor(\n    private readonly mappingUtils: MappingUtilsService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.mappings = this.loadMappings();\n  }\n\n  /**\n   * Load mapping definition\n   * @returns mapping\n   */\n  private loadMappings(): Array<Mapping> {\n    const context: JobsLogContext = {\n      method: 'loadMappings',\n      service: 'mappinService',\n    };\n    try {\n      return this.mappingUtils.loadMappings(\n        '../config/identifier-mapping.json',\n      );\n    } catch (error) {\n      this.customLogger.error(\n        `Failed to load mappings: ${error.message}`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  /**\n   * Retrieve the mapping rules between\n   * source table and target table\n   * @param source source table\n   * @param destination  destination table\n   * @returns mapping\n   */\n  private getMapping(source: string, destination: string): Mapping {\n    const mapping = this.mappings.find(\n      (f) => f.source === source && f.destination === destination,\n    );\n\n    if (!mapping) {\n      throw new Error(\n        `No mapping found for source '${source}' and destination '${destination}'.`,\n      );\n    }\n    return mapping;\n  }\n\n  /**\n   * Build target record by applying mapping data\n   * @param source source table name\n   * @param data raw record\n   * @param listPlant List Plant\n   * @returns mapped data\n   */\n  public mapData(\n    source: string,\n    data: CombinedDtoWithIndex,\n    listPlant: Array<PlantsResponseDto>,\n  ): {\n    destination: string;\n    ingestionEventTracking: IngestionEventTrackingDTO | undefined;\n    mappedData: MappedOutput;\n  } {\n    const destination = this.getDestinationTable(source);\n    const mapping = this.getMapping(source, destination);\n\n    const mappedData: any = {};\n    let keysValue = '';\n    // Build key and fill primary key fields\n    for (const key of mapping.keys) {\n      const keySourceValue = data[key.keySource];\n      if (keySourceValue) {\n        mappedData[key.keyDestination] = keySourceValue;\n        keysValue += keySourceValue;\n      }\n    }\n    const {\n      __source_change_lsn: sourceChangeLsn,\n      __source_ts_ms: sourcetsMs,\n      __source_db: sourceDatabase,\n    } = data;\n    const isWip = this.mappingUtils.isWIP(sourceDatabase);\n    const timeZone = mappedData['plant']\n      ? this.mappingUtils.getTimeZoneForPlant(mappedData['plant'], listPlant)\n      : undefined;\n\n    // Process column mappings without using `continue`\n    for (const columnMapping of mapping.columnMappings) {\n      const columnsSourceValue = data[columnMapping.columnSource];\n\n      // Skip processing if the column source value is undefined or empty\n      if (columnsSourceValue !== undefined && columnsSourceValue !== '') {\n        const isTimestampField = this.mappingUtils.findFieldWithTimestamp(\n          columnMapping.type,\n        );\n\n        const date = isTimestampField\n          ? this.mappingUtils.convertTimestampToDate(\n              Number(columnsSourceValue),\n              isWip,\n              timeZone,\n            )\n          : undefined;\n\n        mappedData[columnMapping.columnDestination] =\n          isTimestampField && date ? date : columnsSourceValue;\n      }\n    }\n\n    const changeLastLsn = sourceChangeLsn\n      ? this.mappingUtils.hexStringToNumber(sourceChangeLsn)\n      : '';\n    const lastTimestamp = sourcetsMs ?? 0;\n    const hashKey = this.generateHash(source, keysValue, destination);\n    let ingestionEventTracking: IngestionEventTrackingDTO | undefined;\n    if (changeLastLsn) {\n      ingestionEventTracking = {\n        changeLastLsn,\n        destinationTable: destination,\n        hashKey,\n        keys: keysValue,\n        lastTimestamp,\n        sourceTable: source,\n      };\n    }\n\n    return { destination, ingestionEventTracking, mappedData };\n  }\n\n  /**\n   * Check primary keys\n   * @param source source table name\n   * @param data raw record\n   * @returns boolean\n   */\n  public checkPrimaryKeys(source: string, data: CombinedDtoWithIndex): boolean {\n    const destination = this.getDestinationTable(source);\n    const mapping = this.getMapping(source, destination);\n    return mapping.keys.every((key) => {\n      const keySourceValue = data[key.keySource] ?? null;\n      return (\n        keySourceValue !== null &&\n        keySourceValue !== undefined &&\n        keySourceValue !== ''\n      );\n    });\n  }\n\n  /**\n   * Identify the target table\n   * @param sourceTable source table\n   * @returns destination table string\n   */\n  public getDestinationTable(sourceTable: string): string {\n    const context: JobsLogContext = {\n      method: 'getDestinationTable',\n      service: 'mappinService',\n    };\n    const mapping = this.mappings.find((m) => m.source === sourceTable);\n    if (!mapping) {\n      const errorMessage = `Mapping not found for source table ${sourceTable}`;\n      this.customLogger.error(errorMessage, context);\n      throw new Error(errorMessage);\n    }\n\n    return mapping.destination;\n  }\n\n  private generateHash(\n    sourceTable: string,\n    keys: string,\n    destinationTable = '',\n  ): string {\n    const context: JobsLogContext = {\n      method: 'generateHash',\n      service: 'mappinService',\n    };\n    try {\n      const destinationTableValue = destinationTable ?? '';\n      return crypto\n        .createHash('sha256')\n        .update(`${sourceTable}:${keys}:${destinationTableValue}`)\n        .digest('hex');\n    } catch (error) {\n      this.customLogger.error(\n        `error when generation the hash key ${error}`,\n        context,\n        error.stack,\n      );\n      return '';\n    }\n  }\n}\n",
+    "taille": 6293
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/mapping/utils/mapping.utils.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// MappingUtils.ts\n\nimport * as fs from 'node:fs';\nimport * as path from 'node:path/posix';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DateTime } from 'luxon';\nimport { PlantsResponseDto } from '@/common/api/dtos/plant.response.dto';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { Mapping } from '@/common/mapping/interface/mapping.model';\n\n@Injectable()\nexport class MappingUtilsService {\n  public constructor(private readonly customLogger: AppLogger) {}\n\n  /**\n   * Loads mappings from a file in the filesystem.\n   * @param filePath - The relative path to the file containing mappings.\n   * @returns An array of Mapping objects loaded from the file.\n   * @throws {Error} Throws an error if the file cannot be read or parsed.\n   */\n  public loadMappings(filePath: string): Array<Mapping> {\n    const absolutePath = path.resolve(__dirname, filePath);\n    try {\n      const rawData = fs.readFileSync(absolutePath, 'utf8');\n      return JSON.parse(rawData);\n    } catch (error) {\n      throw new Error(`Error loading mappings from file ${filePath}: ${error}`);\n    }\n  }\n\n  /**\n   * Determines if a given database is marked as \"WIP\" (Work In Progress).\n   * @param databaseName - The name of the database.\n   * @returns True if the database is \"WIP\", false otherwise.\n   */\n  public isWIP(databaseName: string | undefined): boolean {\n    const context: JobsLogContext = {\n      method: 'isWIP',\n      service: 'mappinUtils',\n    };\n    if (databaseName) {\n      return databaseName === 'WIP';\n    }\n    this.customLogger.error(`DB Name is missed : default isWip false`, context);\n    return false;\n  }\n\n  /**\n   * Checks if a field in the schema is of type timestamp.\n   * @param type - The type of the field to check.\n   * @returns True if the field is a timestamp, false if it is not, and undefined if the field is not found.\n   */\n  public findFieldWithTimestamp(type: string | undefined): boolean {\n    const context: JobsLogContext = {\n      method: 'findFieldWithTimestamp',\n      service: 'mappinUtils',\n    };\n    try {\n      if (type) {\n        if (type === 'timestamp') {\n          return true;\n        }\n        return false;\n      }\n      return false;\n    } catch (error) {\n      this.customLogger.error(\n        `error in finding the type ${error.message}`,\n        context,\n      );\n      return false;\n    }\n  }\n\n  /**\n   * Converts a timestamp to a Date object, considering the timezone offset if applicable.\n   * @param timestamp - The timestamp to convert.\n   * @param isWip - The source of the database is Wip or not.\n   * @param timeZone - The timezone to consider for the conversion.\n   * @returns The converted Date object, or undefined if the timestamp is invalid.\n   */\n  public convertTimestampToDate(\n    timestamp: number,\n    isWip: boolean,\n    timeZone: string | undefined,\n  ): Date | undefined {\n    let utcDate: Date;\n    const context: JobsLogContext = {\n      method: 'convertTimestampToDate',\n      service: 'mappinUtils',\n    };\n    if (timestamp === undefined) {\n      this.customLogger.debug(`timestamp is undefined`, context);\n      return undefined;\n    }\n    if (timestamp === 0) {\n      this.customLogger.debug(`timestamp is null`, context);\n      return undefined;\n    }\n    utcDate = new Date(timestamp);\n    if (isWip) {\n      utcDate = new Date(\n        utcDate.getTime() + utcDate.getTimezoneOffset() * 60_000,\n      );\n      return utcDate;\n    }\n    if (timeZone) {\n      // Const utcDateString = moment(timestamp).tz(timeZone).toISOString();\n      const sourceDateTime = DateTime.fromMillis(timestamp, { zone: timeZone });\n      const utcDateTime = sourceDateTime\n        .toUTC()\n        .minus({ milliseconds: sourceDateTime.offset * 60_000 });\n      const utcDateString = utcDateTime.toISO();\n      if (!utcDateString) {\n        return undefined;\n      }\n      utcDate = new Date(utcDateString);\n      utcDate = new Date(\n        utcDate.getTime() + utcDate.getTimezoneOffset() * 60_000,\n      );\n    }\n    return utcDate;\n  }\n\n  /**\n   * Retrieves the timezone for a specific plant by its ID.\n   * @param plantId - The ID of the plant.\n   * @param plantList Array of list Plant\n   * @returns The timezone associated with the plant, or undefined if it cannot be retrieved.\n   */\n  public getTimeZoneForPlant(\n    plantId: number,\n    plantList: Array<PlantsResponseDto>,\n  ): string | undefined {\n    const context: JobsLogContext = {\n      method: 'getTimeZoneForPlant',\n      service: 'mappinUtils',\n    };\n    try {\n      const plantTimeZone = this.findPlantTimeZone(plantList, Number(plantId));\n      return plantTimeZone;\n    } catch (error) {\n      this.customLogger.error(\n        `Error retrieving time zone for plant ${plantId}: ${error.message}`,\n        context,\n        error.stack,\n      );\n      return undefined;\n    }\n  }\n\n  /**\n   * Finds the timezone for a specific plant by its ID from a list of plants.\n   * @param plants - An array of plant response DTOs.\n   * @param plantId - The ID of the plant to find.\n   * @returns The timezone of the plant, or undefined if the plant is not found.\n   */\n  private findPlantTimeZone(\n    plants: Array<PlantsResponseDto>,\n    plantId: number,\n  ): string | undefined {\n    const plant = plants.find((plantFind) => plantFind.plantId === plantId);\n\n    return plant ? plant.timeZone : undefined;\n  }\n\n  /**\n   * Converts a hexadecimal string to a cleaned hexadecimal string (removing any non-hexadecimal characters).\n   * @param hex - The hexadecimal string to clean.\n   * @returns The cleaned hexadecimal string, or undefined if the input is invalid.\n   */\n  public hexStringToNumber(hex: string): string | undefined {\n    // Removing any colon (:) separators\n    const context: JobsLogContext = {\n      method: 'hexStringToNumber',\n      service: 'mappinUtils',\n    };\n    if (hex === undefined) {\n      this.customLogger.error(`hex is undefined`, context);\n      return undefined;\n    }\n    const cleanedHex = hex.replaceAll(/[^\\da-f]/gi, '').toLowerCase();\n    return cleanedHex;\n  }\n}\n",
+    "taille": 6081
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/publish-message/interface/publish-container.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ContainerMessage {\n  pickingOrderId: string;\n  plant: number;\n}\n",
+    "taille": 81
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/publish-message/publish-message.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { PublishMessageService } from '@/common/publish-message/publish-message.service';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\n\n@Module({\n  exports: [PublishMessageService],\n  imports: [EventHubModule, ConfigModule],\n  providers: [PublishMessageService],\n})\nexport class PublishMessageModule {}\n",
+    "taille": 414
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/publish-message/publish-message.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { DaprClient, CommunicationProtocolEnum } from '@dapr/dapr';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { ContainerMessage } from './interface/publish-container.interface';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\n\n@Injectable()\nexport class PublishMessageService {\n  private readonly daprClient: DaprClient;\n\n  private readonly eventhubService: EventhubService;\n\n  public constructor(\n    eventhubService: EventhubService,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.eventhubService = eventhubService;\n    this.daprClient = new DaprClient({\n      communicationProtocol: CommunicationProtocolEnum.HTTP,\n      daprPort: process.env.DAPR_PORT,\n    });\n  }\n\n  public async publishMessage(\n    topic: string,\n    data: ContainerMessage,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'publishMessage',\n      service: 'PublishMessageService',\n    };\n    try {\n      const { pubSubName } = this.eventhubService;\n      await this.daprClient.pubsub.publish(pubSubName, topic, data);\n    } catch (error) {\n      this.customLogger.error(\n        `Failed to publish message: ${error.message}`,\n        context,\n        error.stack,\n      );\n    }\n  }\n}\n",
+    "taille": 1337
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/send-event/dto/events-container-history.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class EventsContainerHistory {\n  public eventType: string;\n\n  public timestamp: Date;\n\n  public dataInput: {\n    plant: number;\n    containerId: string;\n    material: string;\n    quantity: number;\n    unit: string;\n    workCenter: string;\n    packagingMaterial: string;\n    flow: string;\n    currentStorageLocation: string;\n  };\n\n  public constructor(\n    eventType: string,\n    timestamp: Date,\n    dataInput: {\n      plant: number;\n      containerId: string;\n      material: string;\n      quantity: number;\n      unit: string;\n      workCenter: string;\n      packagingMaterial: string;\n      flow: string;\n      currentStorageLocation: string;\n    },\n  ) {\n    this.eventType = eventType;\n    this.timestamp = timestamp;\n    this.dataInput = { ...dataInput };\n  }\n}\n",
+    "taille": 775
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/send-event/dto/events-ekanban-temporary.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class EkanbanTemporaryHistory {\n  public eventType: string;\n\n  public timestamp: Date;\n\n  public dataInput: {\n    plant: number;\n    material: string;\n    quantity: number;\n    unit: string;\n    workCenter: string;\n    dateTime: string;\n  };\n\n  public constructor(\n    eventType: string,\n    timestamp: Date,\n    dataInput: {\n      plant: number;\n      material: string;\n      quantity: number;\n      unit: string;\n      workCenter: string;\n      dateTime: string;\n    },\n  ) {\n    this.eventType = eventType;\n    this.timestamp = timestamp;\n    this.dataInput = {\n      ...dataInput,\n    };\n  }\n}\n",
+    "taille": 605
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/send-event/dto/events-trf-history.entity.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class EventsTransferHistory {\n  public eventType: string;\n\n  public timestamp: Date;\n\n  public dataInput: {\n    plant: number;\n    material: string;\n    quantity: number;\n    unit: string;\n    flowType: string;\n    dateTime: string;\n    workCenter: string;\n  };\n\n  public constructor(\n    eventType: string,\n    timestamp: Date,\n    dataInput: {\n      plant: number;\n      material: string;\n      quantity: number;\n      unit: string;\n      flowType: string;\n      dateTime: string;\n      workCenter: string;\n    },\n  ) {\n    this.eventType = eventType;\n    this.timestamp = timestamp;\n    this.dataInput = { ...dataInput };\n  }\n}\n",
+    "taille": 638
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/send-event/send-event.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { SendEventService } from './send-event.service';\nimport { ApiModule } from '@/common/api/api.module';\nimport { EventHubModule } from '@/config/eventhub/eventhub.module';\n\n@Module({\n  exports: [SendEventService],\n  imports: [EventHubModule, ApiModule],\n  providers: [SendEventService],\n})\nexport class SendEventModule {}\n",
+    "taille": 369
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/send-event/send-event.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { CommunicationProtocolEnum, DaprClient } from '@dapr/dapr';\nimport { Injectable } from '@nestjs/common';\nimport { MasterApi } from '../api/master.api';\nimport { EventsContainerHistory } from './dto/events-container-history.entity';\nimport { EkanbanTemporaryHistory } from './dto/events-ekanban-temporary.entity';\nimport { EventsTransferHistory } from './dto/events-trf-history.entity';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\nimport { formatDateToCompactUTC } from '@/helpers/functions/format-date-send-ewm';\nimport { ContainerDto } from '@/modules/container/dtos/container.dto';\nimport { EkanbanTemporaryDto } from '@/modules/ekanban-temp/dtos/ekanban-temporary.dto';\nimport { TransferLogDto } from '@/modules/transfer-log/dtos/transfer-log.dto';\n\n@Injectable()\nexport class SendEventService {\n  private readonly daprClient: DaprClient;\n\n  private readonly eventhubService: EventhubService;\n\n  public constructor(\n    eventhubService: EventhubService,\n    private readonly masterApi: MasterApi,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.eventhubService = eventhubService;\n    this.daprClient = new DaprClient({\n      communicationProtocol: CommunicationProtocolEnum.HTTP,\n      daprPort: process.env.DAPR_PORT,\n    });\n  }\n\n  public async sendEventContainer(\n    eventType: string,\n    payload: ContainerDto,\n  ): Promise<void> {\n    const { outputBindingsEwmEvents } = this.eventhubService;\n\n    const dataInput = {\n      containerId: payload.containerId,\n      currentStorageLocation: payload.storageLocation,\n      flow: 'WIP',\n      material: payload.material,\n      packagingMaterial: payload.packagingMaterial,\n      plant: Number(payload.plant),\n      quantity: payload.quantity,\n      unit: payload.unit,\n      workCenter: payload.workcenter,\n    };\n\n    const event = new EventsContainerHistory(eventType, new Date(), dataInput);\n    await this.daprClient.binding.send(\n      outputBindingsEwmEvents,\n      'create',\n      event,\n    );\n  }\n\n  public async sendEventTransfer(\n    eventType: string,\n    payload: TransferLogDto,\n    pokaYoke: string,\n  ): Promise<void> {\n    const { outputBindingsEwmEvents } = this.eventhubService;\n    const autoTransfer = await this.masterApi.fetchMaterialByMaterialIdAndPlant(\n      payload.material,\n      payload.plant,\n    );\n    let flowTypeAssign = '';\n    if (autoTransfer === '1' && pokaYoke === 'API_P') {\n      flowTypeAssign = 'SEQ';\n    }\n\n    const dataInput = {\n      dateTime: formatDateToCompactUTC(payload.createdAt),\n      flowType: flowTypeAssign,\n      material: payload.material,\n      plant: Number(payload.plant),\n      quantity: payload.quantity,\n      unit: payload.unit,\n      workCenter: payload.workCenter,\n    };\n    const event = new EventsTransferHistory(eventType, new Date(), dataInput);\n    await this.daprClient.binding.send(\n      outputBindingsEwmEvents,\n      'create',\n      event,\n    );\n  }\n\n  public async sendEventEkanbanTemp(\n    eventType: string,\n    payload: EkanbanTemporaryDto,\n  ): Promise<void> {\n    const { outputBindingsEwmEvents } = this.eventhubService;\n    const timestamp = new Date();\n    const dataInput = {\n      dateTime: formatDateToCompactUTC(timestamp),\n      material: payload.material,\n      plant: Number(payload.plant),\n      quantity: payload.quantity,\n      unit: payload.unit,\n      workCenter: payload.workCenter,\n    };\n\n    const event = new EkanbanTemporaryHistory(eventType, new Date(), dataInput);\n    await this.daprClient.binding.send(\n      outputBindingsEwmEvents,\n      'create',\n      event,\n    );\n  }\n}\n",
+    "taille": 3648
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/sleep/sleep.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Sleep function\n * @param time number of ms to wait\n * @returns void\n */\nexport async function asyncSleep(time: number): Promise<void> {\n  return new Promise((resolve) => {\n    setTimeout(resolve, time);\n  });\n}\n",
+    "taille": 218
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/subscribe/dtos/subscribe.response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class SubscribeResponseDto {\n  public message: string;\n}\n",
+    "taille": 64
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/subscribe/subscribe.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ApiModule } from '@/common/api/api.module';\nimport { SubscribeMessageService } from '@/common/subscribe/subscribe.service';\nimport { RedisConfigModule } from '@/config/redis/redis-store/redis-store.module';\n\n@Module({\n  exports: [SubscribeMessageService],\n  imports: [RedisConfigModule, ApiModule],\n  providers: [SubscribeMessageService],\n})\nexport class SubscribeModule {}\n",
+    "taille": 424
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/subscribe/subscribe.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable } from '@nestjs/common';\nimport { DaprClient } from 'dapr-client';\nimport { PlantsResponseDto } from '../api/dtos/plant.response.dto';\nimport { AppLogger } from '../logger/app-logger';\nimport { PlantHierarchyApi } from '@/common/api/plt-hry.api';\nimport { SubscribeResponseDto } from '@/common/subscribe/dtos/subscribe.response.dto';\nimport { RedisConfigService } from '@/config/redis/redis-store/redis-store.service';\n\n@Injectable()\nexport class SubscribeMessageService {\n  private readonly daprClient: DaprClient;\n\n  public constructor(\n    private readonly redisConfigService: RedisConfigService,\n    private readonly plantHYRApi: PlantHierarchyApi,\n    private readonly customLogger: AppLogger,\n  ) {\n    this.daprClient = new DaprClient();\n  }\n\n  public async handleMessage(message: SubscribeResponseDto): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'handleMessage',\n      object: message.message,\n      service: 'SubscribeMessageService',\n    };\n    try {\n      const plants = await this.plantHYRApi.fetchEwmPlant();\n      await this.savePlantsInRedis(plants);\n    } catch (error) {\n      this.customLogger.error(\n        `Error processing message: ${error}`,\n        context,\n        error.stack,\n      );\n    }\n  }\n\n  public async savePlantsInRedis(\n    plants: Array<PlantsResponseDto>,\n  ): Promise<void> {\n    const context: JobsLogContext = {\n      method: 'savePlantsInRedis',\n      service: 'SubscribeMessageService',\n    };\n    try {\n      const { redisPlantKey, redisStoreAmr } = this.redisConfigService;\n\n      const dataToCache = {\n        key: redisPlantKey,\n        value: [plants],\n      };\n\n      await this.daprClient.state.save(redisStoreAmr, [dataToCache]);\n    } catch (error) {\n      this.customLogger.error(\n        `Error saving list of plant in Redis: ${error}`,\n        context,\n        error.stack,\n      );\n    }\n  }\n}\n",
+    "taille": 1947
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/utils/async-try-catch.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Default catch function that returns the error as the specified type.\n * @param error - The error caught in the try block.\n * @returns The error cast to the specified type.\n */\nfunction defaultCatchFunction<TError>(error: Error): TError {\n  return error as unknown as TError;\n}\n\n/**\n * A utility function that wraps try-catch logic in a consistent return format.\n *\n * This function can be called either with a function:\n * `asyncTryCatch(() => Promise<T>)`\n *\n * Or with an object containing `tryFn` and an optional `catchFn`:\n * `asyncTryCatch({ tryFn: () => Promise<T>, catchFn?: (err) => TError })`\n * @param optionsOrTryFunction - Either a function to execute, or an object with `tryFn` (required) and `catchFn` (optional).\n * @returns A tuple: [result or undefined, error or undefined].\n */\nexport async function asyncTryCatch<T, TError = Error>(\n  optionsOrTryFunction:\n    | (() => Promise<T>)\n    | {\n        /**\n         * The function to attempt execution of.\n         */\n        tryFn: () => Promise<T>;\n\n        /**\n         * Optional catch handler to customize the returned error.\n         */\n        catchFn?: (error: Error) => Promise<TError> | TError;\n      },\n): Promise<[T | undefined, TError | undefined]> {\n  try {\n    if (typeof optionsOrTryFunction === 'function') {\n      return [await optionsOrTryFunction(), undefined];\n    }\n\n    return [await optionsOrTryFunction.tryFn(), undefined];\n  } catch (error_) {\n    const error = error_ instanceof Error ? error_ : new Error(String(error_));\n    const catchFunction =\n      typeof optionsOrTryFunction !== 'function' && optionsOrTryFunction.catchFn\n        ? optionsOrTryFunction.catchFn\n        : defaultCatchFunction;\n\n    return [undefined, await catchFunction(error)];\n  }\n}\n",
+    "taille": 1758
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/common/utils/with-timeout.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Wraps a promise with a timeout. If the promise does not resolve or reject\n * within the specified time, the returned promise is rejected with a timeout error.\n * @template T - The resolved type of the input promise.\n * @param promise - The promise to wrap with a timeout.\n * @param ms - Timeout duration in milliseconds.\n * @returns A promise that resolves with the input promise or rejects if the timeout is exceeded.\n * @throws {Error} Throws \"Operation timed out\" if the promise does not settle within the given time.\n */\nexport async function withTimeout<T>(\n  promise: Promise<T>,\n  ms: number,\n): Promise<T> {\n  let timeoutId: ReturnType<typeof setTimeout>;\n  const timeoutPromise = new Promise<never>((_, reject) => {\n    timeoutId = setTimeout(() => reject(new Error('Operation timed out')), ms);\n  });\n  return Promise.race([promise, timeoutPromise]).finally(() =>\n    clearTimeout(timeoutId),\n  );\n}\n",
+    "taille": 917
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, Logger, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'AppConfigInitialConfigService',\n    };\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'appConfigEndpoint', value: this.appConfigEndpoint }];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        Logger.error(`Missing configuration value for ${config.key}`, context);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    Logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n      context,\n    );\n  }\n}\n",
+    "taille": 1412
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, Logger } from '@nestjs/common';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    const context: JobsLogContext = {\n      method: 'keyIsDefined',\n      service: 'AppConfigService',\n    };\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    const context: JobsLogContext = {\n      method: 'getConfigValueFromStore',\n      service: 'AppConfigService',\n    };\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      Logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    const context: JobsLogContext = {\n      method: 'reachable',\n      service: 'AppConfigService',\n    };\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      Logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        context,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 3115
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/cosmos-db/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const cosmosDBConfiguration = (): {\n  cosmosDbEndpoint: string | undefined;\n  cosmosDbDatabase: string | undefined;\n  cosmosDbContainer: string | undefined;\n  cosmosDbTransfer: string | undefined;\n} => ({\n  cosmosDbContainer: process.env.COSMOS_DB_CONTAINER_EWM_BUFFER,\n  cosmosDbDatabase: process.env.COSMOS_DB_DATABASE,\n  cosmosDbEndpoint: process.env.COSMOS_DB_ENDPOINT,\n  cosmosDbTransfer: process.env.COSMOS_DB_CONTAINER_TRANSFER_EWM_BUFFER,\n});\n",
+    "taille": 458
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/cosmos-db/cosmos.database.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { CosmosDatabaseConfigService } from '@/config/cosmos-db/cosmos.database.service';\n\n@Module({\n  exports: [CosmosDatabaseConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [CosmosDatabaseConfigService],\n})\nexport class CosmosDatabaseConfigModule {}\n",
+    "taille": 397
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/cosmos-db/cosmos.database.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { CosmosClient, Container } from '@azure/cosmos';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class CosmosDatabaseConfigService implements OnModuleInit {\n  private readonly client: CosmosClient;\n\n  private readonly container;\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly customLogger: AppLogger,\n  ) {\n    const credential = new DefaultAzureCredential();\n\n    this.client = new CosmosClient({\n      aadCredentials: credential,\n      endpoint: this.cosmosDbEndpoint,\n    });\n\n    // Optionally initialize a container\n    this.container = this.client\n      .database(this.cosmosDbDatabase)\n      .container(this.cosmosDbContainer);\n  }\n\n  // A method to return the container for reuse in other services\n  public get getContainer(): Container {\n    return this.container;\n  }\n\n  public get cosmosDbEndpoint(): string {\n    return (\n      this.configService.get<string>('cosmosDbEndpoint') ??\n      process.env.COSMOS_DB_ENDPOINT ??\n      ''\n    );\n  }\n\n  public get cosmosDbDatabase(): string {\n    return (\n      this.configService.get<string>('cosmosDbDatabase') ??\n      process.env.COSMOS_DB_DATABASE ??\n      ''\n    );\n  }\n\n  public get cosmosDbContainer(): string {\n    return (\n      this.configService.get<string>('cosmosDbContainer') ??\n      process.env.COSMOS_DB_CONTAINER_TRANSFER_EWM_BUFFER ??\n      ''\n    );\n  }\n\n  public get cosmosDbTransfer(): string {\n    return (\n      this.configService.get<string>('cosmosDbTransfer') ??\n      process.env.COSMOS_DB_CONTAINER_TRANSFER_EWM_BUFFER ??\n      ''\n    );\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'CosmosDatabaseConfigService',\n    };\n    // List of required configurations\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | Container | number | boolean | undefined;\n    }> = [\n      { key: 'container', value: this.container },\n      { key: 'cosmosDbDatabase', value: this.cosmosDbDatabase },\n      { key: 'cosmosDbEndpoint', value: this.cosmosDbEndpoint },\n      { key: 'cosmosDbContainer', value: this.cosmosDbContainer },\n      { key: 'cosmosDbTransfer', value: this.cosmosDbTransfer },\n    ];\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 2851
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface DaprConfiguration {\n  bindingContainer: string | undefined;\n  bindingTransferLog: string | undefined;\n  bindingEkanbanTemp: string | undefined;\n  plantHierarchyApiAppId: string | undefined;\n  masterApiAppId: string | undefined;\n}\nexport const daprConfigurationVariable = (): DaprConfiguration => ({\n  bindingContainer:\n    process.env\n      .INPUT_BINDINGS_MES_FAURECIA_DBO_HU_DTL_CONTENT_EWM_GATEWAY_BACKEND,\n  bindingEkanbanTemp:\n    process.env\n      .INPUT_BINDINGS_MES_FAURECIA_DBO_EKANBAN_TEMP_EWM_GATEWAY_BACKEND,\n  bindingTransferLog:\n    process.env\n      .INPUT_BINDINGS_MES_FAURECIA_DBO_TRANSFER_LOG_EWM_GATEWAY_BACKEND,\n\n  masterApiAppId: process.env.MASTER_API_APP_ID,\n  plantHierarchyApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n});\n",
+    "taille": 762
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Module({\n  exports: [DaprConfigService],\n  imports: [ConfigModule],\n  providers: [DaprConfigService],\n})\nexport class DaprConfigModule {}\n",
+    "taille": 299
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class DaprConfigService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public get bindingContainer(): string {\n    return this.configService.get<string>('bindingContainer') ?? '';\n  }\n\n  public get bindingTransferLog(): string {\n    return this.configService.get<string>('bindingTransferLog') ?? '';\n  }\n\n  public get bindingEkanbanTemp(): string {\n    return this.configService.get<string>('bindingEkanbanTemp') ?? '';\n  }\n\n  public get plantHierarchyApiAppId(): string {\n    return this.configService.get<string>('plantHierarchyApiAppId') ?? '';\n  }\n\n  public get masterApiAppId(): string {\n    return this.configService.get<string>('masterApiAppId') ?? '';\n  }\n\n  public onModuleInit(): void {\n    this.validateConfiguration();\n  }\n\n  private validateConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'validateConfiguration',\n      service: 'DaprConfigService',\n    };\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'bindingContainer', value: this.bindingContainer },\n      { key: 'plantHierarchyApiAppId', value: this.plantHierarchyApiAppId },\n      { key: 'bindingTransferLog', value: this.bindingTransferLog },\n      { key: 'bindingEkanbanTemp', value: this.bindingEkanbanTemp },\n      { key: 'masterApiAppId', value: this.masterApiAppId },\n    ];\n\n    const missingConfigs = requiredConfigs.filter(\n      (config) => config.value === undefined,\n    );\n\n    if (missingConfigs.length > 0) {\n      for (const config of missingConfigs) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n      }\n      throw new Error(\n        'Configuration error: Some required configurations are not set.',\n      );\n    }\n  }\n}\n",
+    "taille": 2143
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub-sdk/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Common configuration settings shared across all EventHub topics\n */\ninterface EventHubCommonConfig {\n  useEventhubSDK: boolean | undefined;\n}\n\n/**\n * Configuration for a specific EventHub topic\n */\ninterface EventHubTopicConfig {\n  checkpointContainerName: string | undefined;\n  checkpointInterval: number | undefined;\n  consumerGroup: string | undefined;\n  eventHubName: string | undefined;\n  eventHubNamespace: string | undefined;\n  storageAccountName: string | undefined;\n}\n\n/**\n * Complete EventHub configuration with common settings and topic-specific settings\n */\ninterface EventHubSdkConfig {\n  eventHub: {\n    common: EventHubCommonConfig;\n    topics: {\n      container: EventHubTopicConfig;\n      transfer: EventHubTopicConfig;\n    };\n  };\n}\n\nexport const eventHubSdkConfig = (): EventHubSdkConfig => ({\n  eventHub: {\n    common: {\n      useEventhubSDK: process.env.EWM_GATEWAY_USE_EVENTHUB_SDK\n        ? process.env.EWM_GATEWAY_USE_EVENTHUB_SDK === 'true'\n        : undefined,\n    },\n    topics: {\n      container: {\n        checkpointContainerName:\n          process.env.EVENTHUB_HU_DTL_CONTENT_CHECKPOINT_CONTAINER ?? '',\n\n        checkpointInterval: Number(\n          process.env.EVENTHUB_HU_DTL_CONTENT_CHECKPOINT_INTERVAL ?? '30000',\n        ),\n\n        consumerGroup: process.env.EVENTHUB_HU_DTL_CONTENT_CONSUMER_GROUP ?? '',\n\n        eventHubName: process.env.EVENTHUB_HU_DTL_CONTENT_NAME ?? '',\n\n        eventHubNamespace: process.env.EVENTHUB_HU_DTL_CONTENT_NAMESPACE,\n        storageAccountName:\n          process.env.EVENTHUB_HU_DTL_CONTENT_STORAGE_ACCOUNT_NAME,\n      }, // Future topics will be added here\n      transfer: {\n        checkpointContainerName:\n          process.env.EVENTHUB_TRANSFER_CHECKPOINT_CONTAINER ?? '',\n\n        checkpointInterval: Number(\n          process.env.EVENTHUB_TRANSFER_CHECKPOINT_INTERVAL ?? '30000',\n        ),\n\n        consumerGroup: process.env.EVENTHUB_TRANSFER_CONSUMER_GROUP ?? '',\n\n        eventHubName: process.env.EVENTHUB_TRANSFER_NAME ?? '',\n\n        eventHubNamespace: process.env.EVENTHUB_TRANSFER_NAMESPACE,\n        storageAccountName: process.env.EVENTHUB_TRANSFER_STORAGE_ACCOUNT_NAME,\n      }, // Future topics will be added here\n    },\n  },\n});\n",
+    "taille": 2226
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub-sdk/eventhub-sdk-config.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface EventHubSdkConfig {\n  eventHubNamespace: string;\n  eventHubName: string;\n  consumerGroup: string;\n  storageAccountName: string;\n  checkpointContainerName: string;\n  checkpointInterval?: number;\n}\n",
+    "taille": 213
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub-sdk/eventhub-sdk-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { EventhubSdkConfigService } from '@/config/eventhub-sdk/eventhub-sdk-config.service';\n\n@Module({\n  exports: [EventhubSdkConfigService],\n  imports: [ConfigModule, AppConfigModule],\n  providers: [EventhubSdkConfigService],\n})\nexport class EventhubSdkConfigModule {}\n",
+    "taille": 427
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub-sdk/eventhub-sdk-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppConfigService } from '../app-config/app-config.service';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { EventHubSdkConfig } from '@/config/eventhub-sdk/eventhub-sdk-config.interface';\n\n@Injectable()\nexport class EventhubSdkConfigService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly customLogger: AppLogger,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  // Common config getters\n  public async useEventhubSDK(): Promise<boolean> {\n    let value = this.configService.get<boolean>(\n      'eventHub.common.useEventhubSDK',\n    );\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'EventhubSdkConfigService',\n    };\n    if (value === undefined) {\n      const configValue = await this.appConfigService.getConfigurationValue(\n        'EWM_GATEWAY_USE_EVENTHUB_SDK',\n      );\n      value = configValue === 'true';\n    } else {\n      this.customLogger.verbose(\n        `'useEventhubSDK' was read from environment variable`,\n        context,\n      );\n    }\n\n    return value ?? false;\n  }\n\n  // Containers topic config getters\n\n  public get containerEventHubName(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.container.eventHubName',\n      ) ?? ''\n    );\n  }\n\n  public get containerEventHubNamespace(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.container.eventHubNamespace',\n      ) ?? ''\n    );\n  }\n\n  public get containerConsumerGroup(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.container.consumerGroup',\n      ) ?? ''\n    );\n  }\n\n  public get containerStorageAccountName(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.container.storageAccountName',\n      ) ?? ''\n    );\n  }\n\n  public get containerCheckpointContainerName(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.container.checkpointContainerName',\n      ) ?? ''\n    );\n  }\n\n  public get containerCheckpointInterval(): number {\n    return (\n      this.configService.get<number>(\n        'eventHub.topics.container.checkpointInterval',\n      ) ?? 30_000\n    );\n  }\n\n  // Transfer topic config getters\n\n  public get transferEventHubName(): string {\n    return (\n      this.configService.get<string>('eventHub.topics.transfer.eventHubName') ??\n      ''\n    );\n  }\n\n  public get transferEventHubNamespace(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.transfer.eventHubNamespace',\n      ) ?? ''\n    );\n  }\n\n  public get transferConsumerGroup(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.transfer.consumerGroup',\n      ) ?? ''\n    );\n  }\n\n  public get transferStorageAccountName(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.transfer.storageAccountName',\n      ) ?? ''\n    );\n  }\n\n  public get transferCheckpointContainerName(): string {\n    return (\n      this.configService.get<string>(\n        'eventHub.topics.transfer.checkpointContainerName',\n      ) ?? ''\n    );\n  }\n\n  public get transferCheckpointInterval(): number {\n    return (\n      this.configService.get<number>(\n        'eventHub.topics.transfer.checkpointInterval',\n      ) ?? 30_000\n    );\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'EventhubSdkConfigService',\n    };\n\n    // Required configurations for managed identity authentication\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'containerEventHubName', value: this.containerEventHubName },\n      {\n        key: 'containerEventHubNamespace',\n        value: this.containerEventHubNamespace,\n      },\n      {\n        key: 'containerStorageAccountName',\n        value: this.containerStorageAccountName,\n      },\n      {\n        key: 'containerCheckpointInterval',\n        value: this.containerCheckpointInterval,\n      },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.customLogger.debug(\n      'All required configurations for direct Event Hub are properly set',\n      context,\n    );\n  }\n\n  /**\n   * Get the complete configuration for container topic\n   * @returns Configuration object with all settings for NonTrsTicket topic\n   */\n  public getContainerConfig(): EventHubSdkConfig {\n    return {\n      checkpointContainerName: this.containerCheckpointContainerName,\n      checkpointInterval: this.containerCheckpointInterval,\n      consumerGroup: this.containerConsumerGroup,\n      eventHubName: this.containerEventHubName,\n      eventHubNamespace: this.containerEventHubNamespace,\n      storageAccountName: this.containerStorageAccountName,\n    };\n  }\n\n  /**\n   * Get the complete configuration for transfer topic\n   * @returns Configuration object with all settings for transfer topic\n   */\n  public getTransferConfig(): EventHubSdkConfig {\n    return {\n      checkpointContainerName: this.transferCheckpointContainerName,\n      checkpointInterval: this.transferCheckpointInterval,\n      consumerGroup: this.transferConsumerGroup,\n      eventHubName: this.transferEventHubName,\n      eventHubNamespace: this.transferEventHubNamespace,\n      storageAccountName: this.transferStorageAccountName,\n    };\n  }\n\n  /**\n   * Helper method to get full config for a specific topic\n   * @param topicName Name of the topic to get config for\n   * @returns Complete configuration for the specified topic\n   */\n  public getTopicConfig(\n    topicName: string /* Add more topics as they're added */,\n  ): EventHubSdkConfig & {\n    checkpointInterval?: number;\n    maxRetries?: number;\n  } {\n    if (topicName === 'container') {\n      return this.getContainerConfig();\n    }\n    if (topicName === 'transfer') {\n      return this.getTransferConfig();\n    }\n\n    throw new Error(`Configuration for topic ${topicName} not found`);\n  }\n}\n",
+    "taille": 6579
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface EventHubEnvironmentVariableConfig {\n  pubSubName: string | undefined;\n  topicPlants: string | undefined;\n  topicWorkcenters: string | undefined;\n  topicMaterials: string | undefined;\n  topicStorageLocations: string | undefined;\n  outputBindingsEwmEvents: string | undefined;\n}\n\nexport const eventHubConfiguration = (): {\n  eventhub: EventHubEnvironmentVariableConfig;\n} => ({\n  eventhub: {\n    outputBindingsEwmEvents: process.env.OUTPUT_BINDINGS_EWM_EVENTS,\n    pubSubName: process.env.PUBSUB_NAME,\n    topicMaterials: process.env.TOPIC_MATERIALS,\n    topicPlants: process.env.TOPIC_EWM_PLANT_UPDATES,\n    topicStorageLocations: process.env.TOPIC_STORAGE_LOCATIONS,\n    topicWorkcenters: process.env.TOPIC_WORKCENTERS,\n  },\n});\n",
+    "taille": 739
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub/eventhub.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { EventhubService } from '@/config/eventhub/eventhub.service';\n\n@Module({\n  exports: [EventhubService],\n  imports: [ConfigModule],\n  providers: [EventhubService],\n})\nexport class EventHubModule {}\n",
+    "taille": 292
+  },
+  {
+    "microservice": "mesx-ewm-gateway-backend",
+    "chemin": "/src/config/eventhub/eventhub.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { JobsLogContext } from '@mesx/common-lib';\nimport { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class EventhubService implements OnModuleInit {\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly customLogger: AppLogger,\n  ) {}\n\n  public get pubSubName(): string {\n    return this.configService.get<string>('eventhub.pubSubName') ?? '';\n  }\n\n  public get topicPlants(): string {\n    return this.configService.get<string>('eventhub.topicPlants') ?? '';\n  }\n\n  public get topicWorkcenters(): string {\n    return this.configService.get<string>('eventhub.topicWorkcenters') ?? '';\n  }\n\n  public get topicMaterials(): string {\n    return this.configService.get<string>('eventhub.topicMaterials') ?? '';\n  }\n\n  public get topicStorageLocations(): string {\n    return (\n      this.configService.get<string>('eventhub.topicStorageLocations') ?? ''\n    );\n  }\n\n  public get outputBindingsEwmEvents(): string {\n    return (\n      this.configService.get<string>('eventhub.outputBindingsEwmEvents') ?? ''\n    );\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private checkConfiguration(): void {\n    const context: JobsLogContext = {\n      method: 'checkConfiguration',\n      service: 'EventhubService',\n    };\n    // Check if all required configuration values are present\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'pubSubName', value: this.pubSubName },\n      { key: 'topicPlants', value: this.topicPlants },\n      { key: 'topicWorkcenters', value: this.topicWorkcenters },\n      { key: 'topicMaterials', value: this.topicMaterials },\n      { key: 'topicStorageLocations', value: this.topicStorageLocations },\n      { key: 'outputBindingsEwmEvents', value: this.outputBindingsEwmEvents },\n    ];\n\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n          context,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 2284
+  }
+]

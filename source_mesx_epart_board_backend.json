@@ -1,0 +1,482 @@
+[
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1776
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: epb-be\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/epart-board-backend\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
+    "taille": 1235
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"",
+    "taille": 259
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/epart-board-backend');\n    });\n  });\n});\n",
+    "taille": 628
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(public readonly appService: AppService) {}\n\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { ApiManagerConfigModule } from './config/api-manager/api-manager.module';\nimport { apiManagerConfig } from './config/api-manager/configuration';\nimport { AppConfigModule } from './config/app-config/app-config.module';\nimport { appConfig } from './config/app-config/configuration';\nimport { daprConfiguration } from './config/dapr/configuration';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { redisConfiguration } from './config/redis/configuration';\nimport { RedisConfigModule } from './config/redis/redis-store.module';\nimport { EgapboardModule } from './egapboard/egapboard.module';\nimport { EpartboardModule } from './epartboard/epartboard.module';\nimport { RedisModule } from './redis/redis.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    AppConfigModule,\n    UrlApiConfigModule,\n    ConfigModule.forRoot({\n      load: [\n        appConfig,\n        urlApiConfiguration,\n        daprConfiguration,\n        apiManagerConfig,\n        redisConfiguration,\n      ],\n    }),\n    EpartboardModule,\n    ApiManagerConfigModule,\n    DaprConfigModule,\n    EgapboardModule,\n    RedisConfigModule,\n    RedisModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 1548
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/epart-board-backend';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 205
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export interface ExceptionResponse {\n  message?: string;\n  error?: string;\n}\n",
+    "taille": 77
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse();\n    const request = context.getRequest();\n    // Determine the status code\n    const status =\n      exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      } else if (\n        typeof exceptionResponse === 'object' &&\n        exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    } else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1659
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  public log(message: unknown): void {\n    super.log(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    super.error(`${new Date().toISOString()} -- ${message}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    super.warn(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public debug(message: unknown): void {\n    super.debug(`${new Date().toISOString()} -- ${message}`);\n  }\n\n  public verbose(message: unknown): void {\n    super.verbose(`${new Date().toISOString()} -- ${message}`);\n  }\n}\n",
+    "taille": 644
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/common/sleep/sleep.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "/**\n * Async sleep\n * @param timeout in ms\n */\nexport async function asyncSleep(timeout: number): Promise<void> {\n  await new Promise((resolve) => {\n    setTimeout(resolve, timeout);\n  });\n}\n",
+    "taille": 191
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/api-manager/api-manager.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigModule } from '../app-config/app-config.module';\nimport { ApiManagerConfigService } from '@/config/api-manager/api-manager.service';\n\n@Module({\n  exports: [ApiManagerConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n      load: [],\n    }),\n    AppConfigModule,\n  ],\n\n  providers: [ApiManagerConfigService],\n})\nexport class ApiManagerConfigModule {}\n",
+    "taille": 483
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/api-manager/api-manager.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Injectable()\nexport class ApiManagerConfigService implements OnModuleInit {\n  private readonly logger: AppLogger = new AppLogger(\n    ApiManagerConfigService.name,\n  );\n\n  public constructor(\n    private readonly configService: ConfigService,\n    private readonly appConfigService: AppConfigService,\n  ) {}\n\n  public async apiManager(): Promise<string> {\n    let value = this.configService.get<string>('apiManagerUrl');\n\n    if (value) {\n      this.logger.warn(`'apiManagerUrl' was read from environment variable`);\n    } else {\n      value = await this.appConfigService.getConfigurationValue('API_MGR_URL');\n    }\n\n    return value ?? '';\n  }\n\n  public get mesPasswordSecretName(): string {\n    return this.configService.get<string>('mesPasswordSecretName') ?? '';\n  }\n\n  public get plantHryApiAppId(): string {\n    return this.configService.get<string>('plantHryApiAppId') ?? '';\n  }\n\n  public get apiMgrSecretName(): string {\n    return this.configService.get<string>('apiMgrKeySecretName') ?? '';\n  }\n\n  public get mainSecretStore(): string {\n    return this.configService.get<string>('mainSecretStore') ?? '';\n  }\n\n  public get productionApiAppId(): string {\n    return this.configService.get<string>('productionApiAppId') ?? '';\n  }\n\n  public async mleanUsername(): Promise<string> {\n    let value = this.configService.get<string>('mleanUsername');\n\n    if (value) {\n      this.logger.warn(`'mleanUsername' was read from environment variable`);\n    } else {\n      value =\n        await this.appConfigService.getConfigurationValue('MLEAN_USERNAME');\n    }\n\n    return value ?? '';\n  }\n\n  public async mesUserName(): Promise<string> {\n    let value = this.configService.get<string>('mesUser');\n\n    if (value) {\n      this.logger.warn(`'mesUserName' was read from environment variable`);\n    } else {\n      value = await this.appConfigService.getConfigurationValue('MES_USER');\n    }\n\n    return value ?? '';\n  }\n\n  public async apiManagerEnabled(): Promise<boolean> {\n    const value = this.configService.get<string>('apiMgrEnabled');\n\n    if (value === undefined) {\n      const appStoreValue =\n        await this.appConfigService.getConfigurationValue('API_MGR_ENABLED');\n\n      return appStoreValue?.toLowerCase() === 'true';\n    }\n    this.logger.warn(`'apiMgrEnabled' was read from environment variable`);\n\n    return value?.toLowerCase() === 'true';\n  }\n\n  public get mleanPasswordSecretName(): string {\n    return this.configService.get<string>('mleanPasswordSecretName') ?? '';\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    if (!(await this.appConfigService.reachable())) {\n      const storeNotReachableMessage = `App Configuration Store '${this.appConfigService.configStoreId}' is not reachable !`;\n\n      this.logger.error(storeNotReachableMessage);\n      throw new Error(storeNotReachableMessage);\n    }\n\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'apiManagerUrl', value: await this.apiManager() },\n      { key: 'mainSecretStore', value: this.mainSecretStore },\n      { key: 'apiMgrKeySecretName', value: this.apiMgrSecretName },\n      { key: 'mleanUsername', value: await this.mleanUsername() },\n      { key: 'mleanPasswordSecretName', value: this.mleanPasswordSecretName },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log('All required API Manager configurations are properly set');\n  }\n}\n",
+    "taille": 3998
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/api-manager/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  apiManagerUrl: string | undefined;\n  apiMgrKeySecretName: string | undefined;\n  mainSecretStore: string | undefined;\n  mleanUsername: string | undefined;\n  mleanPasswordSecretName: string | undefined;\n  mesPasswordSecretName: string | undefined;\n  mesUser: string | undefined;\n  plantHryApiAppId: string | undefined;\n  productionApiAppId: string | undefined;\n}\n\nconst apiManagerConfig = (): Config => ({\n  apiManagerUrl: process.env.API_MGR_URL,\n  apiMgrKeySecretName: process.env.API_MGR_KEY_SECRET_NAME,\n  mainSecretStore: process.env.MAIN_SECRET_STORE,\n  mesPasswordSecretName: process.env.MES_PASSWORD_SECRET_NAME,\n  mesUser: process.env.MES_USER,\n  mleanPasswordSecretName: process.env.MLEAN_PASSWORD_SECRET_NAME,\n  mleanUsername: process.env.MLEAN_USERNAME,\n  plantHryApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n  productionApiAppId: process.env.PRODUCTION_API_APP_ID,\n});\n\nexport { apiManagerConfig };\n",
+    "taille": 936
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (!config.value) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 1259
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined;\n  expiresAt: number;\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache: Map<string, CacheEntry> = new Map();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    } catch (error) {\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      throw error;\n    }\n  }\n\n  public async reachable(): Promise<boolean> {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    } catch (error) {\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        error.stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 2816
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined;\n  appConfigEndpoint: string | undefined;\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 294
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface DaprConfiguration {\n  mleanApiKey: string | undefined;\n}\n\nexport const daprConfiguration = (): DaprConfiguration => ({\n  mleanApiKey: process.env.MLEAN_API_KEY,\n});\n",
+    "taille": 175
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { DaprConfigService } from './dapr-config.service';\n\n@Module({\n  exports: [DaprConfigService],\n  imports: [ConfigModule],\n  providers: [DaprConfigService],\n})\nexport class DaprConfigModule {}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class DaprConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get mleanApiKey(): string {\n    return this.configService.get<string>('mleanApiKey') ?? '';\n  }\n}\n",
+    "taille": 320
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/redis/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export const redisConfiguration = (): {\n  redisAmr: string | undefined;\n} => ({\n  redisAmr: process.env.STATE_STORE_NAME_AMR_EPB_BE,\n});\n",
+    "taille": 137
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/redis/redis-store.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { RedisConfigService } from './redis-store.service';\n\n@Module({\n  exports: [RedisConfigService],\n  imports: [ConfigModule],\n  providers: [RedisConfigService],\n})\nexport class RedisConfigModule {}\n",
+    "taille": 291
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/redis/redis-store.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class RedisConfigService implements OnModuleInit {\n  private readonly customLogger: AppLogger = new AppLogger(\n    RedisConfigService.name,\n  );\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get redisStoreAmr(): string {\n    return this.configService.get<string>('redisAmr') ?? '';\n  }\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    // List of required configurations\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [{ key: 'redisAmr', value: this.redisStoreAmr }];\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.customLogger.error(\n          `Missing configuration value for ${config.key}`,\n        );\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n  }\n}\n",
+    "taille": 1115
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined;\n  umeApiAppId: string | undefined;\n  plantHryApiAppId: string | undefined;\n  masterApiAppId: string | undefined;\n  resourceApiAppId: string | undefined;\n  productionApiAppId: string | undefined;\n  orderApiAppId: string | undefined;\n  qualityApiAppId: string | undefined;\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  masterApiAppId: process.env.MASTER_API_APP_ID,\n  orderApiAppId: process.env.ORDER_API_APP_ID,\n  plantHryApiAppId: process.env.PLANT_HIERARCHY_API_APP_ID,\n  productionApiAppId: process.env.PRODUCTION_API_APP_ID,\n  qualityApiAppId: process.env.QUALITY_API_APP_ID,\n  resourceApiAppId: process.env.RESOURCE_API_APP_ID,\n  umeApiAppId: process.env.UME_API_APP_ID,\n  urlApi: process.env.URL_EPART_BOARD_BACKEND,\n});\n",
+    "taille": 805
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class UrlApiConfigService implements OnModuleInit {\n  private readonly logger: AppLogger = new AppLogger(UrlApiConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi') ??\n      'https://mesx-ppr.app.corp/epb-be/'\n    );\n  }\n\n  public get umeApiAppId(): string {\n    return this.configService.get<string>('umeApiAppId') ?? '';\n  }\n\n  public get plantHryApiAppId(): string {\n    return this.configService.get<string>('plantHryApiAppId') ?? '';\n  }\n\n  public get masterApiAppId(): string {\n    return this.configService.get<string>('masterApiAppId') ?? '';\n  }\n\n  public get resourceApiAppId(): string {\n    return this.configService.get<string>('resourceApiAppId') ?? '';\n  }\n\n  public get productionApiAppId(): string {\n    return this.configService.get<string>('productionApiAppId') ?? '';\n  }\n\n  public get orderApiAppId(): string {\n    return this.configService.get<string>('orderApiAppId') ?? '';\n  }\n\n  public get qualityApiAppId(): string {\n    return this.configService.get<string>('qualityApiAppId') ?? '';\n  }\n\n  public async onModuleInit(): Promise<void> {\n    await this.checkConfiguration();\n  }\n\n  private async checkConfiguration(): Promise<void> {\n    const requiredConfigs: Array<{\n      key: string;\n      value: string | number | boolean | undefined;\n    }> = [\n      { key: 'plantHryApiAppId', value: this.plantHryApiAppId },\n      { key: 'umeApiAppId', value: this.umeApiAppId },\n      { key: 'masterApiAppId', value: this.masterApiAppId },\n      { key: 'resourceApiAppId', value: this.resourceApiAppId },\n      { key: 'productionApiAppId', value: this.productionApiAppId },\n      { key: 'orderApiAppId', value: this.orderApiAppId },\n      { key: 'qualityApiAppId', value: this.qualityApiAppId },\n    ];\n\n    // Check mandatory fields\n    for (const config of requiredConfigs) {\n      if (config.value === undefined) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log('All required API Manager configurations are properly set');\n  }\n}\n",
+    "taille": 2404
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/alert-by-workcenters-details-enriched-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class AlertByWorkcentersDetailsEnrichedResponseDto {\n  public material: string;\n\n  public wkId: string;\n\n  public startPickingTime: Date | null | undefined;\n\n  public newPromiseTime: Date | null | undefined;\n\n  public od: string;\n\n  public endPreparation: Date | null | undefined;\n\n  public truckDeparture: Date | null | undefined;\n\n  public alertStatus: string;\n\n  public alertLevel: string;\n\n  public alertId: string;\n\n  public workcenter: string;\n\n  public workcenterDescription?: string;\n\n  public advancePickingDuration?: string;\n\n  public uapId?: string | null;\n}\n",
+    "taille": 577
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/alert-by-workcenters-details-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class AlertByWorkcentersDetailsResponseDto {\n  public material: string;\n\n  public wkId: string;\n\n  public startPickingTime: Date;\n\n  public newPromiseTime: Date | null;\n\n  public od: string;\n\n  public endPreparation: Date | null;\n\n  public truckDeparture: Date | null;\n\n  public alertStatus: string;\n\n  public alertLevel: string;\n\n  public alertId: string;\n\n  public workcenter: string;\n}\n",
+    "taille": 396
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/alert-counts-by-workcenter-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class AlertCountsByWorkcenterResponseDto {\n  public workcenter: string;\n\n  public grey: number;\n\n  public yellow: number;\n\n  public orange: number;\n\n  public red: number;\n}\n",
+    "taille": 180
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/all-kpis-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ManagementControlResponseDto } from './management-control-response.dto';\nimport { OkFirstPartResponseDto } from './ok-first-part-response.dto';\nimport { RoutinesResponseDto } from './routines-response.dto';\nimport { TpmResponseDto } from './tpm-response.dto';\n\nexport class AllKpisResponseDto {\n  public okFirstPart?: OkFirstPartResponseDto['okFirstPart'];\n\n  public routines?: RoutinesResponseDto['routines'];\n\n  public tpm?: TpmResponseDto['tpm'];\n\n  public managementControl?: ManagementControlResponseDto['managementControl'];\n\n  public constructor(\n    okFirstPart?: OkFirstPartResponseDto['okFirstPart'],\n    routines?: RoutinesResponseDto['routines'],\n    tpm?: TpmResponseDto['tpm'],\n    managementControl?: ManagementControlResponseDto['managementControl'],\n  ) {\n    this.okFirstPart = okFirstPart;\n    this.routines = routines;\n    this.tpm = tpm;\n    this.managementControl = managementControl;\n  }\n}\n",
+    "taille": 922
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/assign-gap-to-resources-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class AssignGapToResourcesResponseDto {\n  public updatedCount: number;\n\n  public updatedResourceIds: Array<string>;\n\n  public gapId: string;\n\n  public gapDesc: string;\n}\n",
+    "taille": 177
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/assign-gap-to-resources.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';\n\nexport class AssignGapToResourcesDto {\n  @Type(() => Number)\n  @IsNumber()\n  @IsNotEmpty()\n  public plant: number;\n\n  @IsArray()\n  @IsNotEmpty()\n  public resourceIds: Array<string>;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapId: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapDesc: string;\n}\n",
+    "taille": 414
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/checkpoint-result-api.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class CheckpointResultApiDto {\n  public label: string;\n\n  public status: number;\n}\n",
+    "taille": 90
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/checkpoint-result.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class CheckpointResultDto {\n  public label: string;\n\n  public status: 'green' | 'red';\n\n  public constructor(label: string, status: 'green' | 'red') {\n    this.label = label;\n    this.status = status;\n  }\n}\n",
+    "taille": 214
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/gemba-walk-checkpoint-api-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { CheckpointResultApiDto } from './checkpoint-result-api.dto';\n\nexport class GembaWalkCheckpointApiResponseDto {\n  public checkpoint_category_color: string;\n\n  public checkpoint_category_description: string;\n\n  public checkpoint_description: string;\n\n  public checkpoint_results: Array<CheckpointResultApiDto>;\n\n  public id: number;\n}\n",
+    "taille": 342
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-alert-by-workcenters-details.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ApiProperty } from '@nestjs/swagger';\nimport { IsArray, IsNotEmpty, IsNumber, IsString } from 'class-validator';\n\nexport class GetAlertByWorkcentersDetailsDto {\n  @IsNumber()\n  @IsNotEmpty()\n  public plant: number;\n\n  @ApiProperty({\n    description: 'Array of workcenter IDs',\n    example: ['W1', 'W2', 'W3'],\n    type: [String],\n  })\n  @IsArray()\n  @IsString({ each: true })\n  public workcenterIds: Array<string>;\n}\n",
+    "taille": 426
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-alert-counts-for-resources.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Type } from 'class-transformer';\nimport {\n  IsArray,\n  IsNotEmpty,\n  IsNumber,\n  IsOptional,\n  IsString,\n  Max,\n  Min,\n} from 'class-validator';\n\nexport class GetAlertCountsForResourcesDto {\n  @Type(() => Number)\n  @IsNumber()\n  @IsNotEmpty()\n  @Min(1000)\n  @Max(9999)\n  public plant: number;\n\n  @IsArray()\n  @IsString({ each: true })\n  @IsNotEmpty()\n  public resourceIds: Array<string>;\n\n  @IsString()\n  @IsOptional()\n  public timezone: string;\n}\n",
+    "taille": 457
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-all-kpis-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { IsNotEmpty, IsOptional, IsString } from 'class-validator';\n\nexport class GetAllKpisQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public plant: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public timezone: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapId: string;\n\n  @IsString()\n  @IsOptional()\n  public teamId: string;\n\n  @IsString()\n  @IsOptional()\n  public currentShiftHourNumber: string;\n}\n",
+    "taille": 526
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-management-control-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsNotEmpty, IsOptional, IsString } from 'class-validator';\n\nexport class GetManagementControlQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public plant: string;\n\n  @Type(() => String)\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @Type(() => String)\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public timezone: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public team: string;\n\n  @IsString()\n  @IsOptional()\n  public currentShiftHourNumber: string;\n}\n",
+    "taille": 565
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-ok-first-part-details-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { IsString, IsNotEmpty } from 'class-validator';\n\nexport class GetOkFirstPartDetailsQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public plant: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapId: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public timezone: string;\n}\n",
+    "taille": 397
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-resources-by-gap-id-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsNumber, IsNotEmpty, IsString } from 'class-validator';\n\nexport class GetResourcesByGapIdQueryDto {\n  @Type(() => Number)\n  @IsNumber()\n  @IsNotEmpty()\n  public plant: number;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapId: string;\n}\n",
+    "taille": 285
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-resources-by-gapid-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class GetResourcesByGapIdResponseDto {\n  public resourceId: string;\n\n  public resourceName: string;\n}\n",
+    "taille": 109
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-routine-details-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { IsNotEmpty, IsString } from 'class-validator';\n\nexport class GetRoutineDetailsQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public plant: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public timezone: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public team: string;\n}\n",
+    "taille": 392
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-tpm-details-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { IsNotEmpty, IsString } from 'class-validator';\n\nexport class GetTpmDetailsQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public plant: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public timezone: string;\n\n  @IsString()\n  @IsNotEmpty()\n  public gapId: string;\n}\n",
+    "taille": 389
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/get-workcenters-for-resources-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { ResourceWorkcenterMapping } from './resource-workcenter-mapping.dto';\n\nexport class GetWorkcentersForResourcesResponseDto {\n  public resources: Array<ResourceWorkcenterMapping>;\n\n  public totalCount: number;\n}\n",
+    "taille": 219
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/jwt-decoded.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class JwtDecodedDto {\n  public exp: number;\n\n  public iss: string;\n\n  public lt: number;\n\n  public nbf: number;\n\n  public scope: Array<string>;\n\n  public user_id: number;\n}\n",
+    "taille": 180
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/management-control-details-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { CheckpointResultDto } from './checkpoint-result.dto';\n\nexport class ManagementControlDetailsResponseDto {\n  public checkpoint_category_color: string;\n\n  public checkpoint_category_description: string;\n\n  public checkpoint_description: string;\n\n  public checkpoint_results: Array<CheckpointResultDto>;\n\n  public id: number;\n\n  public labelIsDashorOK: boolean;\n\n  public constructor(\n    id: number,\n    checkpoint_description: string,\n    labelIsDashorOK: boolean,\n    checkpoint_results: Array<CheckpointResultDto>,\n    checkpoint_category_color: string,\n    checkpoint_category_description: string,\n  ) {\n    this.id = id;\n    this.checkpoint_description = checkpoint_description;\n    this.labelIsDashorOK = labelIsDashorOK;\n    this.checkpoint_results = checkpoint_results;\n    this.checkpoint_category_color = checkpoint_category_color;\n    this.checkpoint_category_description = checkpoint_category_description;\n  }\n}\n",
+    "taille": 931
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/management-control-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsNotEmpty, IsString } from 'class-validator';\n\nexport class ManagementControlQueryDto {\n  @IsString()\n  @IsNotEmpty()\n  public team: string;\n\n  @Type(() => String)\n  @IsString()\n  @IsNotEmpty()\n  public shiftStartDate: string;\n\n  @Type(() => String)\n  @IsString()\n  @IsNotEmpty()\n  public shiftEndDate: string;\n\n  public toQueryParams(): Record<string, string> {\n    return {\n      date_begin: this.shiftStartDate,\n      date_end: this.shiftEndDate,\n      team: this.team,\n    };\n  }\n}\n",
+    "taille": 538
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/management-control-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class ManagementControlResponseDto {\n  public readonly managementControl: {\n    value: string;\n    background: 'green' | 'red';\n  };\n\n  public constructor(controlAssessed: number, numberOfItems: number) {\n    this.managementControl = {\n      background: controlAssessed === numberOfItems ? 'green' : 'red',\n      value: `${controlAssessed}/${numberOfItems}`,\n    };\n  }\n}\n",
+    "taille": 379
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/mlean-api-headers.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { AxiosHeaders } from 'axios';\n\nexport class MleanApiHeadersDto extends AxiosHeaders {\n  public 'api_key': string;\n\n  public 'plant_id': string;\n\n  public authorization?: string;\n\n  public constructor(apiKey: string, plantId: string, token?: string) {\n    super();\n    this.api_key = apiKey;\n    this.plant_id = plantId;\n    if (token) {\n      this.authorization = `Bearer ${token}`;\n    }\n  }\n}\n",
+    "taille": 403
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/ok-first-part-detail-item.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class OkFirstPartDetailItemDto {\n  public id: number;\n\n  public creationDate: string;\n\n  public closedDate: string | null;\n\n  public duration: string;\n\n  public subPerimeter: number;\n\n  public subPerimeterDescription: string;\n\n  public color: 'green' | 'red';\n\n  public constructor(\n    id: number,\n    creationDate: string,\n    closedDate: string | null,\n    duration: string,\n    subPerimeter: number,\n    subPerimeterDescription: string,\n    color: 'green' | 'red',\n  ) {\n    this.id = id;\n    this.creationDate = creationDate;\n    this.closedDate = closedDate;\n    this.duration = duration;\n    this.subPerimeter = subPerimeter;\n    this.subPerimeterDescription = subPerimeterDescription;\n    this.color = color;\n  }\n}\n",
+    "taille": 730
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/ok-first-part-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class OkFirstPartQueryDto {\n  public format = 'table';\n\n  public limit = '1000';\n\n  public offset = '0';\n\n  public ordering = '-created';\n\n  public perimeters: string;\n\n  public search = '';\n\n  private readonly createdRangeAfter: string;\n\n  private readonly createdRangeBefore: string;\n\n  public constructor(\n    gapId: string,\n    shiftStartUtcIso: string,\n    shiftEndUtcIso: string,\n  ) {\n    this.perimeters = gapId;\n    this.createdRangeAfter = shiftStartUtcIso;\n    this.createdRangeBefore = shiftEndUtcIso;\n  }\n\n  public toQueryParams(): Record<string, string> {\n    const parameters: Record<string, string> = {\n      format: this.format,\n      limit: this.limit,\n      offset: this.offset,\n      ordering: this.ordering,\n      perimeters: this.perimeters,\n      search: this.search,\n    };\n    parameters['created_range_after'] = this.createdRangeAfter;\n    parameters['created_range_before'] = this.createdRangeBefore;\n    return parameters;\n  }\n}\n",
+    "taille": 964
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/ok-first-part-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class OkFirstPartResponseDto {\n  public okFirstPart: {\n    value: string;\n    background: 'green' | 'red';\n  };\n\n  public constructor(okCount: number, totalCount: number) {\n    const background = okCount === totalCount ? 'green' : 'red';\n    this.okFirstPart = {\n      background,\n      value: `${okCount}/${totalCount}`,\n    };\n  }\n}\n",
+    "taille": 342
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/ok-first-part-schedule-item-api.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class OkFirstPartScheduleItemApiDto {\n  public id: number;\n\n  public created: string;\n\n  public device_update: string;\n\n  public updated: string;\n\n  public close_comment: string;\n\n  public closed_by: number | null;\n\n  public closed_date: string | null;\n\n  public created_by: number;\n\n  public launch_reason: number;\n\n  public noks: number;\n\n  public perimeter: number;\n\n  public product: number;\n\n  public status: number;\n\n  public template_version: string;\n}\n",
+    "taille": 467
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/perimeter-api-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class PerimeterApiResponseDto {\n  public id: number;\n\n  public created: string;\n\n  public device_update: string;\n\n  public updated: string;\n\n  public description: string;\n\n  public factory_url: string | null;\n\n  public media: string | null;\n\n  public name: string;\n\n  public parent: number;\n\n  public pattern: number;\n\n  public enabled: boolean;\n\n  public external_id: string | null;\n}\n",
+    "taille": 393
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/polyvalent-api-parameters.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class PolyvalentApiParameters {\n  public include_inactive_people: boolean;\n\n  public include_polyvalent_operator: boolean;\n\n  public is_auditable: boolean;\n\n  public hide_operators_with_no_polyvalences: boolean;\n\n  public limit: number;\n\n  public offset: number;\n\n  public only_reference: boolean;\n\n  public perimeters: string;\n\n  public search: string;\n\n  public teams: number;\n\n  public constructor(parameters: {\n    includeInactivePeople: boolean;\n    includePolyvalentOperator: boolean;\n    isAuditable: boolean;\n    hideOperatorsWithNoPolyvalences: boolean;\n    limit: number;\n    offset: number;\n    onlyReference: boolean;\n    perimeters: string;\n    search: string;\n    teams: number;\n  }) {\n    this.include_inactive_people = parameters.includeInactivePeople;\n    this.include_polyvalent_operator = parameters.includePolyvalentOperator;\n    this.is_auditable = parameters.isAuditable;\n    this.hide_operators_with_no_polyvalences =\n      parameters.hideOperatorsWithNoPolyvalences;\n    this.limit = parameters.limit;\n    this.offset = parameters.offset;\n    this.only_reference = parameters.onlyReference;\n    this.perimeters = parameters.perimeters;\n    this.search = parameters.search;\n    this.teams = parameters.teams;\n  }\n}\n",
+    "taille": 1245
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/resource-workcenter-mapping.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class ResourceWorkcenterMapping {\n  public resourceId: string;\n\n  public workcenterId: string | null;\n}\n",
+    "taille": 111
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/routine-api-response.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class RoutineApiResponseDto {\n  public schedule_entry_id: number;\n\n  public schedule_id: number;\n\n  public name: string;\n\n  public status: string | null;\n\n  public constructor(\n    schedule_entry_id: number,\n    schedule_id: number,\n    name: string,\n    status: string | null,\n  ) {\n    this.schedule_entry_id = schedule_entry_id;\n    this.schedule_id = schedule_id;\n    this.name = name;\n    this.status = status;\n  }\n}\n",
+    "taille": 429
+  },
+  {
+    "microservice": "mesx-epart-board-backend",
+    "chemin": "/src/egapboard/dtos/routine-detail-item.dto.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "export class RoutineDetailItemDto {\n  public scheduleEntryId: number;\n\n  public scheduleId: number;\n\n  public description: string;\n\n  public status: 'OK' | 'NOK' | 'NA';\n\n  public color: 'green' | 'red' | 'grey';\n\n  public constructor(\n    scheduleEntryId: number,\n    scheduleId: number,\n    description: string,\n    status: 'OK' | 'NOK' | 'NA',\n    color: 'green' | 'red' | 'grey',\n  ) {\n    this.scheduleEntryId = scheduleEntryId;\n    this.scheduleId = scheduleId;\n    this.description = description;\n    this.status = status;\n    this.color = color;\n  }\n}\n",
+    "taille": 560
+  }
+]

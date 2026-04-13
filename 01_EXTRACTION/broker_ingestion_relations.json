@@ -1,0 +1,152 @@
+[
+  {
+    "source": "mesx-downtime-materialized-view",
+    "cible": "mesx-downtime-backend",
+    "type": "INGESTION",
+    "ingestion_type": "Materialized View Update",
+    "broker_type": "SQL Server",
+    "topics": [],
+    "tables_consumed": [
+      "DowntimeEvents",
+      "MachineState"
+    ],
+    "direction": "INPUT",
+    "communication_mode": "scheduled",
+    "frequency": "hourly",
+    "confidence": 0.9,
+    "source_detected": "Schema analysis"
+  },
+  {
+    "source": "mesx-leveling-board-backend",
+    "cible": "mesx-leveling-board-mv-processor",
+    "type": "INGESTION",
+    "ingestion_type": "Materialized View Update",
+    "broker_type": "SQL Server",
+    "topics": [],
+    "tables_consumed": [
+      "LevelingData",
+      "Assignments"
+    ],
+    "direction": "INPUT",
+    "communication_mode": "scheduled",
+    "frequency": "hourly",
+    "confidence": 0.88,
+    "source_detected": "MV schema"
+  },
+  {
+    "source": "mesx-master-data-ingestion",
+    "cible": "mesx-master-api",
+    "type": "INGESTION",
+    "ingestion_type": "Data Ingestion",
+    "broker_type": "Azure Service Bus",
+    "topics": [
+      "master-data-changed"
+    ],
+    "tables_consumed": [
+      "MasterData",
+      "References"
+    ],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "real-time",
+    "confidence": 0.92,
+    "source_detected": "Known pattern"
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-datahub",
+    "type": "INGESTION",
+    "ingestion_type": "Data Ingestion Service",
+    "broker_type": "Azure Data Factory",
+    "topics": [
+      "orders-feed",
+      "order-events"
+    ],
+    "tables_consumed": [
+      "Orders",
+      "OrderItems"
+    ],
+    "direction": "INPUT",
+    "communication_mode": "async",
+    "frequency": "real-time",
+    "confidence": 0.95,
+    "source_detected": "Known relationship"
+  },
+  {
+    "source": "mesx-central-error-ui",
+    "cible": "mesx-mv-orchestrator",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "error-events",
+      "system-alerts"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "async",
+    "service_namespace": "mesx-events",
+    "frequency": "real-time",
+    "confidence": 0.85,
+    "source_detected": "Event Hub pattern"
+  },
+  {
+    "source": "mesx-downtime-backend",
+    "cible": "mesx-downtime-materialized-view",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "downtime-events"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "async",
+    "service_namespace": "mesx-events",
+    "frequency": "real-time",
+    "confidence": 0.87,
+    "source_detected": "Event Hub pattern"
+  },
+  {
+    "source": "mesx-job-scheduler-backend",
+    "cible": "mesx-order-api",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Redis Stream",
+    "topics": [
+      "jobs:schedule",
+      "jobs:execute"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "async",
+    "frequency": "real-time",
+    "confidence": 0.8,
+    "source_detected": "Redis Stream config"
+  },
+  {
+    "source": "mesx-order-api",
+    "cible": "mesx-order-management-backend",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Service Bus",
+    "topics": [
+      "orders-created",
+      "orders-updated"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "async",
+    "service_namespace": "mesx-messaging",
+    "confidence": 0.9,
+    "source_detected": "Known pattern"
+  },
+  {
+    "source": "mesx-picking-backend",
+    "cible": "mesx-picking-job-service",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Service Bus",
+    "topics": [
+      "picking-jobs-queue",
+      "picking-instructions"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "message-queue",
+    "service_namespace": "mesx-messaging",
+    "frequency": "real-time",
+    "confidence": 0.88,
+    "source_detected": "Service Bus config"
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/capture/index.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "//dependencies \nimport { DaprServer, CommunicationProtocolEnum } from '@dapr/dapr'; \nimport fs from 'fs'\n//code\nconst daprHost = \"127.0.0.1\"; \nconst serverHost = \"127.0.0.1\";\nconst serverPort = \"6002\"; \nconst daprPort = \"3602\"; \n\nstart().catch((e) => {\n    console.error(e);\n    process.exit(1);\n});\n\nconst shopOrders = []\nconst pickingOrders = []\nconst prodOrders = []\n\nasync function start() {\n    const server = new DaprServer({\n        serverHost,\n        serverPort,\n        communicationProtocol: CommunicationProtocolEnum.HTTP,\n        clientOptions: {\n            daprHost,\n            daprPort, \n        }\n    });\n    \n    await server.binding.receive('picking-order', async (msg) => {\n        console.log(`Received Message picking-order `)\n        pickingOrders.push(msg)\n        fs.writeFileSync('capture/pickingOrders.json', JSON.stringify(pickingOrders))\n    });\n    \n    await server.binding.receive('prod-order', async (msg) => {\n        console.log(`Received Message prod-order `)\n        prodOrders.push(msg)\n        fs.writeFileSync('capture/prodOrders.json', JSON.stringify(prodOrders))\n        \n    });\n    \n    await server.binding.receive('shop-order', async (msg) => {\n        console.log(`Received Message shop-order `)\n        shopOrders.push(msg)\n        fs.writeFileSync('capture/shopOrders.json', JSON.stringify(shopOrders))\n    });\n \n    await server.start();\n}",
+    "taille": 1390
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/capture/resources/picking-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: picking-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.faurecia-wip.faurecia_wip.dbo.s_picking_order\"\n  - name: eventHub\n    value: \"dbz.faurecia-wip.faurecia_wip.dbo.s_picking_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"input\"",
+    "taille": 555
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/capture/resources/prod-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: prod-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.faurecia-wip.faurecia_wip.dbo.s_production_order\"\n  - name: eventHub\n    value: \"dbz.faurecia-wip.faurecia_wip.dbo.s_production_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"input\"",
+    "taille": 558
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/capture/resources/shop-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: shop-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.wip.wip.dbo.shop_order\"\n  - name: eventHub\n    value: \"dbz.wip.wip.dbo.shop_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"input\"",
+    "taille": 506
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/load-tests/index.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "import { DaprClient, CommunicationProtocolEnum } from '@dapr/dapr'; \nimport fs from 'fs'\nimport{ processWithDelay } from './lib.js'\n\nconst delayInMilliseconds = 100;\nconst messagesCount = 1;\n\nconst daprHost = \"127.0.0.1\"; \nconst daprPort = process.argv[2];\n\nconst client = new DaprClient({\n    daprHost,\n    daprPort,\n    communicationProtocol: CommunicationProtocolEnum.HTTP,\n});\n\nprocessWithDelay(delayInMilliseconds, messagesCount, client)\n    .then( orders => {\n        const handles = orders\n            .map( o => o.shop_order)\n            .join('\\n');\n\n        fs.writeFileSync(`orders-${daprPort}.json`, handles);\n    });\n",
+    "taille": 630
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/load-tests/lib.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "import fs from 'fs'\nimport crypto from 'crypto'\n\nlet CurrentLsnPicking   = lsnToNumber(\"0000122A:000281B8:0002\")\nlet CurrentLsnShopOrder = lsnToNumber(\"0000122A:00027D50:0004\")\n\nfunction getNextShopOrderLsn() {\n    CurrentLsnShopOrder = CurrentLsnShopOrder + BigInt(getRandomInt(1, 10));\n    \n    return numberToLsn(CurrentLsnShopOrder);\n}\n\nfunction getNextPickingLsn() {\n    CurrentLsnPicking = CurrentLsnPicking + BigInt(getRandomInt(1, 10));\n    return numberToLsn(CurrentLsnPicking);\n}\n\nfunction lsnToNumber(hex) {\n    const cleanedHex = hex.replaceAll(/[^\\da-f]/gi, '').toLowerCase();\n    const hexString = cleanedHex.toString('hex');\n    const bigIntValue = BigInt(`0x${hexString}`);\n    return bigIntValue;\n}\n\nfunction numberToLsn(lsn) {\n    lsn = lsn.toString(16)\n        .padStart(20, '0');\n    const part1 = lsn.slice(0, 8);\n    const part2 = lsn.slice(8, 16);\n    const part3 = lsn.slice(16, 20);\n\n    return `${part1}:${part2}:${part3}`;\n}\n\nfunction getRandomInt(min, max) {\n    return Math.floor(Math.random() * (max - min + 1)) + min;\n}\n\nasync function createShopOrder(client) {\n    const shopOrderMessage = JSON.parse(fs.readFileSync('shoporder_create/shopOrders.json'));\n    const pickingOrderMessage = JSON.parse(fs.readFileSync('shoporder_create/pickingOrders.json'));\n    const uniqueId = `${crypto.randomUUID().split('-')[0]}_${crypto.randomUUID().split('-')[1]}_${crypto.randomUUID().split('-')[2]}`;\n    \n    shopOrderMessage.payload.HANDLE = shopOrderMessage.payload.HANDLE.replace('12345678620240731_2', `_${uniqueId}`);\n    shopOrderMessage.payload.SHOP_ORDER = shopOrderMessage.payload.SHOP_ORDER.replace('12345678620240731_2', `_${uniqueId}`);\n    shopOrderMessage.payload.__source_ts_ms = Date.now();\n    shopOrderMessage.payload.__source_change_lsn = getNextShopOrderLsn();\n    \n    pickingOrderMessage.payload.S_HANDLE = pickingOrderMessage.payload.S_HANDLE.replace('12345678620240731_2', `_${uniqueId}`);\n    pickingOrderMessage.payload.S_SHOP_ORDER = pickingOrderMessage.payload.S_SHOP_ORDER.replace('12345678620240731_2', `_${uniqueId}`);\n    await sleep(5);\n    pickingOrderMessage.payload.__source_ts_ms = Date.now();\n    pickingOrderMessage.payload.__source_change_lsn = getNextPickingLsn();\n\n\n    await client.binding.send('shop-order', 'create', shopOrderMessage);\n    console.log(`Sent Creation Shop Order: '${shopOrderMessage.payload.SHOP_ORDER}', with t=${shopOrderMessage.payload.__source_ts_ms}`)\n    await client.binding.send('picking-order', 'create', pickingOrderMessage);\n    console.log(`Sent Creation Picking Order: '${pickingOrderMessage.payload.S_SHOP_ORDER}'with t=${pickingOrderMessage.payload.__source_ts_ms}`)\n\n    return {\n        handle: shopOrderMessage.payload.HANDLE,\n        shop_order: shopOrderMessage.payload.SHOP_ORDER\n    };\n}\n\nasync function updateShopOrder(client, { handle, shop_order }) {\n    const shopOrderMessage = JSON.parse(fs.readFileSync('shoporder_create/shopOrders.json'));\n    const pickingOrderMessage = JSON.parse(fs.readFileSync('shoporder_create/pickingOrders.json'));\n\n    shopOrderMessage.payload.HANDLE     = handle;\n    shopOrderMessage.payload.SHOP_ORDER = shop_order;\n    shopOrderMessage.payload.__source_ts_ms = Date.now();\n    shopOrderMessage.payload.QTY_TO_BUILD = pickingOrderMessage.payload.QTY_TO_BUILD + getRandomInt(1, 10);\n    shopOrderMessage.payload.__source_change_lsn = getNextShopOrderLsn();\n    shopOrderMessage.payload.__op = \"u\";\n    \n    pickingOrderMessage.payload.S_HANDLE     = handle;\n    pickingOrderMessage.payload.S_SHOP_ORDER = shop_order;\n    await sleep(5);\n    pickingOrderMessage.payload.__source_ts_ms = Date.now();\n    pickingOrderMessage.payload.D_SOURCE_LOC = \"PR10\";\n    pickingOrderMessage.payload.D_DESTINATION_LOC = \"PR11\";\n    pickingOrderMessage.payload.__source_change_lsn = getNextPickingLsn();\n    pickingOrderMessage.payload.__op = \"u\";\n\n    await client.binding.send('shop-order', 'create', shopOrderMessage);\n    console.log(`Sent Update Shop Order: '${shopOrderMessage.payload.SHOP_ORDER}', with t=${shopOrderMessage.payload.__source_ts_ms}`)\n    await client.binding.send('picking-order', 'create', pickingOrderMessage);\n    console.log(`Sent Update Picking Order: '${pickingOrderMessage.payload.S_SHOP_ORDER}', with t=${pickingOrderMessage.payload.__source_ts_ms}`)\n}\n\nfunction sleep(ms) {\n    return new Promise(resolve => setTimeout(resolve, ms));\n}\n\nexport async function processWithDelay(delayInMilliseconds, count, client) {\n    const orders = []\n    for (let i = 0; i < count; i++) {\n        const shopOrder = await createShopOrder(client);\n        orders.push(shopOrder)\n        await sleep(getRandomInt(1, delayInMilliseconds));\n        await updateShopOrder(client, shopOrder);\n        await sleep(getRandomInt(1, delayInMilliseconds));\n    }\n\n    return orders;\n}\n",
+    "taille": 4815
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/load-tests/resources/picking-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: picking-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.faurecia-wip.faurecia_wip.dbo.s_picking_order\"\n  - name: eventHub\n    value: \"dbz.faurecia-wip.faurecia_wip.dbo.s_picking_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"output\"",
+    "taille": 556
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/load-tests/resources/prod-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: prod-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.faurecia-wip.faurecia_wip.dbo.s_production_order\"\n  - name: eventHub\n    value: \"dbz.faurecia-wip.faurecia_wip.dbo.s_production_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"output\"",
+    "taille": 559
+  },
+  {
+    "microservice": "mesx-ops-load-tests-di",
+    "chemin": "/load-tests/resources/shop-order-component.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: shop-order\nspec:\n  type: bindings.azure.eventhubs\n  version: v1\n  metadata:\n  - name: connectionString\n    value: \"__CONN_STRING__;EntityPath=dbz.wip.wip.dbo.shop_order\"\n  - name: eventHub\n    value: \"dbz.wip.wip.dbo.shop_order\"\n  - name: consumerGroup\n    value: \"$Default\"\n  - name: storageAccountName\n    value: \"statgptmpxn01mes01\"\n  - name: storageContainerName\n    value: \"ca01missaou-dapr-binding\"\n  - name: direction\n    value: \"output\"",
+    "taille": 507
+  }
+]

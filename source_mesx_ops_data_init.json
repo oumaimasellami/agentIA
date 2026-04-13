@@ -1,0 +1,26 @@
+[
+  {
+    "microservice": "mesx-ops-data-init",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      agent_pool: ubuntu-2204-vmss-mesx\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n            run_documentation_analyzer: false\n            run_scss_linter: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1586
+  },
+  {
+    "microservice": "mesx-ops-data-init",
+    "chemin": "/azure-pipeline.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "parameters:\n- name: environment\n  displayName: 'Select Environment'\n  type: string\n  values:\n  - dev\n  - ppr\n  - qua\n  - pro\n  default: dev\n- name: csvFileName\n  displayName: 'Provide the path of the file to upload (relative to the data folder)'\n  type: string\n- name: oauth2Token\n  displayName: 'Provide Oauth2 Token'\n  type: string\n\nvariables:\n  ${{ if eq(parameters.environment, 'pro') }}:\n    baseUrl: 'https://mesx.app.corp'\n  ${{ else }}:\n    baseUrl: 'https://mesx-${{ parameters.environment }}.app.corp'\n\ntrigger: none\n\npool: ubuntu-2204-vmss\n\nsteps:\n- script: npm install\n  displayName: 'Run npm install'\n\n- script: |\n    node index.js \\\n      '${{ parameters.csvFileName }}' \\\n      '${{ variables.baseUrl }}' \\\n      '${{ parameters.oauth2Token }}'\n  displayName: 'Run data initialization'\n  failOnStderr: 'true'",
+    "taille": 823
+  },
+  {
+    "microservice": "mesx-ops-data-init",
+    "chemin": "/index.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "const axios = require('axios');\nconst FormData = require('form-data');\nconst fs = require('fs');\n\nasync function uploadCSV(uploadPlantHierarchyCsvUrl, csvDataFilePath, token) {\n  const formData = new FormData();\n  \n  formData\n    .append('file', fs.createReadStream(csvDataFilePath));\n  \n  const requestHeaders = {\n    headers: {\n      ...formData.getHeaders(),\n      'Authorization': `Bearer ${token}`,\n    },\n  };\n  \n  try {\n    const response = await axios\n        .post(uploadPlantHierarchyCsvUrl, formData, requestHeaders);\n    console.log(`CSV '${csvDataFilePath}' uploaded successfully, response: `, response.data);\n  } catch (error) {\n    console.error(`Error uploading file '${csvDataFilePath}', error: `, error);\n  }\n}\n\n\nconst [ csvDataFilePath, mesxBaseUrl, token ] = process.argv.slice(2);\nconst uploadPlantHierarchyCsvUrl = `${mesxBaseUrl}/plt-hry-api/plant/uploadplants`;\nconst relativeCsvDataFilePath = `data/${csvDataFilePath}`;\n\nconsole.log(`Start Uploading '${relativeCsvDataFilePath}' to '${uploadPlantHierarchyCsvUrl}'`)\n\nuploadCSV(\n    uploadPlantHierarchyCsvUrl,\n    relativeCsvDataFilePath,\n    token);",
+    "taille": 1125
+  }
+]

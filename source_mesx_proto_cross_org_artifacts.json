@@ -1,0 +1,10 @@
+[
+  {
+    "microservice": "mesx-proto-cross-org-artifacts",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "trigger:\n- main\n\npool: ubuntu-2204-vmss-mesx\n\nsteps:\n  - task: NuGetAuthenticate@1\n    inputs:\n      nuGetServiceConnections: 'faurecia-gtf-nuget-feed'\n\n  - task: NuGetCommand@2\n    inputs:\n      command: 'restore'\n      restoreSolution: '**/*.sln'\n      feedsToUse: \"config\"\n      nugetConfigPath: 'Nuget.config'\n",
+    "taille": 314
+  }
+]
