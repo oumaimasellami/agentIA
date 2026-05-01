@@ -13,7 +13,7 @@ app = Flask(__name__)
 # Neo4j Configuration
 NEO4J_URI = "bolt://localhost:7687"
 NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "forvia2025"
+NEO4J_PASSWORD = "neo4j2026!"
 
 class NRTAnalyzer:
     """Analyze NRT scopes from Neo4j"""
@@ -24,16 +24,17 @@ class NRTAnalyzer:
     def get_commit_impact(self, commit_id):
         """Get impact of a specific commit"""
         query = """
-        MATCH (c:Commit {commit_id: $commit_id})-[mod:MODIFIES]->(ms:Microservice)
-              -[impl:IMPLEMENTS]->(f:Function)
-              -[cov:COVERS]-(wi:WorkItem)
+        MATCH (c:Commit {commit_id: $commit_id})-[:MODIFIES]->(ms:Microservice)
+        OPTIONAL MATCH (c)-[:TOUCHES_FUNCTION]->(f:Function)
+        OPTIONAL MATCH (wi:WorkItem)-[:LINKED_TO_COMMIT]->(c)
+        OPTIONAL MATCH (wi)-[:LINKED_TO_PULL_REQUEST]->(:PullRequest)-[:CONTAINS_COMMIT]->(c)
         RETURN DISTINCT
             c.commit_id as commit_id,
             c.auteur as author,
             c.message as message,
             c.date as date,
             COLLECT(DISTINCT ms.name) as microservices,
-            COUNT(DISTINCT f.id) as function_count,
+            COLLECT(DISTINCT f.id) as function_ids,
             COLLECT(DISTINCT wi.id) as workitem_ids,
             COLLECT(DISTINCT wi.titre) as workitem_titles
         """
@@ -43,31 +44,57 @@ class NRTAnalyzer:
             record = result.single()
             
             if record:
+                filtered_function_ids = [fid for fid in (record['function_ids'] or []) if fid]
+                raw_workitem_ids = list(record['workitem_ids'] or [])
+                raw_workitem_titles = list(record['workitem_titles'] or [])
+                workitems = []
+                if raw_workitem_ids:
+                    # Keep API shape stable while removing null/duplicate pairs.
+                    seen = set()
+                    for index, wid in enumerate(raw_workitem_ids):
+                        if wid is None:
+                            continue
+                        title = raw_workitem_titles[index] if index < len(raw_workitem_titles) else None
+                        if wid in seen:
+                            continue
+                        seen.add(wid)
+                        workitems.append((wid, title))
+
                 return {
                     "commit_id": record['commit_id'],
                     "author": record['author'],
                     "message": record['message'],
                     "date": record['date'],
                     "microservices": record['microservices'],
-                    "function_count": record['function_count'],
-                    "workitem_count": len(record['workitem_ids']),
-                    "workitems": list(zip(record['workitem_ids'], record['workitem_titles']))
+                    "function_count": len(filtered_function_ids),
+                    "workitem_count": len(workitems),
+                    "workitems": workitems
                 }
             return None
     
     def get_workitem_scope(self, workitem_id):
         """Get complete NRT scope for a WorkItem"""
         query = """
-        MATCH (c:Commit)-[mod:MODIFIES]->(ms:Microservice)
-              -[impl:IMPLEMENTS]->(f:Function)
-              -[cov:COVERS]-(wi:WorkItem {id: $wid})
-        RETURN DISTINCT
-            COUNT(DISTINCT c.commit_id) as total_commits,
-            COLLECT(DISTINCT ms.name) as microservices,
-            COUNT(DISTINCT f.id) as total_functions,
-            COLLECT(DISTINCT c.auteur) as authors,
+        MATCH (wi:WorkItem {id: $wid})
+        OPTIONAL MATCH (wi)-[:LINKED_TO_PULL_REQUEST]->(pr:PullRequest)-[:CONTAINS_COMMIT]->(c_from_pr:Commit)-[:MODIFIES]->(ms_from_pr:Microservice)
+        OPTIONAL MATCH (wi)-[:LINKED_TO_COMMIT]->(c_direct:Commit)-[:MODIFIES]->(ms_direct:Microservice)
+        OPTIONAL MATCH (c_from_pr)-[:TOUCHES_FUNCTION]->(f_from_pr:Function)
+        OPTIONAL MATCH (c_direct)-[:TOUCHES_FUNCTION]->(f_direct:Function)
+        WITH wi,
+             COLLECT(DISTINCT pr.pr_id) AS pr_ids,
+             COLLECT(DISTINCT c_from_pr.commit_id) + COLLECT(DISTINCT c_direct.commit_id) AS commit_ids,
+             COLLECT(DISTINCT ms_from_pr.name) + COLLECT(DISTINCT ms_direct.name) AS microservice_names,
+             COLLECT(DISTINCT f_from_pr.id) + COLLECT(DISTINCT f_direct.id) AS function_ids,
+             COLLECT(DISTINCT c_from_pr.auteur) + COLLECT(DISTINCT c_direct.auteur) AS authors
+        RETURN
             wi.titre as workitem_title,
-            wi.statut as status
+            wi.statut as status,
+            wi.type as workitem_type,
+            [x IN pr_ids WHERE x IS NOT NULL] as pull_request_ids,
+            [x IN commit_ids WHERE x IS NOT NULL] as commit_ids,
+            [x IN microservice_names WHERE x IS NOT NULL] as microservice_names,
+            [x IN function_ids WHERE x IS NOT NULL] as function_ids,
+            [x IN authors WHERE x IS NOT NULL] as authors
         """
         
         with self.driver.session() as session:
@@ -75,15 +102,25 @@ class NRTAnalyzer:
             record = result.single()
             
             if record:
+                pull_request_ids = sorted(set([x for x in (record['pull_request_ids'] or []) if x is not None]))
+                commit_ids = sorted(set([x for x in (record['commit_ids'] or []) if x]))
+                microservice_names = sorted(set([x for x in (record['microservice_names'] or []) if x]))
+                function_ids = sorted(set([x for x in (record['function_ids'] or []) if x]))
+                authors = sorted(set([x for x in (record['authors'] or []) if x]))
+
                 return {
                     "workitem_id": workitem_id,
                     "workitem_title": record['workitem_title'],
                     "status": record['status'],
-                    "total_commits": record['total_commits'],
-                    "microservices": record['microservices'],
-                    "total_functions": record['total_functions'],
-                    "authors_count": len(record['authors']),
-                    "authors": record['authors']
+                    "workitem_type": record['workitem_type'],
+                    "pull_request_ids": pull_request_ids,
+                    "total_pull_requests": len(pull_request_ids),
+                    "commit_ids": commit_ids,
+                    "total_commits": len(commit_ids),
+                    "microservices": microservice_names,
+                    "total_functions": len(function_ids),
+                    "authors_count": len(authors),
+                    "authors": authors
                 }
             return None
     
@@ -113,6 +150,10 @@ class NRTAnalyzer:
             # Commits
             result = session.run("MATCH (c:Commit) RETURN count(c) as total")
             total_commits = result.single()['total']
+
+            # Pull Requests
+            result = session.run("MATCH (pr:PullRequest) RETURN count(pr) as total")
+            total_pull_requests = result.single()['total']
             
             return {
                 "total_nodes": total_nodes,
@@ -120,7 +161,8 @@ class NRTAnalyzer:
                 "microservices": total_ms,
                 "functions": total_functions,
                 "workitems": total_workitems,
-                "commits": total_commits
+                "commits": total_commits,
+                "pull_requests": total_pull_requests
             }
     
     def search_workitems(self, query):

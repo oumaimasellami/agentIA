@@ -1,0 +1,12 @@
+etape 1:Set-Location D:\agentIA
+etape 2:docker start neo4j
+etape3:Set-Location D:\agentIA\02_NEO4J_DATABASE
+D:\Python\bin\python.exe .\build_graph_database.py
+etape 4:Set-Location D:\agentIA\05_WEB_INTERFACE
+D:\Python\bin\python.exe .\server.py
+
+
+Option “tout en un” (script stable déjà présent):*
+Set-Location D:\agentIA
+powershell -ExecutionPolicy Bypass -File .\start_project.ps1
+

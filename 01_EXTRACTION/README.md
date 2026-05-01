@@ -7,6 +7,23 @@ Extraire les données de l'architecture MESX.0 depuis Azure DevOps et les struct
 
 ## 📂 Fichiers
 
+### **step1b_extract_workitem_commit_links.py** (NOUVEAU)
+- **Entrée:** `work_items.json`, `commits.json` (+ API Azure DevOps)
+- **Sorties:** `workitem_commit_links.json`, `work_items_enriched.json`
+- **Rôle:** Extraire les liens `WorkItem -> Commit` manquants de facon incrementale.
+
+Execution recommandee:
+```bash
+python step1b_extract_workitem_commit_links.py
+```
+
+Mode test sans API (fallback messages commit uniquement):
+```bash
+python step1b_extract_workitem_commit_links.py --offline
+```
+
+---
+
 ### **step2_parser.py** (Script principal)
 - **Entrée:** Données Azure DevOps (commits, métadonnées)
 - **Sortie:** `graph_data.json` (7.2 MB)

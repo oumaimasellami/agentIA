@@ -1,0 +1,54 @@
+MATCH (wi:WorkItem {id: 127835})
+
+/* 1) Direct via COVERS */
+OPTIONAL MATCH (wi)<-[:COVERS]-(f_cov:Function)<-[:IMPLEMENTS]-(ms_cov:Microservice)
+WITH wi,
+     collect(DISTINCT ms_cov) AS ms_cov_list,
+     collect(DISTINCT f_cov)  AS f_cov_list
+
+/* 2) Direct enrichment via RELATES_TO_COMMIT + TOUCHES_FUNCTION */
+OPTIONAL MATCH (wi)-[:RELATES_TO_COMMIT]->(:Commit)-[:TOUCHES_FUNCTION]->(f_ct:Function)<-[:IMPLEMENTS]-(ms_ct:Microservice)
+WITH wi, ms_cov_list, f_cov_list,
+     collect(DISTINCT ms_ct) AS ms_ct_list,
+     collect(DISTINCT f_ct)  AS f_ct_list
+
+/* 3) Merge both direct sources */
+WITH wi,
+     [m IN (ms_cov_list + ms_ct_list) WHERE m IS NOT NULL] AS ms_direct_raw,
+     [f IN (f_cov_list + f_ct_list) WHERE f IS NOT NULL]   AS f_direct_raw
+
+UNWIND ms_direct_raw AS msd
+WITH wi, collect(DISTINCT msd) AS ms_direct_set, f_direct_raw
+
+UNWIND f_direct_raw AS fd
+WITH wi, ms_direct_set, collect(DISTINCT fd) AS f_direct_set
+
+/* 4) Indirect from all direct microservices */
+UNWIND ms_direct_set AS ms1
+OPTIONAL MATCH (ms1)-[:API_CALLS|MESSAGE_BROKER|INGESTION]->(ms2:Microservice)
+OPTIONAL MATCH (ms2)-[:IMPLEMENTS]->(f_ind:Function)
+WITH wi, ms_direct_set, f_direct_set,
+     collect(DISTINCT ms2)   AS ms_indirect_raw,
+     collect(DISTINCT f_ind) AS f_indirect_raw
+
+WITH wi, ms_direct_set, f_direct_set,
+     [m IN ms_indirect_raw WHERE m IS NOT NULL AND NOT m IN ms_direct_set] AS ms_indirect_set,
+     [f IN f_indirect_raw WHERE f IS NOT NULL] AS f_indirect_set
+
+RETURN
+  wi.id AS workitem_id,
+  [m IN ms_direct_set | m.name] AS direct_microservices,
+  [m IN ms_indirect_set | m.name] AS indirect_microservices,
+  size(f_direct_set) AS direct_function_count,
+  size(f_indirect_set) AS indirect_function_count,
+  size(f_direct_set) + size(f_indirect_set) AS total_function_count;
+///id a tester 147765 
+WorkItem -> RELATES_TO_COMMIT -> Commit -> TOUCHES_FUNCTION -> Function -> IMPLEMENTS -> Microservice
+Scope:
+Domains: Visual Management, Production Management
+Screens: Live Status, eDashboard
+Microservices: admin-backend, admin-ui, ume-api, epartboard-ui
+Impacted Functionality:
+Implementation of the Page Builder in eDashboard and Live Status.
+NRT Definition – Expected Behavior:
+Confirm that there is no regression in the display of eDashboard and Live Status, and that all existing functionalities continue to work as expected.

@@ -1,0 +1,10 @@
+93812  à montrer pour l'explication  (on compare azur devops et l'agent )
+Pour ton objectif métier (scope NRT testeur), la bonne règle est simple et propre:
+
+Direct MS: depuis liens Azure DevOpsMATCH (wi:WorkItem {id: 85001})
+OPTIONAL MATCH (wi)-[:LINKED_TO_COMMIT]->(c1:Commit)-[:MODIFIES]->(ms:Microservice)
+OPTIONAL MATCH (wi)-[:LINKED_TO_PULL_REQUEST]->(pr:PullRequest)-[:CONTAINS_COMMIT]->(c2:Commit)-[:MODIFIES]->(ms2:Microservice)
+RETURN wi, c1, ms, pr, c2, ms2
+Direct functions: uniquement fonctions dont des lignes ont changé dans le commit (pas juste “fichier du MS”)
+Indirect MS: via dépendances (API_CALLS/MESSAGE_BROKER/INGESTION)
+Indirect functions: optionnelles et limitées (sinon bruit)

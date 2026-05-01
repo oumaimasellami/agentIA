@@ -50,3 +50,6 @@ yarn-error.log
 
 # OS
 Thumbs.db
+TOKENGITPUSH
+extract_rebuild.log
+workitem_dev_links.json

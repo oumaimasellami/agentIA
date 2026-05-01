@@ -1,0 +1,59 @@
+{
+  "status": "WARN",
+  "checks": {
+    "no_duplicate_identifiers": true,
+    "valid_core_relation_endpoints": true,
+    "expected_core_labels_present": true,
+    "expected_core_relations_present": true,
+    "dependency_graph_non_empty": true
+  },
+  "node_counts": {
+    "Commit": 2977,
+    "WorkItem": 500,
+    "Function": 193,
+    "Microservice": 81,
+    "PersistTest": 1
+  },
+  "relation_counts": {
+    "RELATES_TO_COMMIT": 31229,
+    "TOUCHES_FUNCTION": 8558,
+    "MODIFIES": 2977,
+    "COVERS": 971,
+    "IMPLEMENTS": 193,
+    "API_CALLS": 178,
+    "MESSAGE_BROKER": 5,
+    "INGESTION": 4
+  },
+  "duplicate_checks": {
+    "duplicate_workitem_ids": 0,
+    "duplicate_function_ids": 0,
+    "duplicate_microservice_names": 0
+  },
+  "relation_endpoint_validity": {
+    "modifies_validity": {
+      "total": 2977,
+      "valid": 2977
+    },
+    "implements_validity": {
+      "total": 193,
+      "valid": 193
+    },
+    "covers_validity": {
+      "total": 971,
+      "valid": 971
+    }
+  },
+  "evidence_stats": {
+    "wi_with_evidence": 253,
+    "commits": 882,
+    "functions": 155
+  },
+  "warnings": {
+    "unexpected_labels": [
+      "PersistTest"
+    ],
+    "unexpected_relation_types": [],
+    "orphan_workitem_rate": 0.494,
+    "workitems_without_relates_to_commit": 247
+  }
+}

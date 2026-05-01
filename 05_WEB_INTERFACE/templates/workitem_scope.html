@@ -7,464 +7,552 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         :root {
-            --forvia-blue: #0033CC;
+            --forvia-blue: #0033cc;
             --forvia-dark: #001a99;
             --forvia-light: #e6f0ff;
-            --gray-dark: #1a1a1a;
-            --gray-light: #f8f9fa;
-            --accent: #FF6B35;
+            --bg: #f7f8fb;
+            --surface: #ffffff;
+            --text: #141414;
+            --muted: #606774;
+            --line: #dce1ea;
+            --accent: #ff6b35;
+            --ok: #1e9e61;
+            --warn: #c47f00;
+            --danger: #c93939;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 8% 2%, rgba(0, 51, 204, 0.08) 0, rgba(0, 51, 204, 0) 40%),
+                radial-gradient(circle at 90% 0, rgba(255, 107, 53, 0.08) 0, rgba(255, 107, 53, 0) 30%),
+                var(--bg);
             min-height: 100vh;
-            color: var(--gray-dark);
         }
 
         .navbar {
-            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
-            padding: 15px 0;
-            box-shadow: 0 4px 20px rgba(0, 51, 204, 0.25);
+            background: linear-gradient(90deg, var(--forvia-blue), var(--forvia-dark));
+            box-shadow: 0 4px 20px rgba(0, 26, 153, 0.28);
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 30;
         }
 
         .navbar-content {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 12px 20px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
 
         .navbar-brand {
             color: white;
-            font-size: 22px;
-            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .navbar-brand img {
-            height: 40px;
-            width: auto;
-            object-fit: contain;
-        }
+        .navbar-brand img { height: 62px; width: auto; object-fit: contain; }
 
-        .navbar-brand-text {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
+        .navbar-brand-text { display: flex; flex-direction: column; }
 
-        .navbar-brand-text .primary {
-            font-size: 16px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .navbar-brand-text .secondary {
-            font-size: 11px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            opacity: 0.95;
-        }
+        .navbar-brand-text .primary { font-size: 16px; font-weight: 800; letter-spacing: 0.2px; }
+        .navbar-brand-text .secondary { font-size: 11px; font-weight: 700; letter-spacing: 1px; opacity: 0.95; }
 
         .nav-links {
             display: flex;
-            gap: 30px;
             list-style: none;
+            gap: 24px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .nav-links a {
             color: white;
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-            position: relative;
-            display: flex;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
+            opacity: 0.92;
+            transition: opacity 0.2s;
         }
 
-        .nav-links a::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 0;
-            height: 3px;
-            background: var(--accent);
-            transition: width 0.3s;
-        }
+        .nav-links a:hover { opacity: 1; }
 
-        .nav-links a:hover::after { width: 100%; }
-
-        .container {
-            max-width: 1200px;
+        .page {
+            max-width: 1500px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 28px 20px 30px;
         }
 
         .page-title {
-            font-size: 36px;
-            color: var(--forvia-dark);
-            margin-bottom: 40px;
-            font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
+            color: var(--forvia-dark);
+            font-size: 29px;
+            font-weight: 800;
+            margin-bottom: 18px;
+            letter-spacing: -0.3px;
         }
 
-        .generation-panel {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
-            border: 2px solid var(--forvia-light);
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--gray-dark);
+        .subtitle {
+            color: var(--muted);
             font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-bottom: 20px;
         }
 
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-            font-family: 'Courier New', monospace;
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(580px, 1.05fr) minmax(420px, 0.95fr);
+            gap: 18px;
+            align-items: start;
         }
 
-        .form-input:focus {
-            outline: none;
-            border-color: var(--forvia-blue);
-            box-shadow: 0 0 0 3px var(--forvia-light);
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: 0 8px 24px rgba(4, 22, 51, 0.08);
         }
 
-        .form-input:is(select) {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            background-size: 20px;
-            padding-right: 35px;
-        }
-
-        select:hover {
-            border-color: var(--forvia-blue);
-        }
-
-        select:focus {
-            outline: none;
-            border-color: var(--forvia-blue);
-            box-shadow: 0 0 0 3px var(--forvia-light);
-        }
-
-        .button-group {
+        .panel-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
             display: flex;
-            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
         }
 
-        .btn {
+        .panel-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--forvia-dark);
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 30px;
-            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
-            color: white;
-            border: none;
+        }
+
+        .filters {
+            padding: 14px 16px;
+            display: grid;
+            grid-template-columns: 1.1fr 1fr 1fr 0.8fr;
+            gap: 10px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, #fafcff 0%, #f5f8ff 100%);
+            position: sticky;
+            top: 82px;
+            z-index: 15;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .field label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #465066;
+        }
+
+        .input, .select {
+            width: 100%;
+            border: 1px solid #cfd7e5;
             border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            flex: 1;
-            justify-content: center;
+            background: #fff;
+            padding: 9px 10px;
+            font-size: 13px;
+            color: var(--text);
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 51, 204, 0.3);
+        .input:focus, .select:focus {
+            outline: none;
+            border-color: var(--forvia-blue);
+            box-shadow: 0 0 0 3px rgba(0, 51, 204, 0.12);
         }
 
-        .btn-secondary {
-            background: var(--gray-light);
-            color: var(--forvia-blue);
-            border: 2px solid var(--forvia-blue);
-        }
-
-        .btn-secondary:hover {
-            background: var(--forvia-light);
-        }
-
-        .scope-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 25px;
-            border-left: 4px solid var(--forvia-blue);
-        }
-
-        .scope-header {
+        .toolbar {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--line);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--forvia-light);
-        }
-
-        .scope-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--forvia-dark);
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .badge-success {
-            background: #d1f2eb;
-            color: #27AE60;
-        }
-
-        .scope-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-box {
-            padding: 20px;
-            background: var(--forvia-light);
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--forvia-blue);
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .functions-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .functions-table thead {
-            background: var(--forvia-light);
-            border-bottom: 2px solid var(--forvia-blue);
-        }
-
-        .functions-table th {
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--forvia-dark);
-            font-size: 13px;
-            text-transform: uppercase;
-        }
-
-        .functions-table td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .functions-table tbody tr:hover {
-            background: var(--gray-light);
-        }
-
-        /* ========== CHILDREN TO TEST SECTION ========== */
-        .children-to-test-section {
-            margin-top: 40px;
-            padding: 20px;
-            background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
-            border: 2px solid #3498DB;
-            border-radius: 8px;
-            box-shadow: 0 2px 12px rgba(52, 152, 219, 0.15);
-        }
-
-        .children-header {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #3498DB;
-        }
-
-        .children-header h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0033CC;
-            margin-bottom: 5px;
-        }
-
-        .children-subtitle {
-            font-size: 12px;
-            color: #555;
-            font-style: italic;
-            margin: 0;
-        }
-
-        .children-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 6px;
-            overflow: hidden;
-            box-shadow: 0 1px 4px rgba(0, 51, 204, 0.1);
-        }
-
-        .children-table thead {
-            background: #E8F4F8;
-            border-bottom: 2px solid #3498DB;
-        }
-
-        .children-table thead th {
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            color: #0033CC;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .children-table tbody td {
-            padding: 12px;
-            border-bottom: 1px solid #E0E0E0;
-            font-size: 13px;
-            color: #333;
-        }
-
-        .children-table tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        .children-table tbody tr:hover {
-            background: #F5F9FF;
-            box-shadow: inset 0 0 4px rgba(52, 152, 219, 0.1);
-        }
-
-        .children-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .priority-badge {
-            display: inline-block;
-            font-weight: bold;
-            min-width: 30px;
-            text-align: center;
-            border-radius: 3px;
-        }
-
-        .status-badge {
-            display: inline-block;
-            white-space: nowrap;
-            border-radius: 3px;
-            text-transform: uppercase;
-            font-weight: 500;
-        }
-
-        .export-section {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid var(--forvia-light);
-        }
-
-        .export-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--gray-dark);
-            margin-bottom: 15px;
-            text-transform: uppercase;
-        }
-
-        .export-buttons {
-            display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
-        .export-btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid var(--forvia-blue);
-            background: white;
-            color: var(--forvia-blue);
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
+        .toolbar-left, .toolbar-right {
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid #cdd7eb;
+            background: #f4f8ff;
+            color: #2d4469;
+            border-radius: 20px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
             gap: 6px;
         }
 
-        .export-btn:hover {
-            background: var(--forvia-light);
+        .btn-primary { background: linear-gradient(90deg, var(--forvia-blue), var(--forvia-dark)); color: #fff; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 51, 204, 0.28); }
+
+        .btn-ghost { background: #fff; color: var(--forvia-blue); border: 1px solid #b9c8ea; }
+        .btn-ghost:hover { background: #edf3ff; }
+
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .table-wrap {
+            max-height: calc(100vh - 338px);
+            min-height: 350px;
+            overflow: auto;
         }
 
-        /* DATALIST STYLES */
-        datalist {
-            display: none;
-        }
-
-        .form-input::placeholder {
-            color: #999;
-        }
-
-        footer {
-            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
-            color: white;
-            text-align: center;
-            padding: 30px 20px;
-            margin-top: 60px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 13px;
         }
 
-        @media (max-width: 768px) {
-            .button-group { flex-direction: column; }
-            .page-title { font-size: 24px; }
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background: #f0f4fd;
+            border-bottom: 1px solid #ccd5e8;
+            color: #2a4066;
+            text-align: left;
+            font-size: 11px;
+            letter-spacing: 0.45px;
+            text-transform: uppercase;
+            padding: 10px 10px;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 10px;
+            border-bottom: 1px solid #edf1f7;
+            vertical-align: top;
+        }
+
+        tbody tr {
+            transition: background 0.15s ease;
+            cursor: pointer;
+        }
+
+        tbody tr:hover { background: #f7faff; }
+        tbody tr.selected { background: #eaf1ff; outline: 1px solid #9eb8f4; }
+
+        .id-pill {
+            display: inline-block;
+            border-radius: 999px;
+            background: #edf3ff;
+            color: #0f3c9d;
+            padding: 3px 8px;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .status {
+            display: inline-flex;
+            border-radius: 999px;
+            padding: 3px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            border: 1px solid;
+            white-space: nowrap;
+        }
+
+        .status-done { color: #177347; background: #e9f8ef; border-color: #bde6ce; }
+        .status-progress { color: #946400; background: #fff6dc; border-color: #f3de95; }
+        .status-other { color: #5a6578; background: #f1f4f9; border-color: #d5dde8; }
+
+        .result-panel {
+            position: sticky;
+            top: 90px;
+            min-height: 560px;
+            max-height: calc(100vh - 112px);
+            overflow: auto;
+        }
+
+        .result-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: start;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .result-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--forvia-dark);
+            line-height: 1.2;
+        }
+
+        .result-subtitle {
+            margin-top: 4px;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+
+        .quality-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quality-badge {
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 800;
+            border: 1px solid;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .quality-ok { color: #0f6f43; background: #e7f7ef; border-color: #b8e6cc; }
+        .quality-warn { color: #8a5e00; background: #fff7dc; border-color: #efd489; }
+        .quality-danger { color: #a32727; background: #fbe9e9; border-color: #f0bcbc; }
+
+        .summary-grid {
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .metric {
+            border: 1px solid #dbe3f1;
+            background: #f8fbff;
+            border-radius: 9px;
+            padding: 10px;
+        }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--forvia-blue);
+            line-height: 1;
+        }
+
+        .metric-label {
+            margin-top: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #526179;
+            letter-spacing: 0.5px;
+        }
+
+        .tabs {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            border: 1px solid #ccd7ee;
+            background: #f7f9ff;
+            color: #284067;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 7px 10px;
+            cursor: pointer;
+        }
+
+        .tab.active {
+            background: #e9f0ff;
+            border-color: #91abeb;
+            color: #153c9e;
+        }
+
+        .tab-content {
+            padding: 14px 16px 18px;
+            font-size: 13px;
+        }
+
+        .scope-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .scope-item {
+            border: 1px solid #dfe6f2;
+            border-radius: 9px;
+            padding: 10px;
+            background: #fff;
+        }
+
+        .scope-item-title {
+            font-weight: 800;
+            color: #18376b;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .small-muted { color: var(--muted); font-size: 12px; }
+
+        .function-list {
+            margin-top: 8px;
+            max-height: 170px;
+            overflow: auto;
+            border: 1px dashed #cdd8ec;
+            border-radius: 7px;
+            padding: 6px;
+            background: #fafcff;
+        }
+
+        .function-item {
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 11px;
+            color: #34445f;
+            line-height: 1.45;
+            padding: 2px 3px;
+            border-radius: 4px;
+        }
+
+        .function-item:hover { background: #eef4ff; }
+
+        .empty-state {
+            min-height: 210px;
+            display: grid;
+            place-items: center;
+            text-align: center;
+            color: var(--muted);
+            padding: 20px;
+        }
+
+        .empty-state i { font-size: 30px; color: #8aa3d8; margin-bottom: 10px; }
+
+        .footer-row {
+            padding: 10px 16px;
+            border-top: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            border: 1px solid #c8d3ea;
+            background: #fff;
+            color: #27406a;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 7px;
+            padding: 5px 9px;
+            cursor: pointer;
+        }
+
+        .page-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .alert {
+            margin: 12px 16px 0;
+            border-radius: 9px;
+            padding: 10px 12px;
+            font-size: 13px;
+            border: 1px solid;
+            display: none;
+        }
+
+        .alert-error { background: #fbe9e9; border-color: #f0bcbc; color: #a32727; }
+
+        .loader {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid #cbd7ef;
+            border-top-color: var(--forvia-blue);
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        footer {
+            background: linear-gradient(90deg, var(--forvia-blue), var(--forvia-dark));
+            color: #fff;
+            text-align: center;
+            margin-top: 22px;
+            padding: 22px 16px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1200px) {
+            .layout { grid-template-columns: 1fr; }
+            .result-panel { position: static; max-height: none; }
+            .table-wrap { max-height: 420px; }
+        }
+
+        @media (max-width: 980px) {
+            .filters { grid-template-columns: 1fr 1fr; top: 72px; }
+        }
+
+        @media (max-width: 660px) {
+            .filters { grid-template-columns: 1fr; }
+            .summary-grid { grid-template-columns: 1fr 1fr; }
+            .nav-links { gap: 14px; }
+            .page-title { font-size: 22px; }
         }
     </style>
 </head>
@@ -472,14 +560,14 @@
     <nav class="navbar">
         <div class="navbar-content">
             <div class="navbar-brand">
-                <img src="/static/forvia_logo.png" alt="FORVIA Logo" style="height: 70px;">
+                <img src="/static/forvia_logo.png" alt="FORVIA Logo">
                 <div class="navbar-brand-text">
                     <div class="primary">MESX 0</div>
                     <div class="secondary">NRT</div>
                 </div>
             </div>
             <ul class="nav-links">
-                <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
                 <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
                 <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
                 <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Graph</a></li>
@@ -488,502 +576,620 @@
         </div>
     </nav>
 
-    <div class="container">
-        <div class="page-title">
-            <i class="fas fa-tasks"></i> NRT Scope Analyzer (WorkItem Only)
-        </div>
+    <main class="page">
+        <h1 class="page-title"><i class="fas fa-rocket"></i> WorkItem Scope NRT
+        </h1>
+        <p class="subtitle">Quick selection by type, filterable table, and organized real-time NRT output without scrolling through the whole page.</p>
 
-        <div class="generation-panel">
-            <form id="scopeForm" onsubmit="analyzeWorkitem(event)">
-                <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 20px; align-items: end;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label"><i class="fas fa-filter"></i> Type</label>
-                        <select id="workitemType" class="form-input" onchange="loadWorkItemsByType(this.value)">
-                            <option value="">-- Select Type --</option>
+        <section class="layout">
+            <div class="panel" aria-label="Liste des WorkItems">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-table-list"></i> WorkItem Selection</div>
+                    <span id="tableStatus" class="chip"><i class="fas fa-filter"></i> Choose a type</span>
+                </div>
+
+                <div class="filters">
+                    <div class="field">
+                        <label for="filterType">Type</label>
+                        <select id="filterType" class="select">
+                            <option value="">Select...</option>
                         </select>
                     </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label"><i class="fas fa-tasks"></i> WorkItem ID</label>
-                        <input type="text" id="workitemId" class="form-input" placeholder="141432" required>
-                    </div>
-                    <div class="button-group" style="margin: 0;">
-                        <button type="submit" class="btn"><i class="fas fa-cogs"></i> Analyze</button>
-                        <button type="reset" class="btn btn-secondary"><i class="fas fa-redo"></i> Clear</button>
-                    </div>
-                </div>
-            </form>
-        </div>
 
-        <!-- Filter Results Table -->
-        <div id="filterResultsContainer" style="display: none; margin: 30px 0;">
-            <div class="scope-card">
-                <div class="scope-header">
-                    <div class="scope-title" id="filterTitle">Available IDs</div>
+                    <div class="field">
+                        <label for="filterText">Recherche (ID/Titre)</label>
+                        <input id="filterText" class="input" type="text" placeholder="Example: page builder or 127835">
+                    </div>
+
+                    <div class="field">
+                        <label for="filterStatus">Status</label>
+                        <select id="filterStatus" class="select">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="filterPriority">Priority</label>
+                        <select id="filterPriority" class="select">
+                            <option value="">All</option>
+                            <option value="1">P1</option>
+                            <option value="2">P2</option>
+                            <option value="3">P3</option>
+                            <option value="4">P4</option>
+                            <option value="5">P5</option>
+                        </select>
+                    </div>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table id="filterResultsTable" style="width: 100%; border-collapse: collapse;">
+
+                <div class="toolbar">
+                    <div class="toolbar-left">
+                        <span id="countChip" class="chip"><i class="fas fa-list"></i> 0 results</span>
+                        <span id="selectedChip" class="chip"><i class="fas fa-crosshairs"></i> None selected</span>
+                    </div>
+                    <div class="toolbar-right">
+                        <button id="clearFiltersBtn" class="btn btn-ghost" type="button"><i class="fas fa-broom"></i> Clear filters</button>
+                        <button id="generateBtn" class="btn btn-primary" type="button" disabled><i class="fas fa-play"></i> Generate NRT Scope</button>
+                    </div>
+                </div>
+
+                <div class="table-wrap">
+                    <table>
                         <thead>
-                            <tr style="background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%); color: white;">
-                                <th style="padding: 12px; text-align: left; font-weight: 600;">ID</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600;">Titre</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600;">Statut</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600;">Priorité</th>
-                                <th style="padding: 12px; text-align: center; font-weight: 600;">Action</th>
+                            <tr>
+                                <th style="width: 90px;">ID</th>
+                                <th>Titre</th>
+                                <th style="width: 100px;">Status</th>
+                                <th style="width: 80px;">Priority</th>
+                                <th style="width: 120px;">Assignee</th>
                             </tr>
                         </thead>
-                        <tbody id="filterResultsBody"></tbody>
+                        <tbody id="workitemsTbody">
+                            <tr><td colspan="5"><div class="empty-state"><div><i class="fas fa-inbox"></i><p>Select a type to load work items.</p></div></div></td></tr>
+                        </tbody>
                     </table>
                 </div>
+
+                <div class="footer-row">
+                    <div class="small-muted" id="pageInfo">Page 1 / 1</div>
+                    <div class="pagination">
+                        <button id="prevPageBtn" class="page-btn" type="button"><i class="fas fa-chevron-left"></i> Prev</button>
+                        <button id="nextPageBtn" class="page-btn" type="button">Next <i class="fas fa-chevron-right"></i></button>
+                        <select id="pageSizeSelect" class="select" style="width: 84px; padding: 6px 8px; font-size: 12px;">
+                            <option value="15">15</option>
+                            <option value="25" selected>25</option>
+                            <option value="50">50</option>
+                        </select>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        <!-- Loading Spinner -->
-        <div id="loading" style="display: none; background: white; padding: 40px; border-radius: 12px; text-align: center; margin: 30px 0; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);">
-            <div style="border: 4px solid var(--forvia-light); border-top: 4px solid var(--forvia-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-            <p style="color: var(--gray-dark);">Analyzing NRT scope from Neo4j...</p>
-        </div>
+            <div class="panel result-panel" aria-label="NRT result">
+                <div class="result-header">
+                    <div>
+                        <div id="resultTitle" class="result-title">NRT scope result</div>
+                        <div id="resultSubtitle" class="result-subtitle">Select a work item, then click Generate NRT Scope.</div>
+                    </div>
+                    <div id="resultState"></div>
+                </div>
 
-        <!-- Error Message -->
-        <div id="error" style="display: none; background: #fee; border-left: 4px solid #c62828; color: #c62828; padding: 15px 20px; border-radius: 6px; margin: 20px 0;"></div>
+                <div id="errorBox" class="alert alert-error"></div>
 
-        <!-- Results -->
-        <div id="scopeResults"></div>
-    </div>
-
-    <style>
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
-
-    <script>
-        function analyzeWorkitem(event) {
-            event.preventDefault();
-            const workitemType = document.getElementById('workitemType').value.trim();
-            const workitemId = document.getElementById('workitemId').value.trim();
-            
-            if (!workitemType) {
-                showError('Please select a WorkItem Type (User Story or Bug)');
-                return;
-            }
-            
-            if (!workitemId) {
-                showError('Please enter a WorkItem ID');
-                return;
-            }
-            
-            if (!/^\d+$/.test(workitemId)) {
-                showError('WorkItem ID must be a number');
-                return;
-            }
-            
-            showLoading(true);
-            
-            fetch(`/api/nrt-scope?workitem_id=${workitemId}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        showError(data.error);
-                    } else if (data.workitem.type !== workitemType) {
-                        showError(`WorkItem type mismatch! Expected ${workitemType}, but got ${data.workitem.type}`);
-                    } else {
-                        showError('');
-                        renderResults(data);
-                    }
-                })
-                .catch(error => {
-                    showError(`Network error: ${error.message}`);
-                })
-                .finally(() => showLoading(false));
-        }
-        
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-        }
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error');
-            if (message) {
-                errorDiv.textContent = `❌ ${message}`;
-                errorDiv.style.display = 'block';
-            } else {
-                errorDiv.style.display = 'none';
-            }
-        }
-        
-        function renderResults(data) {
-            const wi = data.workitem;
-            const summary = data.summary;
-            
-            let html = `
-                <div class="scope-card">
-                    <div class="scope-header">
+                <div id="resultContent">
+                    <div class="empty-state">
                         <div>
-                            <div class="scope-title">#${wi.id} - ${wi.title}</div>
-                            <div style="font-size: 12px; color: #666; margin-top: 5px;">Type: <strong>${wi.type}</strong></div>
-                        </div>
-                        <span class="badge badge-success">✓ Analysis Complete</span>
-                    </div>
-                    
-                    <div class="scope-stats">
-                        <div class="stat-box">
-                            <div class="stat-value">${summary.direct_ms_count}</div>
-                            <div class="stat-label">Direct MS</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value">${summary.indirect_ms_count}</div>
-                            <div class="stat-label">Indirect MS</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value">${summary.total_ms_count}</div>
-                            <div class="stat-label">Total MS</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value">${summary.total_functions}</div>
-                            <div class="stat-label">Functions</div>
+                            <i class="fas fa-wave-square"></i>
+                            <p>The NRT scope appears here in a structured, dynamic view.</p>
                         </div>
                     </div>
                 </div>
-                
-                <!-- DIRECT MICROSERVICES -->
-                <div class="scope-card">
-                    <div class="scope-header">
-                        <div class="scope-title">✅ Direct Microservices (${summary.direct_ms_count})</div>
-                    </div>
-                    ${renderMicroservicesTable(data.direct_microservices, 'direct')}
-                </div>
-                
-                <!-- INDIRECT MICROSERVICES -->
-                <div class="scope-card">
-                    <div class="scope-header">
-                        <div class="scope-title">🔗 Indirect Microservices (${summary.indirect_ms_count})</div>
-                    </div>
-                    ${renderMicroservicesTable(data.indirect_microservices, 'indirect')}
-                </div>
-            `;
-            
-            document.getElementById('scopeResults').innerHTML = html;
-        }
-        
-        function renderMicroservicesTable(microservices, type) {
-            if (!microservices || microservices.length === 0) {
-                return '<p style="color: #999; padding: 20px;">No microservices found</p>';
-            }
-            
-            let html = '<table class="functions-table"><thead><tr>';
-            
-            if (type === 'direct') {
-                html += '<th>Microservice</th><th>Type</th><th>Functions</th>';
-            } else {
-                html += '<th>Microservice</th><th>Dependency Via</th><th>Source MS</th><th>Functions</th>';
-            }
-            
-            html += '</tr></thead><tbody>';
-            
-            microservices.forEach(ms => {
-                if (type === 'direct') {
-                    html += `<tr>
-                        <td><strong>${ms.name}</strong></td>
-                        <td><span class="badge" style="background: #d1f2eb; color: #27AE60;">${ms.type}</span></td>
-                        <td>${ms.function_count}</td>
-                    </tr>`;
-                } else {
-                    html += `<tr>
-                        <td><strong>${ms.name}</strong></td>
-                        <td><span class="badge" style="background: #fff3e0; color: #e65100;">${ms.dependency_type}</span></td>
-                        <td><code>${ms.source_microservice}</code></td>
-                        <td>${ms.function_count}</td>
-                    </tr>`;
-                }
-                
-                if (ms.functions && ms.functions.length > 0) {
-                    html += `<tr style="background: #f9f9f9;">
-                        <td colspan="${type === 'direct' ? 3 : 4}">
-                            <div style="padding: 10px 0; margin-left: 15px; font-size: 12px; color: #666;">`;
-                    
-                    ms.functions.forEach(fn => {
-                        html += `<div style="padding: 4px 0;"><code>→ ${fn.name}</code></div>`;
-                    });
-                    
-                    html += `</div></td></tr>`;
-                }
-            });
-            
-            html += '</tbody></table>';
-            return html;
-        }
-    </script>
+            </div>
+        </section>
+    </main>
 
     <footer>
-        <p>&copy; 2026 FORVIA NRT Scope System | <strong>Automated Non-Regression Test Orchestration</strong></p>
+        <p>&copy; 2026 FORVIA NRT Scope System | Automated Non-Regression Test Orchestration</p>
     </footer>
 
     <script>
-        // Load commit history on page load
-        function loadCommitHistory() {
-            const history = JSON.parse(localStorage.getItem('commitHistory') || '[]');
-            const datalist = document.getElementById('commitHistory');
-            if (datalist) {
-                datalist.innerHTML = history.map(commitId => `<option value="${commitId}"></option>`).join('');
+        const state = {
+            types: [],
+            allWorkitems: [],
+            filtered: [],
+            selectedId: null,
+            selectedType: null,
+            page: 1,
+            pageSize: 25,
+            loadingScope: false,
+            activeTab: "summary",
+            lastScopeData: null
+        };
+
+        const nodes = {
+            filterType: document.getElementById("filterType"),
+            filterText: document.getElementById("filterText"),
+            filterStatus: document.getElementById("filterStatus"),
+            filterPriority: document.getElementById("filterPriority"),
+            clearFiltersBtn: document.getElementById("clearFiltersBtn"),
+            generateBtn: document.getElementById("generateBtn"),
+            countChip: document.getElementById("countChip"),
+            selectedChip: document.getElementById("selectedChip"),
+            tableStatus: document.getElementById("tableStatus"),
+            pageInfo: document.getElementById("pageInfo"),
+            prevPageBtn: document.getElementById("prevPageBtn"),
+            nextPageBtn: document.getElementById("nextPageBtn"),
+            pageSizeSelect: document.getElementById("pageSizeSelect"),
+            workitemsTbody: document.getElementById("workitemsTbody"),
+            resultTitle: document.getElementById("resultTitle"),
+            resultSubtitle: document.getElementById("resultSubtitle"),
+            resultState: document.getElementById("resultState"),
+            resultContent: document.getElementById("resultContent"),
+            errorBox: document.getElementById("errorBox")
+        };
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getStatusClass(status) {
+            const normalized = String(status || "").toLowerCase();
+            if (normalized === "done" || normalized === "validated" || normalized === "ready") return "status status-done";
+            if (normalized.includes("progress") || normalized.includes("review") || normalized.includes("validation")) return "status status-progress";
+            return "status status-other";
+        }
+
+        function showError(message) {
+            if (!message) {
+                nodes.errorBox.style.display = "none";
+                nodes.errorBox.textContent = "";
+                return;
+            }
+            nodes.errorBox.style.display = "block";
+            nodes.errorBox.textContent = message;
+        }
+
+        async function loadTypes() {
+            try {
+                const response = await fetch("/api/workitem-types");
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                state.types = data.types || [];
+                nodes.filterType.innerHTML = '<option value="">Select...</option>';
+
+                for (const item of state.types) {
+                    const option = document.createElement("option");
+                    option.value = item.name;
+                    option.textContent = `${item.name} (${item.count})`;
+                    nodes.filterType.appendChild(option);
+                }
+            } catch (error) {
+                showError(`Error loading types: ${error.message}`);
             }
         }
 
-        function saveCommitToHistory(commitId) {
-            if (!commitId || commitId.trim() === '') return;
-            let history = JSON.parse(localStorage.getItem('commitHistory') || '[]');
-            
-            // Remove if already exists (to move to front)
-            history = history.filter(id => id !== commitId);
-            
-            // Add to front
-            history.unshift(commitId);
-            
-            // Keep only last 10 commits
-            history = history.slice(0, 10);
-            
-            // Save back to localStorage
-            localStorage.setItem('commitHistory', JSON.stringify(history));
-            
-            // Update datalist display
-            loadCommitHistory();
+        async function loadWorkitemsForType(workitemType) {
+            state.selectedId = null;
+            nodes.generateBtn.disabled = true;
+            nodes.selectedChip.innerHTML = '<i class="fas fa-crosshairs"></i> None selected';
+
+            if (!workitemType) {
+                state.allWorkitems = [];
+                state.filtered = [];
+                state.page = 1;
+                nodes.tableStatus.innerHTML = '<i class="fas fa-filter"></i> Choose a type';
+                renderTable();
+                return;
+            }
+
+            nodes.tableStatus.innerHTML = '<span class="loader"></span> Loading...';
+
+            try {
+                const response = await fetch(`/api/workitems-by-type/${encodeURIComponent(workitemType)}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                state.selectedType = workitemType;
+                state.allWorkitems = data.results || [];
+                populateStatusFilter(state.allWorkitems);
+                applyFilters();
+                nodes.tableStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${workitemType} loaded`;
+            } catch (error) {
+                showError(`Error loading work items: ${error.message}`);
+                state.allWorkitems = [];
+                applyFilters();
+                nodes.tableStatus.innerHTML = '<i class="fas fa-triangle-exclamation"></i> Error';
+            }
         }
 
-        // Load history when DOM is ready
-        window.addEventListener('DOMContentLoaded', function() {
-            loadCommitHistory();
-            
-            // Attach form event listener after DOM is ready
-            const form = document.getElementById('scopeForm');
-            if (form) {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const commitId = document.getElementById('commitId').value;
-                    const workitemId = document.getElementById('workitemId').value;
-                    
-                    // Save commit to history BEFORE API call
-                    saveCommitToHistory(commitId);
-                    
-                    const resultsDiv = document.getElementById('scopeResults');
-                    resultsDiv.innerHTML = '<div style="text-align: center; padding: 40px;"><div style="border: 4px solid var(--forvia-light); border-top: 4px solid var(--forvia-blue); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div><p>Generating scope from Commit + WorkItem...</p></div>';
+        function populateStatusFilter(items) {
+            const statuses = [...new Set(items.map(item => (item.statut || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+            const currentValue = nodes.filterStatus.value;
 
-                    try {
-                        const url = `/api/commit/${commitId}?workitem=${workitemId}`;
-                        const response = await fetch(url);
-                        const data = await response.json();
+            nodes.filterStatus.innerHTML = '<option value="">All</option>';
+            for (const status of statuses) {
+                const option = document.createElement("option");
+                option.value = status;
+                option.textContent = status;
+                nodes.filterStatus.appendChild(option);
+            }
 
-                        if (!response.ok) {
-                            resultsDiv.innerHTML = `<div style="background: #f8d7da; border-left: 4px solid #E74C3C; color: #721c24; padding: 15px 20px; border-radius: 8px;"><i class="fas fa-exclamation-circle"></i> ${data.error || 'Error generating scope'}</div>`;
-                            return;
-                        }
+            if (statuses.includes(currentValue)) {
+                nodes.filterStatus.value = currentValue;
+            }
+        }
 
-                        displayScope(data, commitId);
-                    } catch (error) {
-                        resultsDiv.innerHTML = `<div style="background: #f8d7da; border-left: 4px solid #E74C3C; color: #721c24; padding: 15px 20px; border-radius: 8px;"><i class="fas fa-exclamation-circle"></i> Error: ${error.message}</div>`;
-                    }
+        function applyFilters() {
+            const text = nodes.filterText.value.trim().toLowerCase();
+            const status = nodes.filterStatus.value;
+            const priority = nodes.filterPriority.value;
+
+            state.filtered = state.allWorkitems.filter(item => {
+                const matchesText = !text ||
+                    String(item.id).includes(text) ||
+                    String(item.titre || "").toLowerCase().includes(text);
+                const matchesStatus = !status || String(item.statut || "") === status;
+                const matchesPriority = !priority || String(item.priorite || "") === priority;
+                return matchesText && matchesStatus && matchesPriority;
+            });
+
+            state.page = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const total = state.filtered.length;
+            const pageSize = state.pageSize;
+            const totalPages = Math.max(1, Math.ceil(total / pageSize));
+            state.page = Math.min(state.page, totalPages);
+
+            const startIndex = (state.page - 1) * pageSize;
+            const pageItems = state.filtered.slice(startIndex, startIndex + pageSize);
+
+            nodes.countChip.innerHTML = `<i class="fas fa-list"></i> ${total} results`;
+            nodes.pageInfo.textContent = `Page ${state.page} / ${totalPages}`;
+            nodes.prevPageBtn.disabled = state.page <= 1;
+            nodes.nextPageBtn.disabled = state.page >= totalPages;
+
+            if (!pageItems.length) {
+                nodes.workitemsTbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div><i class="fas fa-folder-open"></i><p>No work items match the current filters.</p></div></div></td></tr>';
+                return;
+            }
+
+            nodes.workitemsTbody.innerHTML = pageItems.map(item => {
+                const selectedClass = Number(item.id) === Number(state.selectedId) ? "selected" : "";
+                const assign = escapeHtml(item.assigne_a || "-");
+                const title = escapeHtml(item.titre || "-");
+                const status = escapeHtml(item.statut || "-");
+                const priority = escapeHtml(item.priorite || "-");
+
+                return `
+                    <tr class="${selectedClass}" data-id="${item.id}">
+                        <td><span class="id-pill">${item.id}</span></td>
+                        <td>
+                            <div style="font-weight:700; color:#1a3666; line-height:1.35;">${title}</div>
+                        </td>
+                        <td><span class="${getStatusClass(status)}">${status}</span></td>
+                        <td><strong>${priority}</strong></td>
+                        <td class="small-muted">${assign}</td>
+                    </tr>
+                `;
+            }).join("");
+
+            nodes.workitemsTbody.querySelectorAll("tr[data-id]").forEach(row => {
+                row.addEventListener("click", () => {
+                    state.selectedId = Number(row.dataset.id);
+                    nodes.selectedChip.innerHTML = `<i class="fas fa-crosshairs"></i> Selected: ${state.selectedId}`;
+                    nodes.generateBtn.disabled = false;
+                    renderTable();
                 });
-            }
-        });
+            });
+        }
 
-        function displayScope(data, commitId) {
-            const resultsDiv = document.getElementById('scopeResults');
-            const functionsHtml = (data.functions || []).map(fn => `
-                <tr>
-                    <td><i class="fas fa-code"></i> <strong>${fn.name || 'Unknown'}</strong></td>
-                    <td><i class="fas fa-cube"></i> ${fn.microservice || 'N/A'}</td>
-                    <td><span class="badge badge-success"><i class="fas fa-check"></i> Covered</span></td>
-                </tr>
-            `).join('');
-            
-            // Children section HTML
-            const childrenHtml = (data.children_to_test || []).length > 0 ? `
-                <div class="children-to-test-section">
-                    <div class="children-header">
-                        <h3><i class="fas fa-tasks"></i> Test Cases à Exécuter (${data.children_count || 0})</h3>
-                        <p class="children-subtitle">Enfants du WorkItem Parent - Validation Requise</p>
+        function setResultLoading() {
+            nodes.resultState.innerHTML = '<span class="chip"><span class="loader"></span> Generating...</span>';
+            nodes.resultContent.innerHTML = `
+                <div class="empty-state">
+                    <div>
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>Computing NRT scope...</p>
                     </div>
-                    
-                    <table class="children-table">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-id-badge"></i> Test ID</th>
-                                <th><i class="fas fa-file-alt"></i> Titre</th>
-                                <th><i class="fas fa-tag"></i> Type</th>
-                                <th><i class="fas fa-signal"></i> Priorité</th>
-                                <th><i class="fas fa-check-square"></i> Statut</th>
-                                <th><i class="fas fa-user"></i> Assigné</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${(data.children_to_test || []).map(child => {
-                                const priorityColor = {1: '#E74C3C', 2: '#F39C12', 3: '#3498DB', 4: '#95A5A6'}[child.priorite] || '#95A5A6';
-                                const statusBg = {
-                                    'Validated': '#27AE60',
-                                    'Ready': '#2980B9',
-                                    'Ready for Auto': '#16A085',
-                                    'Draft': '#95A5A6',
-                                    'In Progress': '#F39C12',
-                                    'Pending': '#E67E22',
-                                    'Done': '#27AE60',
-                                    'Repair': '#E74C3C'
-                                }[child.statut] || '#95A5A6';
-                                
-                                return `
-                                <tr>
-                                    <td><span class="badge" style="background: var(--forvia-light); color: var(--forvia-blue);">${child.id}</span></td>
-                                    <td><strong>${child.titre}</strong></td>
-                                    <td><span class="badge" style="background: #E8F4F8;">
-                                        <i class="fas fa-${child.type === 'Test Case' ? 'flask' : 'tasks'}"></i> ${child.type}
-                                    </span></td>
-                                    <td><span class="priority-badge" style="background: ${priorityColor}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 12px; font-weight: bold;">P${child.priorite}</span></td>
-                                    <td><span class="status-badge" style="background: ${statusBg}; color: white; padding: 4px 8px; border-radius: 3px; font-size: 11px;">${child.statut}</span></td>
-                                    <td><small>${child.assigne_a || 'N/A'}</small></td>
-                                </tr>
-                            `}).join('')}
-                        </tbody>
-                    </table>
                 </div>
-            ` : '';
+            `;
+        }
 
-            const modeDisplay = data.workitem_id ? `SPECIFIC (WorkItem ${data.workitem_id})` : `FULL IMPACT`;
-            const workitemDisplay = data.workitem_id ? `WorkItem ${data.workitem_id}` : `All WorkItems (${data.workitem_count})`;
+        function qualityBadge(label, type, icon) {
+            return `<span class="quality-badge ${type}"><i class="fas ${icon}"></i>${label}</span>`;
+        }
 
-            resultsDiv.innerHTML = `
-                <div class="scope-card">
-                    <div class="scope-header">
-                        <span class="scope-title"><i class="fas fa-folder-open"></i> NRT Scope: Commit ${commitId.substring(0, 8)}... → ${workitemDisplay}</span>
-                        <div>
-                            <span class="badge" style="background: var(--forvia-light); color: var(--forvia-blue); margin-right: 10px;"><i class="fas fa-tag"></i> ${modeDisplay}</span>
-                            <span class="badge badge-success"><i class="fas fa-check-circle"></i> Complete</span>
-                        </div>
+        function renderResult(scope) {
+            state.lastScopeData = scope;
+            const wi = scope.workitem || {};
+            const summary = scope.summary || {};
+            const direct = scope.direct_microservices || [];
+            const indirect = scope.indirect_microservices || [];
+            const plan = scope.test_plan || {};
+
+            nodes.resultTitle.textContent = `#${wi.id || "?"} - ${wi.title || "WorkItem"}`;
+            nodes.resultSubtitle.textContent = `${wi.type || "Unknown type"} | Scope generated from strong links (strict mode)`;
+
+            const quality = [];
+            quality.push(summary.heuristics_enabled === false
+                ? qualityBadge("Heuristics OFF", "quality-ok", "fa-shield-halved")
+                : qualityBadge("Heuristics ON", "quality-warn", "fa-triangle-exclamation"));
+
+            if (summary.fallback_source) {
+                quality.push(qualityBadge(`Fallback: ${summary.fallback_source}`, "quality-warn", "fa-filter-circle-exclamation"));
+            } else {
+                quality.push(qualityBadge("No fallback", "quality-ok", "fa-link"));
+            }
+
+            nodes.resultState.innerHTML = `<div class="quality-row">${quality.join("")}</div>`;
+
+            const tabContent = {
+                summary: renderSummaryTab(summary),
+                direct: renderMicroserviceTab(direct, "DIRECT"),
+                indirect: renderMicroserviceTab(indirect, "INDIRECT"),
+                functions: renderFunctionsTab(direct, indirect),
+                plan: renderPlanTab(plan)
+            };
+
+            nodes.resultContent.innerHTML = `
+                <div class="summary-grid">
+                    <div class="metric"><div class="metric-value">${summary.direct_ms_count || 0}</div><div class="metric-label">Direct MS</div></div>
+                    <div class="metric"><div class="metric-value">${summary.indirect_ms_count || 0}</div><div class="metric-label">Indirect MS</div></div>
+                    <div class="metric"><div class="metric-value">${summary.total_ms_count || 0}</div><div class="metric-label">Total MS</div></div>
+                    <div class="metric"><div class="metric-value">${summary.total_functions || 0}</div><div class="metric-label">Functions</div></div>
+                </div>
+
+                <div class="tabs">
+                    <button class="tab ${state.activeTab === "summary" ? "active" : ""}" data-tab="summary">Overview</button>
+                    <button class="tab ${state.activeTab === "direct" ? "active" : ""}" data-tab="direct">Direct (${direct.length})</button>
+                    <button class="tab ${state.activeTab === "indirect" ? "active" : ""}" data-tab="indirect">Indirect (${indirect.length})</button>
+                    <button class="tab ${state.activeTab === "functions" ? "active" : ""}" data-tab="functions">Functions</button>
+                    <button class="tab ${state.activeTab === "plan" ? "active" : ""}" data-tab="plan">Prioritized Plan</button>
+                </div>
+
+                <div class="tab-content" id="tabContent">${tabContent[state.activeTab]}</div>
+            `;
+
+            nodes.resultContent.querySelectorAll(".tab").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    state.activeTab = btn.dataset.tab;
+                    renderResult(scope);
+                });
+            });
+        }
+
+        function renderSummaryTab(summary) {
+            return `
+                <div class="scope-list">
+                    <div class="scope-item">
+                        <div class="scope-item-title">Scope quality summary</div>
+                        <div class="small-muted">Heuristics enabled: <strong>${summary.heuristics_enabled === false ? "No" : "Yes"}</strong></div>
+                        <div class="small-muted">Fallback source: <strong>${escapeHtml(summary.fallback_source || "None")}</strong></div>
                     </div>
+                </div>
+            `;
+        }
 
-                    <div class="scope-stats">
-                        <div class="stat-box">
-                            <div class="stat-value">${data.function_count || 0}</div>
-                            <div class="stat-label">Functions</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value">${data.microservice_count || 0}</div>
-                            <div class="stat-label">Microservices</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-value">${data.workitem_count || 0}</div>
-                            <div class="stat-label">WorkItems</div>
-                        </div>
-                        ${data.children_count ? `<div class="stat-box">
-                            <div class="stat-value">${data.children_count}</div>
-                            <div class="stat-label">Tests Enfants</div>
-                        </div>` : ''}
-                    </div>
+        function renderMicroserviceTab(list, label) {
+            if (!list.length) {
+                return '<div class="empty-state"><div><i class="fas fa-circle-info"></i><p>No ' + label.toLowerCase() + ' microservices for this work item.</p></div></div>';
+            }
 
-                    <table class="functions-table">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-code"></i> Function</th>
-                                <th><i class="fas fa-cube"></i> Microservice</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${functionsHtml || '<tr><td colspan="3" style="text-align: center; color: #999;">No functions found</td></tr>'}
-                        </tbody>
-                    </table>
-                    
-                    ${childrenHtml}
+            return `
+                <div class="scope-list">
+                    ${list.map(ms => {
+                        const functions = Array.isArray(ms.functions) ? ms.functions : [];
+                        return `
+                            <div class="scope-item">
+                                <div class="scope-item-title">
+                                    <span>${escapeHtml(ms.name || "unknown")}</span>
+                                    <span class="chip">${escapeHtml(ms.type || label)} | ${functions.length} fn</span>
+                                </div>
+                                ${ms.dependency_type ? `<div class="small-muted">Dependency: <strong>${escapeHtml(ms.dependency_type)}</strong></div>` : ""}
+                                ${ms.source_microservice ? `<div class="small-muted">Source MS: <strong>${escapeHtml(ms.source_microservice)}</strong></div>` : ""}
+                                ${ms.evidence_sources ? `<div class="small-muted">Evidence: <strong>${escapeHtml((ms.evidence_sources || []).join(", "))}</strong></div>` : ""}
+                                <div class="function-list">
+                                    ${functions.length
+                                        ? functions.map(fn => `<div class="function-item">${escapeHtml(fn.id || fn.name || "function")}</div>`).join("")
+                                        : '<div class="function-item">No function details available.</div>'}
+                                </div>
+                            </div>
+                        `;
+                    }).join("")}
+                </div>
+            `;
+        }
 
-                    <div class="export-section">
-                        <div class="export-title"><i class="fas fa-download"></i> Export Scope</div>
-                        <div class="export-buttons">
-                            <button class="export-btn" onclick="exportData('json')"><i class="fas fa-file-code"></i> JSON</button>
-                            <button class="export-btn" onclick="exportData('csv')"><i class="fas fa-file-csv"></i> CSV</button>
+        function renderFunctionsTab(direct, indirect) {
+            const all = [];
+            const seen = new Set();
+
+            for (const ms of [...direct, ...indirect]) {
+                for (const fn of (ms.functions || [])) {
+                    const key = fn.id || `${ms.name}:${fn.name || ""}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        all.push({
+                            id: fn.id || "",
+                            name: fn.name || "",
+                            microservice: ms.name || "",
+                            type: ms.type || ""
+                        });
+                    }
+                }
+            }
+
+            if (!all.length) {
+                return '<div class="empty-state"><div><i class="fas fa-code"></i><p>No aggregated functions for this scope.</p></div></div>';
+            }
+
+            return `
+                <div class="scope-list">
+                    <div class="scope-item">
+                        <div class="scope-item-title">Distinct functions (${all.length})</div>
+                        <div class="function-list" style="max-height: 340px;">
+                            ${all.map(item => `
+                                <div class="function-item">
+                                    ${escapeHtml(item.id || item.name)}
+                                    <span class="small-muted"> | ${escapeHtml(item.microservice)} | ${escapeHtml(item.type)}</span>
+                                </div>
+                            `).join("")}
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        function exportData(format) {
-            alert(`Export as ${format.toUpperCase()} - Feature coming soon!`);
-        }
+        function renderPlanTab(plan) {
+            const mustTest = Array.isArray(plan.must_test) ? plan.must_test : [];
+            const riskBased = Array.isArray(plan.risk_based) ? plan.risk_based : [];
+            const rules = plan.rules || {};
 
-        // Load WorkItem Types on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            fetch('/api/workitem-types')
-                .then(response => response.json())
-                .then(data => {
-                    const typeSelect = document.getElementById('workitemType');
-                    typeSelect.innerHTML = '<option value="">-- Select Type --</option>';
-                    
-                    if (data.types) {
-                        data.types.forEach(type => {
-                            const option = document.createElement('option');
-                            option.value = type.name;
-                            option.textContent = `${type.name} (${type.count})`;
-                            typeSelect.appendChild(option);
-                        });
-                    }
-                })
-                .catch(error => console.error('Error loading types:', error));
-        });
-
-        // Load WorkItems by type
-        function loadWorkItemsByType(typeName) {
-            if (!typeName) {
-                document.getElementById('filterResultsContainer').style.display = 'none';
-                return;
+            if (!mustTest.length && !riskBased.length) {
+                return '<div class="empty-state"><div><i class="fas fa-list-check"></i><p>No prioritized test plan returned by API.</p></div></div>';
             }
 
-            fetch(`/api/workitems-by-type/${encodeURIComponent(typeName)}`)
-                .then(response => response.json())
-                .then(data => {
-                    const container = document.getElementById('filterResultsContainer');
-                    const title = document.getElementById('filterTitle');
-                    const tbody = document.getElementById('filterResultsBody');
+            const mustHtml = mustTest.map(item => `
+                <div class="scope-item">
+                    <div class="scope-item-title">
+                        <span>P1 | ${escapeHtml(item.microservice || "unknown")}</span>
+                        <span class="chip">${escapeHtml(item.scope || "DIRECT")}</span>
+                    </div>
+                    <div class="small-muted">${escapeHtml(item.why || "")}</div>
+                    ${item.function_id ? `<div class="small-muted">Function: <strong>${escapeHtml(item.function_id)}</strong></div>` : ""}
+                    ${item.commit_count !== undefined ? `<div class="small-muted">Commits linked: <strong>${escapeHtml(item.commit_count)}</strong></div>` : ""}
+                </div>
+            `).join("");
 
-                    title.innerHTML = `<i class="fas fa-list"></i> ${typeName} (${data.count} résultats)`;
-                    tbody.innerHTML = '';
+            const riskHtml = riskBased.map(item => `
+                <div class="scope-item">
+                    <div class="scope-item-title">
+                        <span>${escapeHtml(item.priority || "P3")} | ${escapeHtml(item.microservice || "unknown")}</span>
+                        <span class="chip">${escapeHtml(item.dependency_type || "INDIRECT")} | score ${escapeHtml(item.score ?? 0)}</span>
+                    </div>
+                    <div class="small-muted">${escapeHtml(item.why || "")}</div>
+                    <div class="small-muted">Function: <strong>${escapeHtml(item.function_id || item.function_name || "-")}</strong></div>
+                    ${item.score_reasons ? `<div class="small-muted">Why score: ${escapeHtml((item.score_reasons || []).join(" | "))}</div>` : ""}
+                </div>
+            `).join("");
 
-                    if (data.results && data.results.length > 0) {
-                        data.results.forEach(item => {
-                            const row = tbody.insertRow();
-                            row.style.borderBottom = '1px solid #eee';
-                            row.onmouseover = function() { this.style.background = '#f8f9fa'; };
-                            row.onmouseout = function() { this.style.background = 'white'; };
-
-                            row.innerHTML = `
-                                <td style="padding: 12px; font-weight: 600; color: var(--forvia-blue);">${item.id}</td>
-                                <td style="padding: 12px; color: #333;">${item.titre}</td>
-                                <td style="padding: 12px;">
-                                    <span style="background: #${item.statut === 'Done' ? '27AE60' : item.statut === 'In Progress' ? 'F39C12' : '95A5A6'}15; color: #${item.statut === 'Done' ? '27AE60' : item.statut === 'In Progress' ? 'F39C12' : '95A5A6'}; padding: 4px 12px; border-radius: 4px; font-size: 12px;">
-                                        ${item.statut}
-                                    </span>
-                                </td>
-                                <td style="padding: 12px; color: #666;">${item.priorite || '-'}</td>
-                                <td style="padding: 12px; text-align: center;">
-                                    <button onclick="selectWorkItem(${item.id})" style="padding: 6px 12px; background: var(--forvia-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;">
-                                        <i class="fas fa-check"></i> Select
-                                    </button>
-                                </td>
-                            `;
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">Aucun WorkItem trouvé</td></tr>';
-                    }
-
-                    container.style.display = 'block';
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showError('Error loading WorkItems');
-                });
+            return `
+                <div class="scope-list">
+                    <div class="scope-item">
+                        <div class="scope-item-title">Plan rules</div>
+                        <div class="small-muted">Mode: <strong>${escapeHtml(plan.mode || "N/A")}</strong></div>
+                        <div class="small-muted">Allowed dependencies: <strong>${escapeHtml((plan.allowed_dependency_types || []).join(", ") || "N/A")}</strong></div>
+                        <div class="small-muted">Indirect cap: <strong>${escapeHtml(plan.indirect_function_cap ?? "N/A")}</strong></div>
+                        <div class="small-muted">Excluded indirect candidates: <strong>${escapeHtml(plan.excluded_indirect_count ?? 0)}</strong></div>
+                        ${rules.indirect_scoring ? `
+                            <div class="small-muted">
+                                Scoring: API_CALLS(+${escapeHtml(rules.indirect_scoring.API_CALLS)}),
+                                MESSAGE_BROKER(+${escapeHtml(rules.indirect_scoring.MESSAGE_BROKER)}),
+                                INGESTION(+${escapeHtml(rules.indirect_scoring.INGESTION)}),
+                                public_endpoint(+${escapeHtml(rules.indirect_scoring.public_endpoint)}),
+                                fan_in_high(+${escapeHtml(rules.indirect_scoring.fan_in_high)}),
+                                fan_in_medium(+${escapeHtml(rules.indirect_scoring.fan_in_medium)}),
+                                generic_endpoint(${escapeHtml(rules.indirect_scoring.generic_endpoint_penalty)})
+                            </div>` : ""}
+                    </div>
+                    <div class="scope-item">
+                        <div class="scope-item-title">P1 Must Test (${mustTest.length})</div>
+                        <div class="scope-list">${mustHtml || '<div class="small-muted">No P1 items.</div>'}</div>
+                    </div>
+                    <div class="scope-item">
+                        <div class="scope-item-title">P2/P3 Risk-Based (${riskBased.length})</div>
+                        <div class="scope-list">${riskHtml || '<div class="small-muted">No risk-based items.</div>'}</div>
+                    </div>
+                </div>
+            `;
         }
 
-        // Select WorkItem from filtered list
-        function selectWorkItem(workitemId) {
-            document.getElementById('workitemId').value = workitemId;
-            document.getElementById('scopeForm').scrollIntoView({ behavior: 'smooth' });
+        async function generateScope() {
+            showError("");
+            if (!state.selectedId || state.loadingScope) return;
+
+            state.loadingScope = true;
+            nodes.generateBtn.disabled = true;
+            setResultLoading();
+
+            try {
+                const response = await fetch(`/api/nrt-scope?workitem_id=${state.selectedId}`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+
+                if (state.selectedType && data.workitem && data.workitem.type !== state.selectedType) {
+                    throw new Error(`Type mismatch: expected ${state.selectedType}, received ${data.workitem.type}`);
+                }
+
+                renderResult(data);
+            } catch (error) {
+                showError(`Scope generation error: ${error.message}`);
+                nodes.resultTitle.textContent = "NRT scope result";
+                nodes.resultSubtitle.textContent = "Error while computing scope.";
+                nodes.resultState.innerHTML = qualityBadge("Error", "quality-danger", "fa-triangle-exclamation");
+                nodes.resultContent.innerHTML = '<div class="empty-state"><div><i class="fas fa-ban"></i><p>Unable to generate scope for this work item.</p></div></div>';
+            } finally {
+                state.loadingScope = false;
+                nodes.generateBtn.disabled = !state.selectedId;
+            }
         }
+
+        function resetFilters() {
+            nodes.filterText.value = "";
+            nodes.filterStatus.value = "";
+            nodes.filterPriority.value = "";
+            applyFilters();
+        }
+
+        function bindEvents() {
+            nodes.filterType.addEventListener("change", () => {
+                showError("");
+                loadWorkitemsForType(nodes.filterType.value);
+            });
+
+            nodes.filterText.addEventListener("input", () => applyFilters());
+            nodes.filterStatus.addEventListener("change", () => applyFilters());
+            nodes.filterPriority.addEventListener("change", () => applyFilters());
+            nodes.clearFiltersBtn.addEventListener("click", () => resetFilters());
+            nodes.generateBtn.addEventListener("click", () => generateScope());
+
+            nodes.prevPageBtn.addEventListener("click", () => {
+                if (state.page > 1) {
+                    state.page -= 1;
+                    renderTable();
+                }
+            });
+
+            nodes.nextPageBtn.addEventListener("click", () => {
+                const totalPages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+                if (state.page < totalPages) {
+                    state.page += 1;
+                    renderTable();
+                }
+            });
+
+            nodes.pageSizeSelect.addEventListener("change", () => {
+                state.pageSize = Number(nodes.pageSizeSelect.value) || 25;
+                state.page = 1;
+                renderTable();
+            });
+        }
+
+        async function init() {
+            bindEvents();
+            await loadTypes();
+            renderTable();
+        }
+
+        init();
     </script>
 </body>
 </html>

@@ -1,0 +1,158 @@
+{
+  "metadata": {
+    "org": "faurecia-cloud",
+    "project": "MES_X.0",
+    "offline": false,
+    "stats": {
+      "total_workitems": 20,
+      "with_ado_links": 0,
+      "with_message_links": 0,
+      "with_any_links": 0,
+      "ado_errors": 20,
+      "ado_error_samples": [
+        {
+          "workitem_id": 105073,
+          "error": "403 Client Error: The requested operation is not allowed. for url: https://dev.azure.com/faurecia-cloud/MES_X.0/_apis/wit/workitems/105073?%24expand=relations&api-version=7.0"
+        },
+        {
+          "workitem_id": 110549,
+          "error": "403 Client Error: The requested operation is not allowed. for url: https://dev.azure.com/faurecia-cloud/MES_X.0/_apis/wit/workitems/110549?%24expand=relations&api-version=7.0"
+        },
+        {
+          "workitem_id": 109398,
+          "error": "403 Client Error: The requested operation is not allowed. for url: https://dev.azure.com/faurecia-cloud/MES_X.0/_apis/wit/workitems/109398?%24expand=relations&api-version=7.0"
+        },
+        {
+          "workitem_id": 108467,
+          "error": "403 Client Error: The requested operation is not allowed. for url: https://dev.azure.com/faurecia-cloud/MES_X.0/_apis/wit/workitems/108467?%24expand=relations&api-version=7.0"
+        },
+        {
+          "workitem_id": 109213,
+          "error": "403 Client Error: The requested operation is not allowed. for url: https://dev.azure.com/faurecia-cloud/MES_X.0/_apis/wit/workitems/109213?%24expand=relations&api-version=7.0"
+        }
+      ]
+    }
+  },
+  "links": [
+    {
+      "workitem_id": 105063,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 105072,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 105073,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 105103,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 108467,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 109213,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 109395,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 109398,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 109463,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 110549,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 111038,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 111039,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 111497,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 113139,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114319,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114322,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114323,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114325,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114332,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    },
+    {
+      "workitem_id": 114334,
+      "linked_commit_ids": [],
+      "linked_commit_count": 0,
+      "linked_commit_sources": {}
+    }
+  ]
+}

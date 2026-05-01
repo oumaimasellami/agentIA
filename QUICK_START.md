@@ -1,28 +1,40 @@
 # Quick Start Guide - MESX 0 NRT System
 
-## 🚀 Démarrage rapide (5 minutes)
+## Démarrage stable quotidien (recommandé)
 
-### **1️⃣ Démarrer Neo4j**
+Utilise le script stable qui ne supprime ni conteneur ni image:
+
+```powershell
+cd d:\agentIA
+powershell -ExecutionPolicy Bypass -File .\start_project.ps1
+```
+
+Ce script:
+- démarre le conteneur `neo4j` s'il existe,
+- attend la disponibilité Bolt,
+- lance `server.py`.
+
+## Démarrage manuel (alternative)
+
+### 1) Démarrer Neo4j
 ```powershell
 docker start neo4j
-Start-Sleep -Seconds 5
 ```
 
-### **2️⃣ Charger les données**
+### 2) Vérifier la connectivité Neo4j
 ```powershell
-cd d:\agentIA\02_NEO4J_DATABASE
-D:\Python\bin\python.exe build_graph_database.py
+D:\Python\bin\python.exe -c "from neo4j import GraphDatabase; d=GraphDatabase.driver('bolt://localhost:7687',auth=('neo4j','forvia2025')); d.verify_connectivity(); print('NEO4J_OK'); d.close()"
 ```
 
-### **3️⃣ Lancer le serveur**
+### 3) Lancer le serveur
 ```powershell
-cd d:\agentIA\05_WEB_INTERFACE
-D:\Python\bin\python.exe server.py
+cd d:\agentIA
+D:\Python\bin\python.exe .\05_WEB_INTERFACE\server.py
 ```
 
-### **4️⃣ Ouvrir le navigateur**
-- 🌐 Dashboard: http://localhost:5000
-- 📊 Neo4j: http://localhost:7474
+### 4) Ouvrir le navigateur
+- Dashboard: http://localhost:5000
+- Neo4j Browser: http://localhost:7474
 
 ---
 
@@ -54,4 +66,4 @@ docker ps | findstr neo4j
 Invoke-WebRequest http://localhost:5000/api/statistics
 ```
 
-**Réussi!** 🎉
+Réussi.
