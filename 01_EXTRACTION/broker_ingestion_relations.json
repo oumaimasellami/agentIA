@@ -1,152 +1,566 @@
 [
   {
-    "source": "mesx-downtime-materialized-view",
-    "cible": "mesx-downtime-backend",
-    "type": "INGESTION",
-    "ingestion_type": "Materialized View Update",
-    "broker_type": "SQL Server",
-    "topics": [],
-    "tables_consumed": [
-      "DowntimeEvents",
-      "MachineState"
-    ],
-    "direction": "INPUT",
-    "communication_mode": "scheduled",
-    "frequency": "hourly",
-    "confidence": 0.9,
-    "source_detected": "Schema analysis"
-  },
-  {
-    "source": "mesx-leveling-board-backend",
+    "source": "mesx-mv-orchestrator",
     "cible": "mesx-leveling-board-mv-processor",
     "type": "INGESTION",
-    "ingestion_type": "Materialized View Update",
-    "broker_type": "SQL Server",
-    "topics": [],
-    "tables_consumed": [
-      "LevelingData",
-      "Assignments"
-    ],
-    "direction": "INPUT",
-    "communication_mode": "scheduled",
-    "frequency": "hourly",
-    "confidence": 0.88,
-    "source_detected": "MV schema"
-  },
-  {
-    "source": "mesx-master-data-ingestion",
-    "cible": "mesx-master-api",
-    "type": "INGESTION",
-    "ingestion_type": "Data Ingestion",
-    "broker_type": "Azure Service Bus",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
     "topics": [
-      "master-data-changed"
+      "var:topictasks"
     ],
-    "tables_consumed": [
-      "MasterData",
-      "References"
-    ],
+    "tables_consumed": [],
     "direction": "INPUT",
     "communication_mode": "event-driven",
-    "frequency": "real-time",
-    "confidence": 0.92,
-    "source_detected": "Known pattern"
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/Subscribe/subscribe.controller.ts",
+      "/src/subscribe/subscribe.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-mv-orchestrator",
+    "cible": "mesx-picking-mv-processor",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictasks"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/Subscribe/subscribe.controller.ts",
+      "/src/subscribe/subscribe.service.ts"
+    ]
   },
   {
     "source": "mesx-order-data-ingestion",
-    "cible": "mesx-datahub",
+    "cible": "mesx-order-data-ingestion-actor",
     "type": "INGESTION",
-    "ingestion_type": "Data Ingestion Service",
-    "broker_type": "Azure Data Factory",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
     "topics": [
-      "orders-feed",
-      "order-events"
+      "var:topicsfgclosedorders"
     ],
-    "tables_consumed": [
-      "Orders",
-      "OrderItems"
-    ],
+    "tables_consumed": [],
     "direction": "INPUT",
-    "communication_mode": "async",
-    "frequency": "real-time",
-    "confidence": 0.95,
-    "source_detected": "Known relationship"
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
   },
   {
-    "source": "mesx-central-error-ui",
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-order-data-ingestion-v2",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-order-data-ingestion",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-order-data-ingestion-v2",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-v2",
+    "cible": "mesx-order-data-ingestion",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-v2",
+    "cible": "mesx-order-data-ingestion-actor",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-plant-hierarchy-api",
+    "cible": "mesx-plant-hierarchy-data-ingestion",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicewmplants"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/plant/plant.service.ts",
+      "/src/shared/config/eventhub/eventhub.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-quality-data-ingestion",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicdowntimeticketupdates"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-resource-data-ingestion",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicdowntimeticketupdates"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-resource-data-ingestion-v2",
+    "type": "INGESTION",
+    "ingestion_type": "Pipeline/Consumer",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicdowntimeticketupdates"
+    ],
+    "tables_consumed": [],
+    "direction": "INPUT",
+    "communication_mode": "event-driven",
+    "frequency": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-mv-orchestrator",
+    "cible": "mesx-leveling-board-mv-processor",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictasks"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/Subscribe/subscribe.controller.ts",
+      "/src/subscribe/subscribe.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-mv-orchestrator",
+    "cible": "mesx-picking-mv-processor",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictasks"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/Subscribe/subscribe.controller.ts",
+      "/src/subscribe/subscribe.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-order-data-ingestion-actor",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion",
+    "cible": "mesx-order-data-ingestion-v2",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-order-data-ingestion",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-actor",
+    "cible": "mesx-order-data-ingestion-v2",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-v2",
+    "cible": "mesx-order-data-ingestion",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-order-data-ingestion-v2",
+    "cible": "mesx-order-data-ingestion-actor",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicsfgclosedorders"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/picking-order/picking-order.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-plant-hierarchy-api",
+    "cible": "mesx-plant-hierarchy-data-ingestion",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicewmplants"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/plant/plant.service.ts",
+      "/src/shared/config/eventhub/eventhub.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-plant-hierarchy-data-ingestion",
     "cible": "mesx-mv-orchestrator",
     "type": "MESSAGE_BROKER",
     "broker_type": "Azure Event Hubs",
     "topics": [
-      "error-events",
-      "system-alerts"
+      "var:topicworkcenterupdates"
     ],
     "direction": "OUTPUT",
-    "communication_mode": "async",
-    "service_namespace": "mesx-events",
-    "frequency": "real-time",
-    "confidence": 0.85,
-    "source_detected": "Event Hub pattern"
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/apps/cdc/modules/workcenter/workcenter.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
   },
   {
-    "source": "mesx-downtime-backend",
-    "cible": "mesx-downtime-materialized-view",
+    "source": "mesx-plant-hierarchy-data-ingestion",
+    "cible": "mesx-plant-hierarchy-api",
     "type": "MESSAGE_BROKER",
     "broker_type": "Azure Event Hubs",
     "topics": [
-      "downtime-events"
+      "var:topicewmplants"
     ],
     "direction": "OUTPUT",
-    "communication_mode": "async",
-    "service_namespace": "mesx-events",
-    "frequency": "real-time",
-    "confidence": 0.87,
-    "source_detected": "Event Hub pattern"
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/shared/plant/plant.service.ts"
+    ]
   },
   {
-    "source": "mesx-job-scheduler-backend",
-    "cible": "mesx-order-api",
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-mv-orchestrator",
     "type": "MESSAGE_BROKER",
-    "broker_type": "Redis Stream",
+    "broker_type": "Azure Event Hubs",
     "topics": [
-      "jobs:schedule",
-      "jobs:execute"
+      "var:topiccontainer"
     ],
     "direction": "OUTPUT",
-    "communication_mode": "async",
-    "frequency": "real-time",
-    "confidence": 0.8,
-    "source_detected": "Redis Stream config"
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/container/container.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
   },
   {
-    "source": "mesx-order-api",
-    "cible": "mesx-order-management-backend",
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-quality-data-ingestion",
     "type": "MESSAGE_BROKER",
-    "broker_type": "Azure Service Bus",
+    "broker_type": "Azure Event Hubs",
     "topics": [
-      "orders-created",
-      "orders-updated"
+      "var:topicdowntimeticketupdates"
     ],
     "direction": "OUTPUT",
-    "communication_mode": "async",
-    "service_namespace": "mesx-messaging",
-    "confidence": 0.9,
-    "source_detected": "Known pattern"
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
   },
   {
-    "source": "mesx-picking-backend",
-    "cible": "mesx-picking-job-service",
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-resource-data-ingestion",
     "type": "MESSAGE_BROKER",
-    "broker_type": "Azure Service Bus",
+    "broker_type": "Azure Event Hubs",
     "topics": [
-      "picking-jobs-queue",
-      "picking-instructions"
+      "var:topicdowntimeticketupdates"
     ],
     "direction": "OUTPUT",
-    "communication_mode": "message-queue",
-    "service_namespace": "mesx-messaging",
-    "frequency": "real-time",
-    "confidence": 0.88,
-    "source_detected": "Service Bus config"
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-production-data-ingestion",
+    "cible": "mesx-resource-data-ingestion-v2",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicdowntimeticketupdates"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/config/eventhub/eventhub.service.ts",
+      "/src/modules/down-time-ticket/down-time-ticket.service.ts"
+    ]
+  },
+  {
+    "source": "mesx-shipment-data-ingestion",
+    "cible": "mesx-mv-orchestrator",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictpaassignement"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/tpa-assignment/tpa-assignment.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
+  },
+  {
+    "source": "mesx-shipment-data-ingestion",
+    "cible": "mesx-mv-orchestrator",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topicoutbound"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/outbound-delivery/outbound-delivery.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
+  },
+  {
+    "source": "mesx-transfer-data-ingestion",
+    "cible": "mesx-mv-orchestrator",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictransfer"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/transfer-log/transfer-log.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
   }
 ]

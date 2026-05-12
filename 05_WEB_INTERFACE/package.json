@@ -1,0 +1,14 @@
+{
+  "name": "nrt-web-interface",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TypeScript tooling for FORVIA NRT web interface",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -w -p tsconfig.json",
+    "clean": "powershell -Command \"if (Test-Path static\\\\ts) { Remove-Item static\\\\ts -Recurse -Force }\""
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

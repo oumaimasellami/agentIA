@@ -1,0 +1,34 @@
+[
+  {
+    "microservice": "mesx-resource-api-component-tests",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\nvariables:\n  - name: disable.coverage.autogenerate\n    value: \"true\"\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      prepare_scanner_mode: \"MSBuild\"\n\n      step_postPrepare:\n        - template: steps/dotnet-restore-build-test.yml@pipelines\n          parameters:\n            testRunTitle: \"SonarQube test run\"\n            dotnetVersion: \"10.x\"\n            dotnetProjects : \"**/*.slnx\"\n            run_tests: false\n\n      prepare_sonarAdditionalProperties: |\n        sonar.cs.vstest.reportsPaths=$(Agent.TempDirectory)/**/*.trx\n        sonar.coverage.exclusions=**/Migrations/*.cs,**/*Tests*/**/*\n        sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml\n        sonar.cpd.exclusions=**/Migrations/*.cs\n        sonar.issue.ignore.multicriteria=useconstant,emptymethod\n        sonar.issue.ignore.multicriteria.useconstant.ruleKey=csharpsquid:S1192\n        sonar.issue.ignore.multicriteria.useconstant.resourceKey=**/Migrations/*.cs\n        sonar.issue.ignore.multicriteria.emptymethod.ruleKey=csharpsquid:S1186\n        sonar.issue.ignore.multicriteria.emptymethod.resourceKey=**/Migrations/*.cs",
+    "taille": 1412
+  },
+  {
+    "microservice": "mesx-resource-api-component-tests",
+    "chemin": "/MESXTestAuto/azure-pipelines.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "trigger:\n- main\n\nresources:\n  repositories:\n  - repository: 'mesx-resource-api'\n    type: 'git'\n    name: 'MES_X.0/mesx-resource-api'\n\nvariables:\n- group: app_component_test_resource_api\n \npool: \n  ubuntu-2204-vmss\n \nsteps:\n- checkout: self\n  fetchDepth: 1\n- checkout: mesx-resource-api\n  fetchDepth: 1\n  \n- task: Docker@2\n  displayName: Login to MESX ACR\n  inputs:\n    containerRegistry: acrgptmpxp01static01.azurecr.io\n    command: login\n\n- script: |\n    docker pull acrgptmpxp01static01.azurecr.io/mesx/resource-api:latest-unstable\n    docker tag acrgptmpxp01static01.azurecr.io/mesx/resource-api:latest-unstable resource-api:local\n  displayName: Pull and re-tag resource-api image\n\n- script: |\n    docker compose up -d\n  workingDirectory: $(Build.SourcesDirectory)/mesx-resource-api\n  displayName: Start infrastructure with Docker Compose\n  env:\n    DB_PASSWORD: $(DB_PASSWORD)\n    APP_CONFIG_KEY_SECRET: $(APP_CONFIG_KEY_SECRET)\n\n- task: DotNetCoreCLI@2\n  displayName: Restore Solution\n  inputs:\n    command: 'restore'\n    projects: 'mesx-resource-api-component-tests/MESXTestAuto/*.slnx'\n    feedsToUse: 'select'\n- task: DotNetCoreCLI@2\n  displayName: Build Solution\n  inputs:\n    command: 'build'\n    projects: 'mesx-resource-api-component-tests/MESXTestAuto/*.slnx'\n    arguments: '--no-restore -c Release' \n- task: DotNetCoreCLI@2\n  displayName: Run Tests\n  inputs:\n    command: 'test'\n    projects: 'mesx-resource-api-component-tests/MESXTestAuto/*.slnx'\n    arguments: '--no-build -c Release'",
+    "taille": 1503
+  },
+  {
+    "microservice": "mesx-resource-api-component-tests",
+    "chemin": "/README.md",
+    "extension": ".md",
+    "prioritaire": false,
+    "contenu": "# Introduction \r\nTODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. \r\n\r\n# Getting Started\r\nTODO: Guide users through getting your code up and running on their own system. In this section you can talk about:\r\n1.\tInstallation process\r\n2.\tSoftware dependencies\r\n3.\tLatest releases\r\n4.\tAPI references\r\n\r\n# Build and Test\r\nTODO: Describe and show how to build your code and run the tests. \r\n\r\n# Contribute\r\nTODO: Explain how other users and developers can contribute to make your code better. \r\n\r\nIf you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:\r\n- [ASP.NET Core](https://github.com/aspnet/Home)\r\n- [Visual Studio Code](https://github.com/Microsoft/vscode)\r\n- [Chakra Core](https://github.com/Microsoft/ChakraCore)",
+    "taille": 985
+  },
+  {
+    "microservice": "mesx-resource-api-component-tests",
+    "chemin": "/commitlint.config.js",
+    "extension": ".js",
+    "prioritaire": false,
+    "contenu": "export default {\n  extends: ['@commitlint/config-conventional'],\n  plugins: [\n    {\n      rules: {\n        'refs-footer-required': ({ footer }) => {\n          const refsPattern = /^Refs: #\\d+(\\s+#\\d+)*$/m;\n          const valid = refsPattern.test(footer ?? '');\n          return [\n            valid,\n            'Commit must include a Refs footer with at least one work item (e.g., \"Refs: #1234\")',\n          ];\n        },\n      },\n    },\n  ],\n  rules: {\n    'refs-footer-required': [2, 'always'],\n  },\n};\n",
+    "taille": 506
+  }
+]

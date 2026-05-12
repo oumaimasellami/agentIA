@@ -1,0 +1,394 @@
+[
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/daprComponents/daprComponent.yml",
+    "extension": ".yml",
+    "prioritaire": true,
+    "contenu": "apiVersion: dapr.io/v1alpha1\nkind: Component\nmetadata:\n  name: redis\nspec:\n   type: state.redis\n   version: v1\n   metadata:\n   - name: redisHost\n     value: \"localhost:6379\"\n   - name: redisPassword\n     value: \"\"\n   - name: actorStateStore\n     value: \"true\"",
+    "taille": 259
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/app.controller.spec.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Test, TestingModule } from '@nestjs/testing';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\ndescribe('AppController', () => {\n  let appController: AppController;\n\n  beforeEach(async () => {\n    const app: TestingModule = await Test.createTestingModule({\n      controllers: [AppController],\n      providers: [AppService],\n    }).compile();\n\n    appController = app.get<AppController>(AppController);\n  });\n  describe('root', () => {\n    it('should return \"service name\"', () => {\n      expect(appController.getHello()).toBe('mesx/picking-job-service');\n    });\n  });\n});\n",
+    "taille": 628
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/app.controller.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  public constructor(public readonly appService: AppService) {}\n\n  @Get()\n  public getHello(): string {\n    return this.appService.getHello();\n  }\n}\n",
+    "taille": 287
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/app.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { appConfig } from './config/app-config/configuration';\nimport { daprConfig } from './config/dapr/configuration';\nimport { DaprConfigModule } from './config/dapr/dapr-config.module';\nimport { OperationDefinitionModule } from './modules/operation-definition/operation-definition.module';\nimport { OperationSegmentModule } from './modules/operation-segment/operation-segment.module';\nimport { AppController } from '@/app.controller';\nimport { AppService } from '@/app.service';\nimport { urlApiConfiguration } from '@/config/url-api/configuration';\nimport { UrlApiConfigModule } from '@/config/url-api/url-api.module';\n\n@Module({\n  controllers: [AppController],\n  imports: [\n    UrlApiConfigModule,\n    DaprConfigModule,\n    ConfigModule.forRoot({\n      load: [appConfig, urlApiConfiguration, daprConfig],\n    }),\n    OperationDefinitionModule,\n    OperationSegmentModule,\n  ],\n  providers: [AppService],\n})\nexport class AppModule {}\n",
+    "taille": 1026
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/app.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  private readonly message = 'mesx/picking-job-service';\n\n  public getHello(): string {\n    return this.message;\n  }\n}\n",
+    "taille": 205
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/common/filters/interfaces/exception-response.interface.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export interface ExceptionResponse {\n  message?: string\n  error?: string\n}\n",
+    "taille": 75
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/common/filters/mes-generic-error.filter.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "// Src/common/filters/http-exception.filter.ts\nimport {\n  Catch,\n  HttpException,\n  ArgumentsHost,\n  HttpStatus,\n} from '@nestjs/common';\nimport { BaseExceptionFilter } from '@nestjs/core';\nimport type { Request, Response } from 'express';\nimport { ExceptionResponse } from './interfaces/exception-response.interface';\n\n@Catch(HttpException)\nexport class MesGenericErrorFilter extends BaseExceptionFilter {\n  public static catch(exception: unknown, host: ArgumentsHost): void {\n    const context = host.switchToHttp();\n    const response = context.getResponse<Response>();\n    const request = context.getRequest<Request>();\n    // Determine the status code\n    const status\n      = exception instanceof HttpException\n        ? exception.getStatus()\n        : HttpStatus.INTERNAL_SERVER_ERROR;\n\n    let message = 'An error occurred';\n    let errorCode = 'UNHANDLED_EXCEPTION';\n    if (exception instanceof HttpException) {\n      const exceptionResponse = exception.getResponse();\n      if (typeof exceptionResponse === 'string') {\n        message = exceptionResponse;\n      }\n      else if (\n        typeof exceptionResponse === 'object'\n        && exceptionResponse !== null\n      ) {\n        message = (exceptionResponse as ExceptionResponse).message ?? message;\n        errorCode = (exceptionResponse as ExceptionResponse).error ?? errorCode;\n      }\n    }\n    else {\n      message = (exception as Error).message || message;\n    }\n\n    // Default behavior for other exceptions\n    response.status(status).json({\n      body: request.body as unknown,\n      errorCode,\n      message,\n      params: request.params,\n      path: request.url,\n      query: request.query,\n      statusCode: status,\n      timestamp: new Date().toISOString(),\n    });\n  }\n}\n",
+    "taille": 1749
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/common/logger/app-logger.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Logger } from '@nestjs/common';\n\nexport class AppLogger extends Logger {\n  public log(message: unknown): void {\n    super.log(`${new Date().toISOString()} -- ${String(message)}`);\n  }\n\n  public error(message: unknown, stack?: string): void {\n    super.error(`${new Date().toISOString()} -- ${String(message)}`, stack);\n  }\n\n  public warn(message: unknown): void {\n    super.warn(`${new Date().toISOString()} -- ${String(message)}`);\n  }\n\n  public debug(message: unknown): void {\n    super.debug(`${new Date().toISOString()} -- ${String(message)}`);\n  }\n\n  public verbose(message: unknown): void {\n    super.verbose(`${new Date().toISOString()} -- ${String(message)}`);\n  }\n}\n",
+    "taille": 684
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/common/sleep/sleep.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "/**\n * Async sleep\n * @param timeout in ms\n */\nexport async function asyncSleep(timeout: number): Promise<void> {\n  await new Promise((resolve) => {\n    setTimeout(resolve, timeout);\n  });\n}\n",
+    "taille": 191
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/app-config/app-config-initial-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Injectable, OnModuleInit } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\nimport { AppLogger } from '@/common/logger/app-logger';\n\n@Injectable()\nexport class AppConfigInitialConfigService implements OnModuleInit {\n  private readonly logger = new AppLogger(AppConfigInitialConfigService.name);\n\n  public constructor(private readonly configService: ConfigService) {}\n\n  public onModuleInit(): void {\n    this.checkConfiguration();\n  }\n\n  public get appConfigCachingTtl(): number {\n    return this.configService.get<number>('appConfigCachingTtl') ?? 20_000;\n  }\n\n  public get appConfigEndpoint(): string {\n    return this.configService.get<string>('appConfigEndpoint') ?? '';\n  }\n\n  private checkConfiguration(): void {\n    const requiredConfigs = [\n      { key: 'appConfigEndpoint', value: this.appConfigEndpoint },\n    ];\n\n    /*\n     * Check mandatory fields\n     */\n    for (const config of requiredConfigs) {\n      if (!config.value) {\n        this.logger.error(`Missing configuration value for ${config.key}`);\n        throw new Error(`Configuration error: ${config.key} is not set`);\n      }\n    }\n\n    this.logger.log(\n      'All required \"App Config Initial Configuration\" configurations are properly set',\n    );\n  }\n}\n",
+    "taille": 1259
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/app-config/app-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\nimport { AppConfigService } from '@/config/app-config/app-config.service';\n\n@Module({\n  exports: [AppConfigInitialConfigService, AppConfigService],\n  imports: [\n    ConfigModule.forRoot({\n      isGlobal: true,\n    }),\n  ],\n\n  providers: [AppConfigInitialConfigService, AppConfigService],\n})\nexport class AppConfigModule {}\n",
+    "taille": 514
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/app-config/app-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { AppConfigurationClient } from '@azure/app-configuration';\nimport { DefaultAzureCredential } from '@azure/identity';\nimport { Injectable } from '@nestjs/common';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { AppConfigInitialConfigService } from '@/config/app-config/app-config-initial-config.service';\n\ninterface CacheEntry {\n  value: string | undefined\n  expiresAt: number\n}\n\n@Injectable()\nexport class AppConfigService {\n  private readonly appConfigClient: AppConfigurationClient;\n\n  private readonly logger: AppLogger = new AppLogger(AppConfigService.name);\n\n  private readonly cache = new Map<string, CacheEntry>();\n\n  private readonly cacheTTL: number;\n\n  public constructor(\n    private readonly appConfigConfigService: AppConfigInitialConfigService,\n  ) {\n    const credential = new DefaultAzureCredential();\n    this.appConfigClient = new AppConfigurationClient(\n      this.appConfigConfigService.appConfigEndpoint,\n      credential,\n    );\n    this.cacheTTL = appConfigConfigService.appConfigCachingTtl;\n  }\n\n  public get configStoreId(): string {\n    return this.appConfigConfigService.appConfigEndpoint;\n  }\n\n  public async keyIsDefined(key: string): Promise<boolean> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result !== undefined;\n    }\n    catch (error: unknown) {\n      const stack = error instanceof Error ? error.stack : undefined;\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        stack,\n      );\n      throw error;\n    }\n  }\n\n  public async getConfigurationValue(key: string): Promise<string | undefined> {\n    const currentTimeStamp: number = Date.now();\n    const cachedEntry = this.cache.get(key);\n\n    if (cachedEntry && cachedEntry.expiresAt > currentTimeStamp) {\n      return cachedEntry.value;\n    }\n    const value = await this.getConfigValueFromStore(key);\n\n    this.cache.set(key, { expiresAt: currentTimeStamp + this.cacheTTL, value });\n    return value;\n  }\n\n  private async getConfigValueFromStore(\n    key: string,\n  ): Promise<string | undefined> {\n    try {\n      const result = await this.appConfigClient.getConfigurationSetting({\n        key,\n      });\n\n      return result?.value;\n    }\n    catch (error: unknown) {\n      const stack = error instanceof Error ? error.stack : undefined;\n      this.logger.error(\n        `Error When Reading configuration key '${key}' from '${this.appConfigConfigService.appConfigEndpoint}'`,\n        stack,\n      );\n      throw error;\n    }\n  }\n\n  public reachable(): boolean {\n    try {\n      this.appConfigClient.listConfigurationSettings();\n\n      return true;\n    }\n    catch (error: unknown) {\n      const stack = error instanceof Error ? error.stack : undefined;\n      this.logger.error(\n        `Error when trying to reach config store '${this.appConfigConfigService.appConfigEndpoint}'`,\n        stack,\n      );\n      return false;\n    }\n  }\n}\n",
+    "taille": 3025
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/app-config/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "interface Config {\n  appConfigCachingTtl: string | undefined\n  appConfigEndpoint: string | undefined\n}\n\nconst appConfig = (): Config => ({\n  appConfigCachingTtl: process.env.APP_CONFIG_CACHING_TTL_MILLISECONDS,\n  appConfigEndpoint: process.env.APP_CONFIG_ENDPOINT,\n});\n\nexport { appConfig };\n",
+    "taille": 292
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/dapr/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export const daprConfig = () => ({\r\n  masterApiAppId: process.env.MASTER_API_APP_ID,\r\n});\n",
+    "taille": 90
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/dapr/dapr-config.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\r\nimport { ConfigModule } from '@nestjs/config';\r\nimport { DaprConfigService } from './dapr-config.service';\r\n\r\n@Module({\r\n  exports: [DaprConfigService],\r\n  imports: [ConfigModule],\r\n  providers: [DaprConfigService],\r\n})\r\nexport class DaprConfigModule {}\r\n",
+    "taille": 297
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/dapr/dapr-config.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class DaprConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get masterApiAppId(): string {\n    return this.configService.get<string>('masterApiAppId') ?? '';\n  }\n}\n",
+    "taille": 326
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/url-api/configuration.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "interface ApiConfiguration {\n  urlApi: string | undefined\n}\nexport const urlApiConfiguration = (): ApiConfiguration => ({\n  urlApi: process.env.URL_JOB_SERVICE,\n});\n",
+    "taille": 165
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/url-api/url-api.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { ConfigModule } from '@nestjs/config';\nimport { UrlApiConfigService } from '@/config/url-api/url-api.service';\n\n@Module({\n  exports: [UrlApiConfigService],\n  imports: [ConfigModule],\n  providers: [UrlApiConfigService],\n})\nexport class UrlApiConfigModule {}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/config/url-api/url-api.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Injectable } from '@nestjs/common';\nimport { ConfigService } from '@nestjs/config';\n\n@Injectable()\nexport class UrlApiConfigService {\n  public constructor(private readonly configService: ConfigService) {}\n\n  public get urlApi(): string {\n    return (\n      this.configService.get<string>('urlApi')\n      ?? 'https://mesx-ppr.app.corp/job-be/'\n    );\n  }\n}\n",
+    "taille": 365
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/main.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { ValidationPipe } from '@nestjs/common';\nimport { NestFactory } from '@nestjs/core';\nimport type { NestExpressApplication } from '@nestjs/platform-express';\nimport * as express from 'express';\nimport { AppModule } from '@/app.module';\n\n/**\n *\n */\nasync function bootstrap(): Promise<void> {\n  const app = await NestFactory.create<NestExpressApplication>(AppModule, {\n    rawBody: true,\n  });\n\n  app.use(express.json({ type: 'application/cloudevents+json' }));\n  // Global validation pipe\n  app.useGlobalPipes(\n    new ValidationPipe({\n      forbidNonWhitelisted: true,\n      transform: true,\n      whitelist: true,\n    }),\n  );\n\n  app.enableCors({\n    allowedHeaders: 'Content-Type,Authorization',\n    origin: '*',\n  });\n\n  await app.listen(3000);\n}\n\nvoid bootstrap();\n",
+    "taille": 777
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/dtos/get-filter-equipment-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsInt, IsOptional, IsString } from 'class-validator';\n\nexport class GetFilterEquipmentQueryDto {\n  @Type(() => Number)\n  @IsInt()\n  public plant!: number;\n\n  @IsOptional()\n  @IsString()\n  public material?: string;\n}\n",
+    "taille": 267
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/dtos/get-filter-materials-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsInt, IsOptional, IsString, MinLength } from 'class-validator';\n\nexport class GetFilterMaterialsQueryDto {\n  @Type(() => Number)\n  @IsInt()\n  public plant!: number;\n\n  @IsOptional()\n  @IsString()\n  @MinLength(3)\n  public search?: string;\n\n  @IsOptional()\n  @IsString()\n  public equipment?: string;\n}\n",
+    "taille": 352
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/dtos/get-operation-definitions-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsInt, IsOptional, IsString, Min } from 'class-validator';\n\nexport class GetOperationDefinitionsQueryDto {\n  @Type(() => Number)\n  @IsInt()\n  public plant!: number;\n\n  @IsOptional()\n  @IsString()\n  public material?: string;\n\n  @IsOptional()\n  @IsString()\n  public equipment?: string;\n\n  @IsOptional()\n  @Type(() => Number)\n  @IsInt()\n  @Min(1)\n  public limit?: number;\n\n  @IsOptional()\n  @Type(() => Number)\n  @IsInt()\n  @Min(0)\n  public offset?: number;\n}\n",
+    "taille": 508
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/dtos/operation-definition-details.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export class OperationDefinitionDetailsDto {\n  public operationId!: number;\n  public material!: string;\n  public version!: string;\n  public description?: string | null;\n  public equipment!: string;\n  public effectiveStartDate!: string;\n  public effectiveEndDate!: string;\n  public operationBillId?: number | null;\n  public taskGroupId!: string;\n  public groupCounter!: string;\n}\n",
+    "taille": 379
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/dtos/operation-definition-table-row.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export class OperationDefinitionTableRowDto {\n  public operationId!: number;\n  public material!: string;\n  public equipment!: string;\n  public effectiveStartDate!: string;\n  public effectiveEndDate!: string;\n}\n",
+    "taille": 210
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/operation-definition.controller.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';\nimport { GetFilterEquipmentQueryDto } from './dtos/get-filter-equipment-query.dto';\nimport { GetFilterMaterialsQueryDto } from './dtos/get-filter-materials-query.dto';\nimport { GetOperationDefinitionsQueryDto } from './dtos/get-operation-definitions-query.dto';\nimport { OperationDefinitionDetailsDto } from './dtos/operation-definition-details.dto';\nimport { OperationDefinitionTableRowDto } from './dtos/operation-definition-table-row.dto';\nimport { OperationDefinitionService } from './operation-definition.service';\n\n@Controller('isa95-operation-model/operation-definitions')\nexport class OperationDefinitionController {\n  public constructor(\n    private readonly operationDefinitionService: OperationDefinitionService,\n  ) {}\n\n  @Get('filter-materials')\n  public getFilterMaterials(\n    @Query() query: GetFilterMaterialsQueryDto,\n  ): Promise<Array<{ code: string }>> {\n    return this.operationDefinitionService.getFilterMaterials(query);\n  }\n\n  @Get('filter-equipment')\n  public getFilterEquipment(\n    @Query() query: GetFilterEquipmentQueryDto,\n  ): Promise<Array<{ equipment: string }>> {\n    return this.operationDefinitionService.getFilterEquipment(query);\n  }\n\n  @Get('details/:operationId')\n  public getOperationDefinitionDetails(\n    @Param('operationId', ParseIntPipe) operationId: number,\n  ): Promise<OperationDefinitionDetailsDto | null> {\n    return this.operationDefinitionService.getOperationDefinitionDetails(\n      operationId,\n    );\n  }\n\n  @Get()\n  public getOperationDefinitions(\n    @Query() query: GetOperationDefinitionsQueryDto,\n  ): Promise<Array<OperationDefinitionTableRowDto>> {\n    return this.operationDefinitionService.getOperationDefinitions(query);\n  }\n}\n",
+    "taille": 1774
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/operation-definition.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { OperationDefinitionController } from './operation-definition.controller';\nimport { OperationDefinitionService } from './operation-definition.service';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\n\n@Module({\n  controllers: [OperationDefinitionController],\n  imports: [DaprConfigModule],\n  providers: [OperationDefinitionService],\n})\nexport class OperationDefinitionModule {}\n",
+    "taille": 448
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-definition/operation-definition.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { DaprClient, HttpMethod } from '@dapr/dapr';\nimport { Injectable } from '@nestjs/common';\nimport { GetFilterEquipmentQueryDto } from './dtos/get-filter-equipment-query.dto';\nimport { GetFilterMaterialsQueryDto } from './dtos/get-filter-materials-query.dto';\nimport { GetOperationDefinitionsQueryDto } from './dtos/get-operation-definitions-query.dto';\nimport { OperationDefinitionDetailsDto } from './dtos/operation-definition-details.dto';\nimport { OperationDefinitionTableRowDto } from './dtos/operation-definition-table-row.dto';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Injectable()\nexport class OperationDefinitionService {\n  private readonly logger = new AppLogger(OperationDefinitionService.name);\n  private readonly daprClient = new DaprClient();\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {}\n\n  public async getFilterMaterials(\n    query: GetFilterMaterialsQueryDto,\n  ): Promise<Array<{ code: string }>> {\n    const parameters = new URLSearchParams({ plant: String(query.plant) });\n    if (query.search !== undefined && query.search !== '') {\n      parameters.set('search', query.search);\n    }\n    if (query.equipment !== undefined && query.equipment !== '') {\n      parameters.set('equipment', query.equipment);\n    }\n    const path = `isa95-operation-model/operation-definitions/filter-materials?${parameters.toString()}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(`Fetched filter-materials for plant ${query.plant}`);\n      return result as Array<{ code: string }>;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch filter-materials for plant ${query.plant}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return [];\n    }\n  }\n\n  public async getFilterEquipment(\n    query: GetFilterEquipmentQueryDto,\n  ): Promise<Array<{ equipment: string }>> {\n    const parameters = new URLSearchParams({ plant: String(query.plant) });\n    if (query.material !== undefined && query.material !== '') {\n      parameters.set('material', query.material);\n    }\n    const path = `isa95-operation-model/operation-definitions/filter-equipment?${parameters.toString()}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(`Fetched filter-equipment for plant ${query.plant}`);\n      return result as Array<{ equipment: string }>;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch filter-equipment for plant ${query.plant}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return [];\n    }\n  }\n\n  public async getOperationDefinitions(\n    query: GetOperationDefinitionsQueryDto,\n  ): Promise<Array<OperationDefinitionTableRowDto>> {\n    const parameters = new URLSearchParams({ plant: String(query.plant) });\n    if (query.material !== undefined && query.material !== '') {\n      parameters.set('material', query.material);\n    }\n    if (query.equipment !== undefined && query.equipment !== '') {\n      parameters.set('equipment', query.equipment);\n    }\n    if (query.limit !== undefined) {\n      parameters.set('limit', String(query.limit));\n    }\n    if (query.offset !== undefined) {\n      parameters.set('offset', String(query.offset));\n    }\n    const path = `isa95-operation-model/operation-definitions?${parameters.toString()}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(`Fetched operation definitions for plant ${query.plant}`);\n      return result as Array<OperationDefinitionTableRowDto>;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch operation definitions for plant ${query.plant}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return [];\n    }\n  }\n\n  public async getOperationDefinitionDetails(\n    operationId: number,\n  ): Promise<OperationDefinitionDetailsDto | null> {\n    const path = `isa95-operation-model/operation-definitions/details/${operationId}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(\n        `Fetched operation definition details for operationId ${operationId}`,\n      );\n      return result as OperationDefinitionDetailsDto;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch operation definition details for operationId ${operationId}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return null;\n    }\n  }\n}\n",
+    "taille": 4964
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/dtos/get-operation-segments-by-material-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsInt, IsString } from 'class-validator';\n\nexport class GetOperationSegmentsByMaterialQueryDto {\n  @Type(() => Number)\n  @IsInt()\n  public plant!: number;\n\n  @IsString()\n  public material!: string;\n}\n",
+    "taille": 251
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/dtos/get-operation-segments-query.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Type } from 'class-transformer';\nimport { IsInt, IsOptional, Min } from 'class-validator';\n\nexport class GetOperationSegmentsQueryDto {\n  @Type(() => Number)\n  @IsInt()\n  public plant!: number;\n\n  @IsOptional()\n  @Type(() => Number)\n  @IsInt()\n  @Min(1)\n  public operationDefinitionId?: number;\n}\n",
+    "taille": 306
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/dtos/operation-segment-by-material-row.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export class OperationSegmentByMaterialRowDto {\n  public erpIdentifier!: string;\n  public material!: string;\n  public equipment!: string;\n  public effectiveStartDate!: string;\n  public effectiveEndDate!: string;\n}\n",
+    "taille": 214
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/dtos/operation-segment-details.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export class OperationSegmentDetailsDto {\n  public erpIdentifier!: string;\n  public description?: string | null;\n  public material!: string;\n  public equipment!: string;\n  public effectiveStartDate!: string;\n  public effectiveEndDate!: string;\n  public hmacDuration?: number | null;\n  public hmodDuration?: number | null;\n  public hlogDuration?: number | null;\n}\n",
+    "taille": 363
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/dtos/operation-segment-table-row.dto.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "export class OperationSegmentTableRowDto {\n  public erpIdentifier!: string;\n  public material!: string;\n  public equipment!: string;\n  public effectiveStartDate!: string;\n  public effectiveEndDate!: string;\n}\n",
+    "taille": 209
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/operation-segment.controller.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Controller, Get, Param, Query } from '@nestjs/common';\nimport { GetOperationSegmentsByMaterialQueryDto } from './dtos/get-operation-segments-by-material-query.dto';\nimport { GetOperationSegmentsQueryDto } from './dtos/get-operation-segments-query.dto';\nimport { OperationSegmentByMaterialRowDto } from './dtos/operation-segment-by-material-row.dto';\nimport { OperationSegmentDetailsDto } from './dtos/operation-segment-details.dto';\nimport { OperationSegmentTableRowDto } from './dtos/operation-segment-table-row.dto';\nimport { OperationSegmentService } from './operation-segment.service';\n\n@Controller('isa95-operation-model/operation-segments')\nexport class OperationSegmentController {\n  public constructor(\n    private readonly operationSegmentService: OperationSegmentService,\n  ) {}\n\n  @Get('by-material')\n  public getOperationSegmentsByMaterial(\n    @Query() query: GetOperationSegmentsByMaterialQueryDto,\n  ): Promise<Array<OperationSegmentByMaterialRowDto>> {\n    return this.operationSegmentService.getOperationSegmentsByMaterial(query);\n  }\n\n  @Get(':operationNumber')\n  public getOperationSegmentDetails(\n    @Param('operationNumber') operationNumber: string,\n  ): Promise<OperationSegmentDetailsDto | null> {\n    return this.operationSegmentService.getOperationSegmentDetails(\n      operationNumber,\n    );\n  }\n\n  @Get()\n  public getOperationSegments(\n    @Query() query: GetOperationSegmentsQueryDto,\n  ): Promise<Array<OperationSegmentTableRowDto>> {\n    return this.operationSegmentService.getOperationSegments(query);\n  }\n}\n",
+    "taille": 1550
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/operation-segment.module.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { Module } from '@nestjs/common';\nimport { OperationSegmentController } from './operation-segment.controller';\nimport { OperationSegmentService } from './operation-segment.service';\nimport { DaprConfigModule } from '@/config/dapr/dapr-config.module';\n\n@Module({\n  controllers: [OperationSegmentController],\n  imports: [DaprConfigModule],\n  providers: [OperationSegmentService],\n})\nexport class OperationSegmentModule {}\n",
+    "taille": 427
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/src/modules/operation-segment/operation-segment.service.ts",
+    "extension": ".ts",
+    "prioritaire": true,
+    "contenu": "import { DaprClient, HttpMethod } from '@dapr/dapr';\nimport { Injectable } from '@nestjs/common';\nimport { GetOperationSegmentsByMaterialQueryDto } from './dtos/get-operation-segments-by-material-query.dto';\nimport { GetOperationSegmentsQueryDto } from './dtos/get-operation-segments-query.dto';\nimport { OperationSegmentByMaterialRowDto } from './dtos/operation-segment-by-material-row.dto';\nimport { OperationSegmentDetailsDto } from './dtos/operation-segment-details.dto';\nimport { OperationSegmentTableRowDto } from './dtos/operation-segment-table-row.dto';\nimport { AppLogger } from '@/common/logger/app-logger';\nimport { DaprConfigService } from '@/config/dapr/dapr-config.service';\n\n@Injectable()\nexport class OperationSegmentService {\n  private readonly logger = new AppLogger(OperationSegmentService.name);\n  private readonly daprClient = new DaprClient();\n\n  public constructor(private readonly daprConfigService: DaprConfigService) {}\n\n  public async getOperationSegments(\n    query: GetOperationSegmentsQueryDto,\n  ): Promise<Array<OperationSegmentTableRowDto>> {\n    const parameters = new URLSearchParams({ plant: String(query.plant) });\n    if (query.operationDefinitionId !== undefined) {\n      parameters.set('operationDefinitionId', String(query.operationDefinitionId));\n    }\n    const path = `isa95-operation-model/operation-segments?${parameters.toString()}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(`Fetched operation segments for plant ${query.plant}`);\n      return result as Array<OperationSegmentTableRowDto>;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch operation segments for plant ${query.plant}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return [];\n    }\n  }\n\n  public async getOperationSegmentsByMaterial(\n    query: GetOperationSegmentsByMaterialQueryDto,\n  ): Promise<Array<OperationSegmentByMaterialRowDto>> {\n    const parameters = new URLSearchParams({\n      plant: String(query.plant),\n      material: query.material,\n    });\n    const path = `isa95-operation-model/operation-segments/by-material?${parameters.toString()}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(\n        `Fetched operation segments by material ${query.material} for plant ${query.plant}`,\n      );\n      return result as Array<OperationSegmentByMaterialRowDto>;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch operation segments by material ${query.material}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return [];\n    }\n  }\n\n  public async getOperationSegmentDetails(\n    operationNumber: string,\n  ): Promise<OperationSegmentDetailsDto | null> {\n    const path = `isa95-operation-model/operation-segments/${encodeURIComponent(operationNumber)}`;\n    try {\n      const result = await this.daprClient.invoker.invoke(\n        this.daprConfigService.masterApiAppId,\n        path,\n        HttpMethod.GET,\n      );\n      this.logger.log(\n        `Fetched operation segment details for operationNumber ${operationNumber}`,\n      );\n      return result as OperationSegmentDetailsDto;\n    }\n    catch (error) {\n      this.logger.error(\n        `Failed to fetch operation segment details for operationNumber ${operationNumber}`,\n        error instanceof Error ? error.message : String(error),\n      );\n      return null;\n    }\n  }\n}\n",
+    "taille": 3654
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/.azure-pipelines/policies/sonarqube.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\njobs:\n  - template: jobs/sonar-process.yml@pipelines\n    parameters:\n      prepare_scanner_mode: CLI\n      prepare_sonarExclusions: $(Build.SourcesDirectory)/node_modules/**\n      prepare_sonarAdditionalProperties: |\n        sonar.sources=$(Build.SourcesDirectory)/src\n        sonar.test.inclusions=**/*.spec.ts\n        sonar.tests=$(Build.SourcesDirectory)/src\n        sonar.typescript.tsconfigPath=$(Build.SourcesDirectory)/tsconfig.lint.json\n\n      step_postPrepare:\n        - template: steps/angular-lint-and-test.yaml@pipelines\n          parameters:\n            nodejs_version: 22.x\n            run_unit_tests: false\n\n        - template: steps/sonarqube-reports.yml@pipelines\n          parameters:\n            reports:\n              - name: sonar.junit.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/junit-tests.xml\n              - name: sonar.eslint.reportPaths\n                path: $(Build.SourcesDirectory)/report.json\n              - name: sonar.testExecutionReportPaths\n                path: $(Build.SourcesDirectory)/coverage/sonar-tests.xml\n              - name: sonar.flex.cobertura.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/cobertura-coverage.xml\n              - name: sonar.javascript.lcov.reportPaths\n                path: $(Build.SourcesDirectory)/coverage/lcov.info\n              - name: sonar.css.stylelint.reportPaths\n                path: $(Build.SourcesDirectory)/stylelint.json\n",
+    "taille": 1736
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/.stylelintrc.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"extends\": [\"stylelint-config-standard\"],\n  \"rules\": {\n    \"declaration-no-important\": true\n  },\n  \"overrides\": [\n    {\n      \"files\": [\"*.scss\", \"**/*.scss\"],\n      \"extends\": [\"stylelint-config-standard-scss\"],\n      \"rules\": {\n        \"declaration-no-important\": true\n      }\n    },\n    {\n      \"files\": [\"*.vue\", \"**/*.vue\"],\n      \"extends\": [\n        \"stylelint-config-standard-scss\",\n        \"stylelint-config-standard-vue/scss\"\n      ]\n    }\n  ]\n}",
+    "taille": 459
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/Dockerfile",
+    "extension": "",
+    "prioritaire": false,
+    "contenu": "# base stage\nFROM acrprdccr001.azurecr.io/library/node:lts-alpine AS base\n\nWORKDIR /app\n\nENV NODE_ENV=production\nENV NODE_EXTRA_CA_CERTS=\"/etc/ssl/certs/ca-certificates.crt\"\n\nCOPY --from=acrprdfaurecia001.azurecr.io/cloud/azure/ca-certificates:latest \\\n  /ca-certificates.crt \\\n  /etc/ssl/certs/ca-certificates.crt\n\nEXPOSE 3000\n\n# build stage\nFROM acrprdccr001.azurecr.io/library/node:lts AS build\n\nENV NODE_EXTRA_CA_CERTS=\"/etc/ssl/certs/ca-certificates.crt\"\n\nCOPY --from=acrprdfaurecia001.azurecr.io/cloud/azure/ca-certificates:latest \\\n  /ca-certificates.crt \\\n  /etc/ssl/certs/ca-certificates.crt\n\nWORKDIR /app\n\nCOPY . .\n\nRUN --mount=type=secret,id=npmrc,target=/root/.npmrc \\\n    npm ci \\\n    && npm run build\n\n# runtime stage\nFROM base AS runtime\n\nCOPY --from=build /app/dist dist/\n\nCOPY package.json package-lock.json .npmrc tsconfig.json ./\n\nRUN --mount=type=secret,id=npmrc,target=/root/.npmrc \\\n    npm install --omit=dev\n\nUSER node\n\nCMD [\"npm\", \"run\", \"start:prod\"]\n",
+    "taille": 977
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/README.md",
+    "extension": ".md",
+    "prioritaire": false,
+    "contenu": "# Introduction \r\nTODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. \r\n\r\n# Getting Started\r\nTODO: Guide users through getting your code up and running on their own system. In this section you can talk about:\r\n1.\tInstallation process\r\n2.\tSoftware dependencies\r\n3.\tLatest releases\r\n4.\tAPI references\r\n\r\n# Build and Test\r\nTODO: Describe and show how to build your code and run the tests. \r\n\r\n# Contribute\r\nTODO: Explain how other users and developers can contribute to make your code better. \r\n\r\nIf you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:\r\n- [ASP.NET Core](https://github.com/aspnet/Home)\r\n- [Visual Studio Code](https://github.com/Microsoft/vscode)\r\n- [Chakra Core](https://github.com/Microsoft/ChakraCore)",
+    "taille": 985
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/azure-pipelines.yml",
+    "extension": ".yml",
+    "prioritaire": false,
+    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: mstr-set-be\n\nstages:\n- stage: Build\n  jobs:\n  - template: test/jobs/jobs-node-static-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      auditLevel: 'critical'\n\n  - template: test/jobs/jobs-node-dynamic-tests.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/master-setup-backend\n\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n\n",
+    "taille": 1243
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/nest-cli.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"$schema\": \"https://json.schemastore.org/nest-cli\",\n  \"collection\": \"@nestjs/schematics\",\n  \"sourceRoot\": \"src\",\n  \"compilerOptions\": {\n    \"deleteOutDir\": true,\n    \"assets\": [\n      {\n        \"include\": \"common/mapping/config/*.json\",\n        \"outDir\": \"dist\"\n      }\n    ],\n    \"watchAssets\": true\n  }\n}",
+    "taille": 310
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/package.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"name\": \"mesx-master-setup-backend\",\n  \"version\": \"0.0.1\",\n  \"description\": \"\",\n  \"author\": \"\",\n  \"private\": true,\n  \"license\": \"UNLICENSED\",\n  \"scripts\": {\n    \"analyze:compodoc\": \"npx compodoc -p ./tsconfig.app.json --coverageTest --coverageTestThresholdFail false\",\n    \"build\": \"nest build\",\n    \"build:docker\": \"docker build . --secret id=npmrc,src=$HOME/.npmrc --build-arg HTTP_PROXY=$HTTP_PROXY --build-arg HTTPS_PROXY=$HTTPS_PROXY --build-arg NO_PROXY=$NO_PROXY -f Dockerfile\",\n    \"lint\": \"eslint .\",\n    \"lint:fix\": \"eslint . --fix\",\n    \"lint:scss\": \"npx stylelint \\\"./src/**/*.scss\\\" --output-file stylelint.json --formatter json\",\n    \"lint:scss:console\": \"npx stylelint \\\"./src/**/*.scss\\\"\",\n    \"lint:typescript\": \"eslint -c eslint.config.mjs -f json -o report.json\",\n    \"lint:typescript:console\": \"eslint -c eslint.config.mjs\",\n    \"lint:typescript:fix\": \"eslint -c eslint.config.mjs --fix\",\n    \"lintSass\": \"echo '=== Backend project, no styles to lint. ==='\",\n    \"start\": \"nest start\",\n    \"start:dapr\": \"dapr run --app-id mesx-master-setup-backend --app-protocol http --dapr-http-port 3500 --app-port 3000 --resources-path ./daprComponents -- npm run start:dev\",\n    \"start:debug\": \"nest start --debug --watch\",\n    \"start:dev\": \"nest start --watch\",\n    \"start:prod\": \"node dist/main\",\n    \"test\": \"jest\",\n    \"test:cov\": \"jest --coverage\",\n    \"test:cov:ci\": \"jest --ci --reporters=jest-junit --reporters=default --coverage --coverageReporters=cobertura\",\n    \"test:debug\": \"node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand\",\n    \"test:e2e\": \"jest --config ./test/jest-e2e.json\",\n    \"test:watch\": \"jest --watch\",\n    \"typeorm\": \"ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js\",\n    \"typeorm:generate\": \"npm run build && npm run typeorm -- migration:generate -d src/migration.data.source.ts\",\n    \"typeorm:migrate\": \"npm run build && npm run typeorm:migrate-only\",\n    \"typeorm:migrate-only\": \"npm run typeorm -- migration:run -d src/migration.data.source.ts\",\n    \"typeorm:revert\": \"npm run typeorm -- migration:revert -d src/migration.data.source.ts\",\n    \"typeorm:show\": \"npm run typeorm -- migration:show -d src/migration.data.source.ts\"\n  },\n  \"dependencies\": {\n    \"@azure/app-configuration\": \"^1.9.0\",\n    \"@azure/event-hubs\": \"^6.0.0\",\n    \"@azure/eventhubs-checkpointstore-blob\": \"^2.0.0\",\n    \"@azure/identity\": \"^4.10.2\",\n    \"@azure/storage-blob\": \"^12.28.0\",\n    \"@dapr/dapr\": \"^3.5.2\",\n    \"@mesx/common-lib\": \"^1.4.5\",\n    \"@nestjs/common\": \"^10.0.0\",\n    \"@nestjs/config\": \"^4.0.3\",\n    \"@nestjs/core\": \"^10.0.0\",\n    \"@nestjs/event-emitter\": \"^2.0.4\",\n    \"@nestjs/platform-express\": \"^10.0.0\",\n    \"@nestjs/typeorm\": \"^10.0.2\",\n    \"async-mutex\": \"^0.5.0\",\n    \"body-parser\": \"^1.20.3\",\n    \"class-transformer\": \"^0.5.1\",\n    \"class-validator\": \"^0.14.1\",\n    \"dapr-client\": \"^3.3.1\",\n    \"date-fns\": \"^4.1.0\",\n    \"date-fns-tz\": \"^1.3.8\",\n    \"dotenv\": \"^16.4.5\",\n    \"express\": \"^4.18.3\",\n    \"generic-pool\": \"^3.9.0\",\n    \"lodash\": \"^4.17.21\",\n    \"luxon\": \"^3.5.0\",\n    \"mssql\": \"^12.2.0\",\n    \"redis\": \"^4.7.0\",\n    \"reflect-metadata\": \"^0.2.2\",\n    \"rxjs\": \"^7.8.1\",\n    \"ts-node\": \"^10.9.1\",\n    \"tsconfig-paths\": \"^4.2.0\",\n    \"typeorm\": \"^0.3.28\"\n  },\n  \"devDependencies\": {\n    \"@compodoc/compodoc\": \"^1.1.16\",\n    \"@mesx/eslint-config-lib\": \"^3\",\n    \"@forvia/eslint-config-typescript-node22\": \"^1.2.0\",\n    \"@nestjs/cli\": \"^11.0.16\",\n    \"@nestjs/schematics\": \"^10.0.0\",\n    \"@nestjs/testing\": \"^10.0.0\",\n    \"@types/express\": \"^4.17.17\",\n    \"@types/jest\": \"^29.5.2\",\n    \"@types/lodash\": \"^4.17.13\",\n    \"@types/luxon\": \"^3.4.2\",\n    \"@types/node\": \"^22\",\n    \"jest\": \"^29.5.0\",\n    \"jest-junit\": \"^16.0.0\",\n    \"postcss\": \"^8.4.38\",\n    \"source-map-support\": \"^0.5.21\",\n    \"stylelint\": \"^16.5.0\",\n    \"stylelint-config-sass-guidelines\": \"^11.1.0\",\n    \"stylelint-config-standard\": \"^39\",\n    \"ts-jest\": \"^29.1.0\",\n    \"ts-loader\": \"^9.4.3\",\n    \"typescript\": \"^5.1.3\"\n  },\n  \"jest-junit\": {\n    \"reportTestSuiteErrors\": \"true\"\n  },\n  \"jest\": {\n    \"moduleFileExtensions\": [\n      \"js\",\n      \"json\",\n      \"ts\"\n    ],\n    \"rootDir\": \"src\",\n    \"testRegex\": \".*\\\\.spec\\\\.ts$\",\n    \"transform\": {\n      \"^.+\\\\.(t|j)s$\": [\n        \"ts-jest\",\n        {\n          \"tsconfig\": \"tsconfig.json\"\n        }\n      ]\n    },\n    \"moduleNameMapper\": {\n      \"^@/(.*)$\": \"<rootDir>/$1\"\n    },\n    \"collectCoverageFrom\": [\n      \"**/*.(t|j)s\"\n    ],\n    \"coverageDirectory\": \"../coverage\",\n    \"testEnvironment\": \"node\"\n  },\n  \"engines\": {\n    \"node\": \"^22\"\n  }\n}\n",
+    "taille": 4579
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/test/app.end2end-spec.ts",
+    "extension": ".ts",
+    "prioritaire": false,
+    "contenu": "import { INestApplication } from '@nestjs/common';\nimport { Test, TestingModule } from '@nestjs/testing';\nimport * as request from 'supertest';\nimport { AppModule } from '../src/app.module';\n\ndescribe('AppController (e2e)', () => {\n  let app: INestApplication;\n\n  beforeEach(async () => {\n    const moduleFixture: TestingModule = await Test.createTestingModule({\n      imports: [AppModule],\n    }).compile();\n\n    app = moduleFixture.createNestApplication();\n    await app.init();\n  });\n\n  it('/ (GET)', () => {\n    return request(app.getHttpServer())\n      .get('/')\n      .expect(200)\n      .expect('Hello World!');\n  });\n});\n",
+    "taille": 628
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/test/jest-e2e.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"moduleFileExtensions\": [\"js\", \"json\", \"ts\"],\n  \"rootDir\": \".\",\n  \"testEnvironment\": \"node\",\n  \"testRegex\": \".e2e-spec.ts$\",\n  \"transform\": {\n    \"^.+\\\\.(t|j)s$\": \"ts-jest\"\n  }\n}\n",
+    "taille": 183
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/tsconfig.app.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"extends\": \"./tsconfig.json\",\n  \"compilerOptions\": {\n    \"outDir\": \"../out-tsc/app\",\n    \"baseUrl\": \"./src\",\n    \"types\": [\"jquery\", \"node\"]\n  },\n  \"files\": [\"./src/main.ts\", \"./src/polyfills.ts\"],\n  \"include\": [\"src/**/*.d.ts\"]\n}\n",
+    "taille": 235
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/tsconfig.build.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"extends\": \"./tsconfig.json\",\n  \"exclude\": [\"node_modules\", \"test\", \"dist\", \"**/*spec.ts\"],\n  \"include\":[\n    \"src/**/*\",\n    \"src/common/mapping/config/identifier-mapping.json\"\n  ]\n}",
+    "taille": 187
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/tsconfig.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"compilerOptions\": {\n    \"module\": \"commonjs\",\n    \"declaration\": true,\n    \"removeComments\": true,\n    \"emitDecoratorMetadata\": true,\n    \"experimentalDecorators\": true,\n    \"allowSyntheticDefaultImports\": true,\n    \"target\": \"ES2021\",\n    \"sourceMap\": true,\n    \"outDir\": \"./dist\",\n    \"baseUrl\": \"./\",\n    \"incremental\": true,\n    \"skipLibCheck\": true,\n    \"strictNullChecks\": true,\n    \"noImplicitAny\": true,\n    \"strictBindCallApply\": true,\n    \"forceConsistentCasingInFileNames\": true,\n    \"noFallthroughCasesInSwitch\": true,\n    \"paths\": {\n      \"@/*\": [\n        \"src/*\"\n      ]\n    }\n  }\n}\n",
+    "taille": 602
+  },
+  {
+    "microservice": "mesx-master-setup-backend",
+    "chemin": "/tsconfig.lint.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"extends\": \"./tsconfig.json\",\n  \"compilerOptions\": {\n    \"outDir\": \"../out-tsc/app\",\n    \"types\": [\"jquery\", \"node\", \"jest\"],\n    \"strictNullChecks\": true\n  },\n  \"files\": [\"./src/main.ts\", \"./src/polyfills.ts\"],\n  \"include\": [\n    \"src/**/*.d.ts\",\n    \"src/**/*.ts\",\n    \"src/**/*.tsx\",\n    \"test/**/*.d.ts\",\n    \"test/**/*.ts\",\n    \"test/**/*.tsx\"\n  ],\n  \"exclude\": [\"node_modules\"]\n}\n",
+    "taille": 390
+  }
+]

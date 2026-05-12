@@ -427,6 +427,75 @@
             background: #fff;
         }
 
+        .retest-card {
+            border: 1px solid #d7e1f3;
+            border-radius: 10px;
+            padding: 10px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            margin-bottom: 10px;
+        }
+
+        .retest-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .retest-card-title {
+            font-weight: 800;
+            color: #143c93;
+            font-size: 13px;
+        }
+
+        .retest-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid #c8d7f4;
+            border-radius: 999px;
+            padding: 3px 8px;
+            background: #eef4ff;
+            color: #284d9b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .kv {
+            margin: 3px 0;
+            font-size: 12px;
+            color: #33435f;
+            line-height: 1.4;
+        }
+
+        .kv strong {
+            color: #172e57;
+        }
+
+        .retest-actions {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cfdcf4;
+            display: grid;
+            gap: 8px;
+        }
+
+        .retest-action {
+            background: #fff;
+            border: 1px solid #dfe8f8;
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .retest-action-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #183f7b;
+            margin-bottom: 4px;
+        }
+
         .scope-item-title {
             font-weight: 800;
             color: #18376b;
@@ -690,7 +759,9 @@
         <p>&copy; 2026 FORVIA NRT Scope System | Automated Non-Regression Test Orchestration</p>
     </footer>
 
+    <script type="module" src="/static/ts/pages/workitem-scope-bridge.js"></script>
     <script>
+        const tsApi = window.NRT_TS_API || null;
         const state = {
             types: [],
             allWorkitems: [],
@@ -790,12 +861,18 @@
             nodes.tableStatus.innerHTML = '<span class="loader"></span> Loading...';
 
             try {
-                const response = await fetch(`/api/workitems-by-type/${encodeURIComponent(workitemType)}`);
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
+                let results = [];
+                if (tsApi && typeof tsApi.fetchWorkItemsByType === "function") {
+                    results = await tsApi.fetchWorkItemsByType(workitemType);
+                } else {
+                    const response = await fetch(`/api/workitems-by-type/${encodeURIComponent(workitemType)}`);
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error);
+                    results = data.results || [];
+                }
 
                 state.selectedType = workitemType;
-                state.allWorkitems = data.results || [];
+                state.allWorkitems = results || [];
                 populateStatusFilter(state.allWorkitems);
                 applyFilters();
                 nodes.tableStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${workitemType} loaded`;
@@ -932,10 +1009,15 @@
             nodes.resultState.innerHTML = `<div class="quality-row">${quality.join("")}</div>`;
 
             const tabContent = {
-                summary: renderSummaryTab(summary),
+                summary: renderSummaryTab(scope),
                 direct: renderMicroserviceTab(direct, "DIRECT"),
                 indirect: renderMicroserviceTab(indirect, "INDIRECT"),
                 functions: renderFunctionsTab(direct, indirect),
+                commitTrace: renderCommitTraceTab(
+                    scope.commit_trace || [],
+                    scope.direct_retest_from_commit_trace || [],
+                    scope.target_retest_from_commit_trace || []
+                ),
                 plan: renderPlanTab(plan)
             };
 
@@ -952,6 +1034,7 @@
                     <button class="tab ${state.activeTab === "direct" ? "active" : ""}" data-tab="direct">Direct (${direct.length})</button>
                     <button class="tab ${state.activeTab === "indirect" ? "active" : ""}" data-tab="indirect">Indirect (${indirect.length})</button>
                     <button class="tab ${state.activeTab === "functions" ? "active" : ""}" data-tab="functions">Functions</button>
+                    <button class="tab ${state.activeTab === "commitTrace" ? "active" : ""}" data-tab="commitTrace">Commit Trace</button>
                     <button class="tab ${state.activeTab === "plan" ? "active" : ""}" data-tab="plan">Prioritized Plan</button>
                 </div>
 
@@ -964,16 +1047,122 @@
                     renderResult(scope);
                 });
             });
+
+            // Keep Overview concise for testers: hide verbose evidence headers.
+            if (state.activeTab === "summary") {
+                cleanupSummaryRetestNoise();
+            }
         }
 
-        function renderSummaryTab(summary) {
+        function cleanupSummaryRetestNoise() {
+            const labelsToHide = new Set(["fonctions cibles:", "fichiers preuve:", "commits preuve:"]);
+            document.querySelectorAll("#tabContent .retest-card .kv strong").forEach(strong => {
+                const txt = (strong.textContent || "").trim().toLowerCase();
+                if (labelsToHide.has(txt)) {
+                    const kv = strong.closest(".kv");
+                    if (kv) kv.remove();
+                }
+            });
+        }
+
+        function renderSummaryTab(scope) {
+            const summary = scope.summary || {};
+            const targetRetest = Array.isArray(scope.target_retest_from_commit_trace) ? scope.target_retest_from_commit_trace : [];
+            const inferPriority = (r) => {
+                const explicit = Number(r?.priority_order || 0);
+                if (explicit > 0 && explicit < 90) return explicit;
+                const lvl = String(r?.evidence_level || "").toUpperCase();
+                if (lvl === "TOUCHEE_PROUVEE_LIGNE") return 1;
+                if (lvl === "IMPACT_POTENTIEL_CANDIDATE") return 2;
+                if (lvl === "INFRA_PREUVE_FICHIER") return 3;
+                const type = String(r?.type || "").toUpperCase();
+                if (type === "INFRA-RETEST") return 3;
+                if (type === "FILE-RETEST") return 2;
+                return 2;
+            };
+            const classifyItems = (item) => {
+                const src = Array.isArray(item?.retest_items) ? item.retest_items : [];
+                const normalized = src.map((r) => {
+                    const p = inferPriority(r);
+                    const lbl = p === 1
+                        ? "touchée prouvée (preuve ligne)"
+                        : (p === 2 ? "impact potentiel (candidate sans preuve ligne)" : "impact infra/config");
+                    return { ...r, _priority: p, _levelLabel: lbl };
+                }).sort((a, b) => {
+                    if (a._priority !== b._priority) return a._priority - b._priority;
+                    return String(a.element || "").localeCompare(String(b.element || ""));
+                });
+                return {
+                    normalized,
+                    proven: normalized.filter(x => x._priority === 1).length,
+                    potential: normalized.filter(x => x._priority === 2).length,
+                    infra: normalized.filter(x => x._priority === 3).length
+                };
+            };
+            const targetRetestHtml = targetRetest.length ? `
+                <div class="scope-item">
+                    <div class="scope-item-title">Microservices cibles à retester (strict: commit -> file -> line/function)</div>
+                    <div style="max-height: 420px; overflow:auto; padding-right: 2px;">
+                        ${targetRetest.map(item => `
+                            <div class="retest-card">
+                                <div class="retest-card-header">
+                                    <div class="retest-card-title">${escapeHtml(item.microservice || "unknown")}</div>
+                                    <div class="retest-chip">${escapeHtml(item.commit_count || 0)} commit(s) | ${escapeHtml(item.files_count || 0)} fichier(s)</div>
+                                </div>
+                                <div class="kv"><strong>Synthèse:</strong>
+                                ${(item.target_functions || []).length
+                                    ? `${escapeHtml(item.target_function_count || 0)} fonction(s) candidates détectées.`
+                                    : ((item.code_files_count || 0) > 0
+                                        ? `<em>Fichiers code touchés, mais pas de ligne diff exploitable pour lier une fonction exacte.</em>`
+                                        : `<em>Commit infra/config: pas de fonction code à lier directement.</em>`)}
+                                </div>
+                                <div class="kv"><strong>Priorité:</strong> 1) touchée prouvée (preuve ligne) 2) impact potentiel (candidate sans preuve ligne) 3) impact infra/config</div>
+                                <div class="kv"><strong>Répartition:</strong>
+                                    ${(() => { const c = classifyItems(item); return `${escapeHtml(c.proven)} prouvée(s) | ${escapeHtml(c.potential)} potentielle(s) | ${escapeHtml(c.infra)} infra`; })()}
+                                </div>
+                                
+                                ${(item.retest_items || []).length ? `
+                                    <div class="retest-actions">
+                                    ${classifyItems(item).normalized.map(r => {
+                                        const priority = r._priority || 2;
+                                        const classLabel = r._levelLabel || "impact potentiel (candidate sans preuve ligne)";
+                                        const fnText = (r.type || "") === "INFRA-RETEST"
+                                            ? "N/A (impact infra/config)"
+                                            : (r.element || "");
+                                        const fnLabel = priority === 2 ? "Fonction candidate" : "Fonction touchée";
+                                        const descText = r.description || "Description métier non disponible depuis la preuve code actuelle.";
+                                        const frontText = r.impact_front || "Parcours front lié à cette API/fonction à vérifier.";
+                                        const retestText = r.what_to_test || "Retest fonctionnel à exécuter.";
+                                        return `
+                                        <div class="retest-action">
+                                            <div class="retest-action-title">[P${escapeHtml(priority)}] ${escapeHtml(classLabel)} | ${escapeHtml(item.microservice || "unknown")}</div>
+                                            <div class="kv"><strong>Microservice cible:</strong> ${escapeHtml(item.microservice || "unknown")}</div>
+                                            <div class="kv"><strong>${escapeHtml(fnLabel)}:</strong> ${escapeHtml(fnText)}</div>
+                                            <div class="kv"><strong>Description métier:</strong> ${escapeHtml(descText)}</div>
+                                            <div class="kv"><strong>Impact Front ciblé:</strong> ${escapeHtml(frontText)}</div>
+                                            <div class="kv"><strong>Retest conseillé:</strong> ${escapeHtml(retestText)}</div>
+                                            <div class="kv"><strong>Preuve:</strong> ${escapeHtml(r.evidence || "")}</div>
+                                        </div>
+                                    `;
+                                    }).join("")}
+                                    </div>
+                                ` : ""}
+                            </div>
+                        `).join("")}
+                    </div>
+                </div>
+            ` : "";
             return `
                 <div class="scope-list">
                     <div class="scope-item">
-                        <div class="scope-item-title">Scope quality summary</div>
-                        <div class="small-muted">Heuristics enabled: <strong>${summary.heuristics_enabled === false ? "No" : "Yes"}</strong></div>
-                        <div class="small-muted">Fallback source: <strong>${escapeHtml(summary.fallback_source || "None")}</strong></div>
+                        <div class="scope-item-title">Résumé qualité (preuve commit réelle)</div>
+                        <div class="small-muted">Heuristiques activées: <strong>${summary.heuristics_enabled === false ? "Non" : "Oui"}</strong></div>
+                        <div class="small-muted">Fallback: <strong>${escapeHtml(summary.fallback_source || "Aucun")}</strong></div>
+                        <div class="small-muted">Commits dans le scope: <strong>${escapeHtml(summary.commit_count || 0)}</strong></div>
+                        <div class="small-muted">Fonctions code touchées (preuve commit/fichier): <strong>${escapeHtml(summary.commit_trace_functions || 0)}</strong></div>
+                        <div class="small-muted">Blocs infra/config touchés (preuve commit/fichier): <strong>${escapeHtml(summary.commit_trace_infra_blocks || 0)}</strong></div>
                     </div>
+                    ${targetRetestHtml}
                 </div>
             `;
         }
@@ -1112,6 +1301,67 @@
             `;
         }
 
+        function renderCommitTraceTab(commitTrace, retestConclusion, targetRetestConclusion) {
+            if (!Array.isArray(commitTrace) || !commitTrace.length) {
+                return '<div class="empty-state"><div><i class="fas fa-code-commit"></i><p>No commit trace available for this WorkItem.</p></div></div>';
+            }
+
+            const retestHtml = Array.isArray(retestConclusion) && retestConclusion.length
+                ? `
+                    <div class="scope-item">
+                        <div class="scope-item-title">Direct retest conclusion from commit trace (${retestConclusion.length} microservices)</div>
+                        <div class="function-list" style="max-height: 240px;">
+                            ${retestConclusion.map(item => `
+                                <div class="function-item">
+                                    <strong>${escapeHtml(item.microservice || "unknown")}</strong>
+                                    | commits: ${escapeHtml(item.commit_count || 0)}
+                                    | files: ${escapeHtml(item.files_count || 0)}
+                                    | code fn: ${escapeHtml(item.code_function_count || 0)}
+                                    | symbols: ${escapeHtml(item.code_symbol_count || 0)}
+                                    | infra blocks: ${escapeHtml(item.infra_block_count || 0)}
+                                    ${(item.code_functions || []).length
+                                        ? `<br>functions: ${(item.code_functions || []).map(fn => escapeHtml(fn.id || fn.name || "")).join(" | ")}`
+                                        : ""}
+                                </div>
+                            `).join("")}
+                        </div>
+                    </div>
+                `
+                : "";
+
+            return `
+                <div class="scope-list">
+                    ${retestHtml}
+                    ${commitTrace.map(commit => `
+                        <div class="scope-item">
+                            <div class="scope-item-title">
+                                <span>${escapeHtml((commit.commit_id || "").slice(0, 8))}</span>
+                                <span class="chip">${escapeHtml(commit.microservice || "unknown")} | ${escapeHtml(commit.files_changed_count || 0)} files</span>
+                            </div>
+                            <div class="small-muted">${escapeHtml(commit.message || "")}</div>
+                            <div class="small-muted">Author: <strong>${escapeHtml(commit.author || "-")}</strong> | Date: <strong>${escapeHtml(commit.date || "-")}</strong></div>
+                            <div class="small-muted">Touched code functions: <strong>${escapeHtml(commit.direct_touched_functions_count || 0)}</strong> | Parsed code symbols: <strong>${escapeHtml(commit.direct_touched_code_symbols_count || 0)}</strong> | Touched infra blocks: <strong>${escapeHtml(commit.direct_touched_infra_blocks_count || 0)}</strong></div>
+                            ${commit.target_microservice_count ? `<div class="small-muted">Target microservices: <strong>${escapeHtml(commit.target_microservice_count)}</strong> | ${(commit.target_microservices || []).map(ms => escapeHtml(ms)).join(" | ")}</div>` : ""}
+                            ${commit.target_function_count ? `<div class="small-muted">Target functions: <strong>${escapeHtml(commit.target_function_count)}</strong> | ${(commit.target_functions || []).map(fn => escapeHtml(fn)).join(" | ")}</div>` : ""}
+                            <div class="function-list" style="max-height: 220px;">
+                                ${(commit.files || []).length ? (commit.files || []).map(file => `
+                                    <div class="function-item">
+                                        <strong>${escapeHtml(file.path || "")}</strong> [${escapeHtml(file.type || "other")}]
+                                        ${file.changed_lines_count ? `<br>changed lines: ${escapeHtml(file.changed_lines_count)} (${escapeHtml((file.changed_lines || []).slice(0, 20).join(", "))}${(file.changed_lines || []).length > 20 ? ", ..." : ""})` : ""}
+                                        ${file.line_match_mode ? `<br>line match mode: ${escapeHtml(file.line_match_mode)}` : ""}
+                                        ${file.touched_function_count ? `<br>fn: ${(file.touched_functions || []).map(fn => escapeHtml(fn.id || fn.name || "")).join(" | ")}` : ""}
+                                        ${file.touched_code_symbol_count ? `<br>symbols: ${(file.touched_code_symbols || []).map(s => escapeHtml(s)).join(" | ")}` : ""}
+                                        ${file.touched_infra_block_count ? `<br>infra: ${(file.touched_infra_blocks || []).map(b => escapeHtml(b)).join(" | ")}` : ""}
+                                        ${file.target_microservice_count ? `<br>target ms: ${(file.target_microservices || []).map(ms => escapeHtml(ms)).join(" | ")}` : ""}
+                                    </div>
+                                `).join("") : '<div class="function-item">No changed file details found in extracted commit record.</div>'}
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            `;
+        }
+
         async function generateScope() {
             showError("");
             if (!state.selectedId || state.loadingScope) return;
@@ -1121,8 +1371,13 @@
             setResultLoading();
 
             try {
-                const response = await fetch(`/api/nrt-scope?workitem_id=${state.selectedId}`);
-                const data = await response.json();
+                let data;
+                if (tsApi && typeof tsApi.fetchNrtScopeByWorkItem === "function") {
+                    data = await tsApi.fetchNrtScopeByWorkItem(Number(state.selectedId));
+                } else {
+                    const response = await fetch(`/api/nrt-scope?workitem_id=${state.selectedId}`);
+                    data = await response.json();
+                }
                 if (data.error) throw new Error(data.error);
 
                 if (state.selectedType && data.workitem && data.workitem.type !== state.selectedType) {

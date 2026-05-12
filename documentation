@@ -8,3 +8,312 @@ RETURN wi, c1, ms, pr, c2, ms2
 Direct functions: uniquement fonctions dont des lignes ont changé dans le commit (pas juste “fichier du MS”)
 Indirect MS: via dépendances (API_CALLS/MESSAGE_BROKER/INGESTION)
 Indirect functions: optionnelles et limitées (sinon bruit)
+
+Cette commande sert à reconstruire uniquement les dépendances inter-microservices asynchrones à partir de preuves explicites du code source Azure.
+
+Concrètement, elle génère les relations:
+
+(:Microservice)-[:MESSAGE_BROKER]->(:Microservice)
+(:Microservice)-[:INGESTION]->(:Microservice)
+basées sur des éléments réels dans source_mesx_*.json (topics, eventhub/servicebus, direction input/output, subscribe/publish), sans relations “known pattern” manuelles.
+PR_text / PR_file est heuristique car ça lit des mots dans description/nom de fichier PR, pas un vrai appel runtime.
+Exemple: “update mesx-order-api version” peut créer un faux lien sans appel technique réel.
+
+“Preuves code explicites” = on voit une instruction d’appel dans le code:
+source_mesx_*.json est le snapshot du code source réel d’un repo MESX (fichiers + contenu texte).
+C’est la base “code” de ton pipeline.
+
+Typiquement, chaque fichier contient:
+
+le repo/microservice concerné
+une liste d’entrées avec au moins:
+chemin (path du fichier dans le repo)
+contenu (texte du fichier)
+Pour ton objectif NRT, ça sert à:
+
+extraire les fonctions réelles (populate_graph_data.py)
+détecter des preuves de dépendances code/config (step3_strict_broker_ingestion_extractor.py)
+relier commits -> fichiers modifiés -> fonctions touchées (via TOUCHES_FUNCTION)
+Ce que ça n’apporte pas:
+
+pas les liens WorkItem/PR/Commit (ça vient de l’API Azure DevOps dans step1_azure_extract.py)
+
+step1_azure_extract.py
+Contient l’extraction Azure DevOps API (source de vérité traçabilité dev):
+
+microservices.json: liste des repos (id, nom, branche par défaut, url).
+commits.json: commits + auteur/date/message + fichiers modifiés (fichiers_modifies).
+pull_requests.json: PR + statut + branches + commit_ids + linked_workitem_ids.
+work_items.json: Work Items + champs métier + liens dev natifs.
+workitem_dev_links.json: table consolidée workitem_id -> PR IDs + Commit IDs.
+source_mesx_*.json: snapshot code/config par microservice (chemin + contenu texte).
+populate_graph_data.py
+Construit le catalogue fonctions depuis le code source réel (source_mesx_*.json):
+
+met à jour graph_data.json avec fonctions (id stable, nom, type, fichier, microservice).
+force relations_covers = [] (donc pas d’heuristique COVERS).
+step3_strict_broker_ingestion_extractor.py
+Extrait uniquement des relations async avec preuves explicites dans le code/config:
+
+lit source_mesx_*.json,
+écrit broker_ingestion_relations.json avec MESSAGE_BROKER / INGESTION,
+marque evidence_mode=STRICT_SOURCE (pas “known pattern”).
+build_graph_database.py
+Charge tous les JSON dans Neo4j et construit le graphe final:
+
+Noeuds: WorkItem, PullRequest, Commit, Microservice, Function.
+Relations clés:
+WorkItem->PR, WorkItem->Commit, PR->Commit, Commit->Microservice, Commit->Function, Microservice->Function, plus dépendances inter-MS strictes.
+server.py
+Expose l’API/UI NRT:
+
+calcule le scope depuis Neo4j,
+sépare direct/indirect,
+affiche fonctions et microservices à retester.
+En résumé technique: pipeline = Azure traceability + source code parsing + graph reasoning, sans enrichissement heuristique métier caché.
+API_CALLS: visible via API/API Manager et les blocs “API query/API CMD”.
+MESSAGE_BROKER: visible via la couche “Broker” (pub/sub entre services).
+INGESTION: visible via “CDC/Event Hub” et les blocs “Ingestion *”.
+
+
+Pour une idée générale de ton PFE, tu peux le présenter comme ça:
+
+On a construit une chaîne de traçabilité de bout en bout pour générer automatiquement le scope NRT à partir de preuves réelles: Azure DevOps (WorkItems, PR, Commits, fichiers modifiés) + code source extrait des repos MESX.
+Ces données sont normalisées dans Neo4j pour relier WorkItem -> PR/Commit -> Microservice -> Function, puis enrichies par les dépendances inter-services (API_CALLS, MESSAGE_BROKER, INGESTION) afin d’identifier aussi l’impact indirect.
+
+Le résultat est un scope NRT exploitable par les testeurs: microservices et fonctions à retester, avec un raisonnement explicable, traçable, et sans dépendre d’une saisie manuelle développeur.
+
+Techniquement, l’extraction se fait via l’API REST Azure DevOps dans step1_azure_extract.py:
+
+GET /git/repositories
+On récupère les repos (= microservices).
+
+GET /git/repositories/{repoId}/commits
+On récupère les commits par repo, puis pour chaque commit:
+GET /git/repositories/{repoId}/commits/{commitId}/changes
+pour avoir les fichiers modifiés.
+
+GET /git/repositories/{repoId}/pullrequests?searchCriteria.status=all
+On récupère les PR par repo, puis pour chaque PR:
+
+GET /pullRequests/{prId}/commits (commits de la PR)
+GET /pullRequests/{prId}/workitems (WorkItems liés à la PR)
+WorkItems via WIQL + détail
+
+POST /wit/wiql pour lister les IDs
+GET /wit/workitems/{id}?$expand=relations pour détails + relations natives (ArtifactLink)
+Consolidation
+On construit workitem_dev_links.json en fusionnant:
+
+liens directs WorkItem→Commit
+liens WorkItem→PR→Commit
+Backfill réel Azure
+Si un lien WorkItem pointe vers PR/Commit absent des listes globales, on le refetch par ID (toujours API Azure, pas heuristique).
+
+
+source snapshots = une photo à un instant T du contenu des repos source.
+
+Dans ton cas:
+
+fichiers source_mesx_*.json
+chaque snapshot contient les fichiers texte d’un microservice (chemin, contenu, etc.)
+ça sert de base stable pour parser fonctions et dépendances.
+Donc ce n’est pas un flux temps réel, c’est une capture versionnée au moment de l’extraction.
+
+
+
+Tu as bien fait de creuser: ton cas WI 82637 est logique avec le moteur actuel.
+
+Pourquoi direct MS = 2 mais 0 function:
+
+Le WI est bien lié à des commits réels (j’ai vérifié).
+Les commits directs tombent sur:
+mesx-proto-dependency-management
+mesx-infrastructure
+Les fichiers modifiés sont surtout des .tf (ex: r-ca-picking-materialized-view.tf, r-ca-order-api.tf, etc.).
+La relation TOUCHES_FUNCTION ne se crée que si:
+une Function existe déjà pour ce microservice, et
+le fichier de la function match un fichier modifié du commit.
+Or dans ton graphe actuel:
+mesx-proto-dependency-management a 0 functions
+mesx-infrastructure a 0 functions
+Donc direct_function_count = 0 est normal.
+J’ai aussi vérifié directement dans Neo4j pour les commits de 82637:
+
+tous ont touched_fn = 0 (aucune TOUCHES_FUNCTION).
+Tes captures Azure confirment exactement ça:
+
+changements infra/config (Terraform), pas fonctions applicatives TypeScript/Java “parse-code”.
+Donc:
+
+ce n’est pas inventé,
+ce n’est pas une erreur de calcul,
+c’est une conséquence du modèle actuel “function = code applicatif parsé”.
+
+
+Tu peux le vérifier de façon objective avec 3 preuves:
+
+Dans le repo Azure que tu montres, il y a bien du code JS (/dep-management/*.js) donc “le repo a des fonctions” côté humain.
+Mais notre parser actuel filtre les fichiers fonctionnels avec la règle "/src/" obligatoire dans populate_graph_data.py (line 89).
+Donc pour mesx-proto-dependency-management, les fichiers /dep-management/*.js sont ignorés par design, ce qui explique:
+graph_data["fonctions"] = 0 pour ce MS
+(:Microservice)-[:IMPLEMENTS]->(:Function) = 0
+et donc TOUCHES_FUNCTION = 0 sur ce MS.
+En plus, pour WI 82637, les commits que tu as montrés touchent surtout des .tf (r-ca-picking-materialized-view.tf…), donc même avec fonctions JS, ce ticket reste orienté infra/config.
+
+resource "azapi_resource" ...
+bloc probes.scale.minReplicas
+bloc dapr.appId / appPort
+variables injectées ORDER_API_APP_ID
+ce ne sont pas des “fonctions code” TypeScript/Java, ce sont des unités techniques Terraform qui changent le comportement runtime.
+Pour les testeurs NRT, c’est utile comme “unités touchées infra”.
+commit -> files changed -> touched code functions (si code)
+et pour .tf:
+commit -> touched infra blocks (resource/probe/env var), lisible pour les testeur
+
+On lit toutes les lignes modifiées du commit (hunks).
+On mappe ces lignes aux bornes des fonctions du fichier.
+Si plusieurs fonctions couvrent ces lignes, on retourne toutes.
+Si aucune borne exacte n’est trouvée, on garde un fallback “impact fichier/classe” (pas silencieux).
+
+Contexte projet: D:\agentIA
+Objectif: NRT scope Azure-only (WorkItem -> PR/Commit -> MS -> functions), no heuristics.
+État actuel: Commit Trace pour WI 127835 doit retourner 16 commits; backend/server.py déjà patché.
+Prochaine tâche: [écris ici ce que tu veux faire maintenant]
+
+
+Il raisonne en 4 étapes strictes:
+
+Il prend les commits réels liés au WorkItem.
+Pour chaque commit, il prend les fichiers modifiés + calcule les lignes modifiées.
+Il lit la liste des fonctions du même fichier (avec line_start / line_end).
+Si une ligne modifiée tombe dans l’intervalle d’une fonction, cette fonction est marquée “à retester”.
+
+Mode strict (important)
+Si un commit n’a pas changed_lines, on n’invente pas la fonction.
+On affiche “evidence missing / file-only”, pas de conclusion forcée. toi comment tu peux savoir les fonctions ??
+4:32 PM
+
+Par parsing du code source + bornes de lignes.
+
+Concrètement:
+
+On extrait les fonctions réelles depuis source_mesx_*.json
+nom fonction
+fichier
+line_start / line_end
+Pour chaque fichier touché du commit, on prend changed_lines (diff Azure).
+Match strict:
+si une ligne modifiée est entre line_start et line_end, alors cette fonction est marquée “touchée”.
+Donc je “sais” les fonctions par croisement de 2 preuves réelles:
+
+structure des fonctions dans le code source
+lignes modifiées dans le commit Azure
+Si changed_lines absent, on ne peut pas prouver la fonction exacte -> on met file-only (pas d’invention).
+
+
+
+
+
+4:32 PM
+On extrait les fonctions réelles depuis source_mesx_*.json
+nom fonction
+fichier
+line_start / line_end on le biens fait ca avant extractD:\Python\bin\python.exe .\01_EXTRACTION\step1_azure_extract.py?? 
+4:33 PM
+
+Oui, exactement.
+
+step1_azure_extract.py génère/rafraîchit source_mesx_*.json (code brut Azure).
+Ensuite populate_graph_data.py parse ces fichiers et construit les fonctions avec:
+nom fonction
+fichier
+line_start / line_end
+Donc l’ordre correct est:
+
+step1_azure_extract.py
+populate_graph_data.py
+build_graph_database.py
+server.py
+C’est cet enchaînement qui permet le match strict changed_lines -> fonction touchée.
+
+
+
+
+
+4:33 PM
+et comment tupeux ssavoir le changed line exactes "Pour chaque fichier touché du commit, on prend changed_lines (diff Azure)."
+4:34 PM
+
+
+On le calcule à partir de 2 versions Azure du même fichier:
+
+contenu du fichier au commit_id
+contenu du fichier au parent_commit_id
+Puis on fait un diff ligne par ligne (SequenceMatcher) et on garde les lignes “new” touchées (insert/replace, et ancre pour delete).
+
+Donc changed_lines vient de:
+
+fichiers touchés Azure (API commit changes)
+contenu Azure du fichier à deux commits
+diff algorithmique déterministe
+
+
+
+Très bonne question. Le raisonnement exact est celui-ci, sans heuristique:
+
+On prend les commits liés au WorkItem depuis Azure.
+Pour chaque commit, on lit les fichiers modifiés (fichiers_modifies).
+Pour chaque fichier:
+si c’est code (.ts/.js/.py/...) et qu’on a changed_lines, on mappe lignes -> fonctions (line_start/line_end).
+si c’est infra/config (.tf, _service_versions.json, etc.), on extrait des blocs/keys infra (pas des fonctions code).
+Pourquoi tu obtiens “aucune fonction code détectée”:
+
+Tes commits de ce WI touchent surtout mesx-infrastructure (r-ca-*.tf, _service_versions.json).
+Ces fichiers ne contiennent pas de fonctions métier code, donc résultat strict = 0 fonction.
+Pourquoi il y a beaucoup de microservices cibles:
+
+_service_versions.json contient beaucoup de clés (key.admin_backend, key.admin_ui, etc.).
+Le moteur mappe ces clés vers des microservices MESX réels.
+Donc sortie = large liste de microservices impactés infra.
+Donc oui, le système a raisonné correctement selon la stratégie stricte:
+preuves commits/fichiers réels Azure, pas d’invention de fonctions quand le commit est infra/config.
+
+Si tu veux, je te fais maintenant un mode d’affichage “testeur”:
+
+masquer les microservices qui viennent seulement de _service_versions.json,
+garder en priorité ceux des fichiers r-ca-*.tf (ex: admin-backend, admin-ui, epart-board-ui),
+et afficher fonctions uniquement quand il y a vrai fichier code + changed_lines.
+
+
+quand il affiche des fonctions ?
+11:32 AM
+
+
+Il affiche des fonctions uniquement si les 3 conditions sont vraies:
+
+Le commit touche un fichier code (.ts/.js/.py/.java/...), pas juste .tf/.json/.yml.
+On a des changed_lines pour ce fichier (diff commit vs parent).
+Ces lignes tombent dans l’intervalle d’une fonction parsée (line_start <= line <= line_end) dans graph_data.json.
+Si une condition manque, alors fonctions cibles = 0 (comportement strict).
+
+quand il affiche des fonctions ?
+11:32 AM
+
+Il affiche des fonctions uniquement si les 3 conditions sont vraies:
+
+Le commit touche un fichier code (.ts/.js/.py/.java/...), pas juste .tf/.json/.yml.
+On a des changed_lines pour ce fichier (diff commit vs parent).
+Ces lignes tombent dans l’intervalle d’une fonction parsée (line_start <= line <= line_end) dans graph_data.json.
+Si une condition manque, alors fonctions cibles = 0 (comportement strict).
+
+
+Pourquoi c’est utile
+
+Le testeur ne reçoit pas un scope brut.
+Il reçoit un scope déjà contrôlé (cohérent, traçable, preuves présentes).
+Gain de temps + réduction des erreurs manuelles.
+Phrase clé pour ton encadrant
+“J’ai industrialisé la génération NRT avec un pipeline local automatisé: extraction, construction du graphe, puis validation automatique basée sur règles symboliques explicites avant consommation par les testeurs.”
+
+Si tu veux, je te rédige une slide “Architecture + Pipeline + Statuts” prête à mettre dans ta soutenance.

@@ -17,6 +17,22 @@
   },
   {
     "microservice": "mesx-ops-troubleshooting-ca",
+    "chemin": "/Dockerfile",
+    "extension": "",
+    "prioritaire": false,
+    "contenu": "FROM acrprdccr001.azurecr.io/library/ubuntu:24.04\n\nCOPY websocat /usr/local/bin/websocat\nCOPY externalscaler.proto /opt/proto/externalscaler.proto\n\nRUN apt update \\\n    && apt install -y \\\n        inetutils-ping \\\n        netcat-traditional \\\n        qperf \\ \n        netperf \\\n        hping3 \\\n        traceroute \\\n        iperf3 \\\n        dnsutils \\\n        curl \\\n        wget \\\n    && chmod a+x /usr/local/bin/websocat \\\n    && GRPCURL_VERSION=$(wget -qO- \"https://api.github.com/repos/fullstorydev/grpcurl/releases/latest\" | grep '\"tag_name\":' | sed -E 's/.*\"v([^\"]+)\".*/\\1/') \\\n    && wget -O grpcurl.tar.gz \"https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_VERSION}/grpcurl_${GRPCURL_VERSION}_linux_x86_64.tar.gz\" \\\n    && tar -xzf grpcurl.tar.gz -C /usr/local/bin \\\n    && chmod +x /usr/local/bin/grpcurl \\\n    && rm grpcurl.tar.gz \\\n    && apt clean \\\n    && rm -rf /var/lib/apt/lists/*\n\nCMD [\"tail\", \"-f\", \"/dev/null\"]\n",
+    "taille": 949
+  },
+  {
+    "microservice": "mesx-ops-troubleshooting-ca",
+    "chemin": "/README.md",
+    "extension": ".md",
+    "prioritaire": false,
+    "contenu": "# Troubleshooting container app image\r\n\r\nThis repo contains a cusom image used for container app environment troubleshooting",
+    "taille": 124
+  },
+  {
+    "microservice": "mesx-ops-troubleshooting-ca",
     "chemin": "/azure-pipelines.yml",
     "extension": ".yml",
     "prioritaire": false,

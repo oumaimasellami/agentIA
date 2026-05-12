@@ -38,6 +38,7 @@ NEO4J_URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 NEO4J_USER = os.getenv("NEO4J_USER", "neo4j")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD", "neo4j2026!")
 STRICT_CODE_ONLY = os.getenv("STRICT_CODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
+STRICT_AZURE_ONLY = os.getenv("STRICT_AZURE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
 GRAPH_DATA_CANDIDATES = [
     REPO_ROOT / "01_EXTRACTION" / "graph_data.json",
     BASE_DIR / "graph_data.json",
@@ -139,6 +140,17 @@ class GraphDatabaseBuilder:
             r for r in broker_data if r.get("type") in {"INGESTION", "DATABASE_INGESTION"}
         ]
 
+        # Strict Azure mode:
+        # - keep only broker/ingestion relations explicitly marked STRICT_SOURCE
+        # - drop legacy enriched relations lacking strong source evidence
+        if STRICT_AZURE_ONLY:
+            self.message_broker_relations = [
+                r for r in self.message_broker_relations if r.get("evidence_mode") == "STRICT_SOURCE"
+            ]
+            self.ingestion_relations = [
+                r for r in self.ingestion_relations if r.get("evidence_mode") == "STRICT_SOURCE"
+            ]
+
         print(f"Graph data source: {self.graph_data_path}")
         print(f"Microservices: {len(self.microservices)}")
         print(f"Functions: {len(self.functions)}")
@@ -148,6 +160,12 @@ class GraphDatabaseBuilder:
         print(f"Pull requests: {len(self.pull_requests)}")
         print(f"Work items: {len(self.work_items)}")
         print(f"Work item dev links: {len(self.workitem_dev_links)}")
+        if STRICT_AZURE_ONLY:
+            print(
+                "STRICT_AZURE_ONLY: ON "
+                f"(MESSAGE_BROKER={len(self.message_broker_relations)}, "
+                f"INGESTION={len(self.ingestion_relations)} strict-source only)"
+            )
 
     def cleanup_database(self) -> None:
         print("\nCleaning database...")

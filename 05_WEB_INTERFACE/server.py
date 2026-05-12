@@ -52,6 +52,11 @@ NRT_INDIRECT_BUSINESS_ONLY = os.getenv("NRT_INDIRECT_BUSINESS_ONLY", "true").str
     "on",
 }
 BASE_DIR = Path(__file__).parent
+REPO_ROOT = BASE_DIR.parent
+EXTRACTION_DIR = REPO_ROOT / "01_EXTRACTION"
+CODE_FILE_EXTENSIONS = {".ts", ".js", ".java", ".vue", ".tsx", ".jsx", ".py"}
+INFRA_FILE_EXTENSIONS = {".tf", ".bicep"}
+CONFIG_FILE_EXTENSIONS = {".yml", ".yaml", ".json", ".toml", ".ini", ".env", ".xml", ".properties"}
 
 class NRTAnalyzer:
     """Analyze NRT scopes from Neo4j"""
@@ -72,6 +77,13 @@ class NRTAnalyzer:
         # Build an index of UI screens from source files to provide tester-friendly output
         self.ui_screen_index = self._build_ui_screen_index()
         print(f"[OK] Indexed UI screens for {len(self.ui_screen_index)} microservices")
+        self.commits_index = self._load_commits_index()
+        self.function_index_by_ms_file = self._load_function_index()
+        self.known_microservices = self._load_known_microservices()
+        self.source_snapshot_cache = {}
+        print(f"[OK] Loaded commit index: {len(self.commits_index)} commits")
+        print(f"[OK] Loaded function file index: {len(self.function_index_by_ms_file)} keys")
+        print(f"[OK] Loaded known microservices: {len(self.known_microservices)}")
     
     def _load_workitems(self):
         """Load WorkItems from JSON file with parent-child relationships"""
@@ -90,6 +102,1155 @@ class NRTAnalyzer:
         except Exception as e:
             print(f"[WARN] Could not load WorkItems JSON: {e}")
             return {}
+
+    @staticmethod
+    def _normalize_repo_path(path_value):
+        path = str(path_value or "").replace("\\", "/").strip()
+        if not path:
+            return ""
+        if not path.startswith("/"):
+            path = "/" + path
+        while "//" in path:
+            path = path.replace("//", "/")
+        return path
+
+    def _load_commits_index(self):
+        try:
+            path = EXTRACTION_DIR / "commits.json"
+            with path.open("r", encoding="utf-8") as f:
+                commits = json.load(f)
+            index = {}
+            for c in commits or []:
+                cid = c.get("commit_id")
+                if cid:
+                    index[cid] = c
+            return index
+        except Exception as e:
+            print(f"[WARN] Could not load commits index: {e}")
+            return {}
+
+    def _load_function_index(self):
+        try:
+            path = EXTRACTION_DIR / "graph_data.json"
+            with path.open("r", encoding="utf-8") as f:
+                graph_data = json.load(f)
+            out = {}
+            for fn in graph_data.get("fonctions", []) or []:
+                ms = fn.get("microservice")
+                file_path = self._normalize_repo_path(fn.get("fichier"))
+                fn_id = fn.get("id")
+                if not ms or not file_path or not fn_id:
+                    continue
+                # Keep only real code files in function index to avoid false positives
+                # from config/package files.
+                if Path(file_path).suffix.lower() not in CODE_FILE_EXTENSIONS:
+                    continue
+                key = (ms, file_path)
+                out.setdefault(key, []).append({
+                    "id": fn_id,
+                    "name": fn.get("nom") or fn.get("name") or fn.get("classe") or fn_id,
+                    "type": fn.get("type") or "",
+                    "http_method": fn.get("http_method") or "",
+                    "path": fn.get("path") or "",
+                    "line_start": int(fn.get("line_start") or 0),
+                    "line_end": int(fn.get("line_end") or 0),
+                })
+            return out
+        except Exception as e:
+            print(f"[WARN] Could not load function index: {e}")
+            return {}
+
+    def _load_known_microservices(self):
+        names = set()
+        try:
+            path = EXTRACTION_DIR / "microservices.json"
+            with path.open("r", encoding="utf-8") as f:
+                repos = json.load(f)
+            for repo in repos or []:
+                name = str(repo.get("name", "")).strip()
+                if name:
+                    names.add(name)
+        except Exception:
+            pass
+        if not names:
+            for c in self.commits_index.values():
+                ms = str(c.get("microservice", "")).strip()
+                if ms:
+                    names.add(ms)
+        return names
+
+    def _load_source_snapshot_for_microservice(self, microservice):
+        if microservice in self.source_snapshot_cache:
+            return self.source_snapshot_cache[microservice]
+        try:
+            file_name = f"source_{microservice.replace('-', '_')}.json"
+            path = REPO_ROOT / file_name
+            with path.open("r", encoding="utf-8") as f:
+                entries = json.load(f)
+            index = {}
+            for entry in entries or []:
+                p = self._normalize_repo_path(entry.get("chemin"))
+                content = entry.get("contenu")
+                if p and isinstance(content, str):
+                    index[p] = content
+            self.source_snapshot_cache[microservice] = index
+            return index
+        except Exception:
+            self.source_snapshot_cache[microservice] = {}
+            return {}
+
+    def _get_source_file_content(self, microservice, file_path):
+        if not microservice or not file_path:
+            return ""
+        index = self._load_source_snapshot_for_microservice(microservice)
+        return index.get(self._normalize_repo_path(file_path), "")
+
+    @staticmethod
+    def _extract_changed_lines(change_item):
+        if not isinstance(change_item, dict):
+            return []
+        raw = (
+            change_item.get("changed_lines")
+            or change_item.get("changed_new_lines")
+            or change_item.get("touched_lines")
+            or []
+        )
+        if not isinstance(raw, list):
+            return []
+        lines = []
+        for value in raw:
+            try:
+                line = int(value)
+            except (TypeError, ValueError):
+                continue
+            if line > 0:
+                lines.append(line)
+        return sorted(set(lines))
+
+    @staticmethod
+    def _filter_functions_by_changed_lines(functions, changed_lines):
+        if not functions:
+            return []
+        if not changed_lines:
+            return list(functions)
+
+        out = []
+        for fn in functions:
+            start = int(fn.get("line_start") or 0)
+            end = int(fn.get("line_end") or 0)
+            if start <= 0 or end <= 0 or end < start:
+                continue
+            if any(start <= line <= end for line in changed_lines):
+                out.append(fn)
+        return out
+
+    def _extract_infra_blocks_from_content(self, file_path, content):
+        if not isinstance(content, str) or not content.strip():
+            return []
+        ext = Path(file_path).suffix.lower()
+        blocks = []
+
+        if ext == ".tf":
+            for m in re.finditer(r'^\s*resource\s+"([^"]+)"\s+"([^"]+)"', content, flags=re.MULTILINE):
+                blocks.append(f'resource.{m.group(1)}.{m.group(2)}')
+            for m in re.finditer(r'^\s*module\s+"([^"]+)"', content, flags=re.MULTILINE):
+                blocks.append(f'module.{m.group(1)}')
+            for m in re.finditer(r'^\s*variable\s+"([^"]+)"', content, flags=re.MULTILINE):
+                blocks.append(f'variable.{m.group(1)}')
+            if re.search(r'^\s*locals\s*\{', content, flags=re.MULTILINE):
+                blocks.append("locals")
+            for m in re.finditer(r'^\s*output\s+"([^"]+)"', content, flags=re.MULTILINE):
+                blocks.append(f'output.{m.group(1)}')
+            for m in re.finditer(r'\b(minReplicas|maxReplicas|appId|appPort|targetPort|ingress|dapr)\b', content):
+                blocks.append(f"signal.{m.group(1)}")
+            for m in re.finditer(r'name\s*=\s*"([A-Z0-9_]+)"', content):
+                blocks.append(f'envvar.{m.group(1)}')
+        elif ext in {".yml", ".yaml"}:
+            for m in re.finditer(r'^\s*([A-Za-z0-9_.-]+)\s*:', content, flags=re.MULTILINE):
+                blocks.append(f'key.{m.group(1)}')
+        elif ext == ".json":
+            try:
+                parsed = json.loads(content)
+                if isinstance(parsed, dict):
+                    for key in parsed.keys():
+                        blocks.append(f'key.{key}')
+            except Exception:
+                pass
+
+        dedup = []
+        seen = set()
+        for b in blocks:
+            if b not in seen:
+                seen.add(b)
+                dedup.append(b)
+        return dedup[:40]
+
+    @staticmethod
+    def _normalize_service_token(token):
+        raw = str(token or "").strip().lower().replace("_", "-")
+        if not raw:
+            return ""
+        for prefix in ("key-", "app-id-", "state-store-name-", "topic-", "topics-"):
+            if raw.startswith(prefix):
+                raw = raw[len(prefix):]
+        raw = re.sub(r"[^a-z0-9-]", "", raw)
+        return raw.strip("-")
+
+    def _resolve_target_microservices(self, commit_ms, file_path, infra_blocks, changed_lines=None):
+        targets = set()
+        known = self.known_microservices or set()
+        if commit_ms:
+            targets.add(commit_ms)
+
+        # 1) File-name evidence (infra files like r-ca-admin-ui.tf)
+        base = Path(file_path or "").name.lower()
+        file_tokens = []
+        m = re.match(r"r-ca-([a-z0-9_-]+)\.tf$", base)
+        if m:
+            file_tokens.append(m.group(1))
+        m2 = re.match(r"r-([a-z0-9_-]+)\.tf$", base)
+        if m2:
+            file_tokens.append(m2.group(1))
+
+        # 2) Block evidence (key.admin_ui, envvar.APP_ID_ADMIN_UI, resource.*.ca_admin_ui)
+        # Strict guard: very broad config maps should not fan-out targets without line evidence.
+        if base == "_service_versions.json" and not (changed_lines or []):
+            return sorted(targets)
+
+        block_tokens = []
+        for block in infra_blocks or []:
+            b = str(block or "")
+            if b.startswith("key."):
+                block_tokens.append(b.split(".", 1)[1])
+            elif b.startswith("envvar."):
+                block_tokens.append(b.split(".", 1)[1])
+            elif b.startswith("resource."):
+                parts = b.split(".")
+                if len(parts) >= 3:
+                    block_tokens.append(parts[2])
+
+        for token in file_tokens + block_tokens:
+            norm = self._normalize_service_token(token)
+            if not norm:
+                continue
+            candidates = [norm] if norm.startswith("mesx-") else [f"mesx-{norm}"]
+            for candidate in candidates:
+                if candidate in known:
+                    targets.add(candidate)
+
+        return sorted(targets)
+
+    def _extract_code_symbols_from_content(self, file_path, content):
+        if not isinstance(content, str) or not content.strip():
+            return []
+        ext = Path(file_path).suffix.lower()
+        symbols = []
+
+        if ext == ".vue":
+            script_blocks = re.findall(r"<script\b[^>]*>(.*?)</script>", content, flags=re.IGNORECASE | re.DOTALL)
+            content = "\n".join(script_blocks) if script_blocks else content
+            ext = ".ts"
+
+        if ext in {".ts", ".js", ".tsx", ".jsx"}:
+            patterns = [
+                r"(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_]\w*)\s*\(",
+                r"(?:export\s+)?(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*(?:async\s*)?\([^)]*\)\s*=>",
+                r"^\s*(?:public|private|protected)?\s*(?:static\s+)?(?:async\s+)?([A-Za-z_]\w*)\s*\([^)]*\)\s*\{",
+            ]
+            for pat in patterns:
+                symbols.extend(re.findall(pat, content, flags=re.MULTILINE))
+        elif ext == ".java":
+            symbols.extend(re.findall(r"(?:public|protected)\s+(?:static\s+)?(?:final\s+)?[\w<>\[\],\s]+\s+([A-Za-z_]\w*)\s*\(", content, flags=re.MULTILINE))
+
+        blacklist = {"if", "for", "while", "switch", "catch", "constructor", "return", "else", "try"}
+        dedup = []
+        seen = set()
+        for s in symbols:
+            if not s:
+                continue
+            n = s.strip()
+            if not n or n.lower() in blacklist:
+                continue
+            if n not in seen:
+                seen.add(n)
+                dedup.append(n)
+        return dedup[:30]
+
+    def _classify_file_type(self, file_path):
+        ext = Path(file_path).suffix.lower()
+        if ext in CODE_FILE_EXTENSIONS:
+            return "code"
+        if ext in INFRA_FILE_EXTENSIONS:
+            return "infra"
+        if ext in CONFIG_FILE_EXTENSIONS:
+            return "config"
+        return "other"
+
+    def _get_workitem_scope_commits(self, workitem_id):
+        if not self.driver:
+            return []
+        with self.driver.session() as session:
+            result = session.run("""
+            MATCH (wi:WorkItem {id: $wi_id})
+            OPTIONAL MATCH (wi)-[:LINKED_TO_COMMIT]->(c_direct:Commit)
+            OPTIONAL MATCH (wi)-[:LINKED_TO_PULL_REQUEST]->(:PullRequest)-[:CONTAINS_COMMIT]->(c_pr:Commit)
+            WITH COLLECT(DISTINCT c_direct) + COLLECT(DISTINCT c_pr) as commits
+            UNWIND commits as c
+            WITH DISTINCT c
+            WHERE c IS NOT NULL
+            OPTIONAL MATCH (c)-[:MODIFIES]->(ms:Microservice)
+            RETURN c.commit_id as commit_id,
+                   c.auteur as author,
+                   c.date as date,
+                   c.message as message,
+                   COLLECT(DISTINCT ms.name) as modified_microservices
+            ORDER BY c.date DESC
+            """, wi_id=workitem_id)
+            rows = []
+            for r in result:
+                cid = r.get("commit_id")
+                if cid:
+                    rows.append({
+                        "commit_id": cid,
+                        "author": r.get("author") or "",
+                        "date": r.get("date") or "",
+                        "message": r.get("message") or "",
+                        "modified_microservices": [m for m in (r.get("modified_microservices") or []) if m],
+                    })
+            return rows
+
+    def _build_commit_trace_for_workitem(self, workitem_id):
+        trace_rows = []
+        commit_rows = self._get_workitem_scope_commits(workitem_id)
+        for row in commit_rows:
+            commit_id = row.get("commit_id")
+            commit_record = self.commits_index.get(commit_id, {})
+            commit_ms = commit_record.get("microservice") or (row.get("modified_microservices") or [None])[0]
+            changed_files = []
+
+            for item in commit_record.get("fichiers_modifies", []) or []:
+                file_path = self._normalize_repo_path(item.get("fichier"))
+                if not file_path:
+                    continue
+                file_type = self._classify_file_type(file_path)
+                file_functions = list(self.function_index_by_ms_file.get((commit_ms, file_path), []))
+                changed_lines = self._extract_changed_lines(item)
+                line_mode = "line_diff" if changed_lines else "no_line_evidence"
+                if file_type == "code":
+                    functions = self._filter_functions_by_changed_lines(file_functions, changed_lines)
+                    # Strict mode: do not claim touched code functions without changed line evidence.
+                    if not changed_lines:
+                        functions = []
+                else:
+                    functions = []
+                content = self._get_source_file_content(commit_ms, file_path)
+                code_symbols = self._extract_code_symbols_from_content(file_path, content)
+                infra_blocks = self._extract_infra_blocks_from_content(file_path, content)
+                target_microservices = self._resolve_target_microservices(
+                    commit_ms, file_path, infra_blocks, changed_lines=changed_lines
+                )
+                changed_files.append({
+                    "path": file_path,
+                    "action": item.get("action") or "edit",
+                    "type": file_type,
+                    "line_match_mode": line_mode,
+                    "changed_lines": changed_lines,
+                    "changed_lines_count": len(changed_lines),
+                    "all_file_functions_count": len(file_functions),
+                    "all_file_functions": file_functions,
+                    "touched_functions": functions,
+                    "touched_function_count": len(functions),
+                    "touched_code_symbols": code_symbols,
+                    "touched_code_symbol_count": len(code_symbols),
+                    "touched_infra_blocks": infra_blocks,
+                    "touched_infra_block_count": len(infra_blocks),
+                    "target_microservices": target_microservices,
+                    "target_microservice_count": len(target_microservices),
+                })
+
+            target_ms = set()
+            target_functions = set()
+            for f in changed_files:
+                for ms in f.get("target_microservices", []) or []:
+                    target_ms.add(ms)
+                for fn in f.get("touched_functions", []) or []:
+                    fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                    if fn_id:
+                        target_functions.add(f"{commit_ms}::{fn_id}" if commit_ms else fn_id)
+
+            trace_rows.append({
+                "commit_id": commit_id,
+                "author": row.get("author") or commit_record.get("auteur") or "",
+                "date": row.get("date") or commit_record.get("date") or "",
+                "message": row.get("message") or commit_record.get("message") or "",
+                "microservice": commit_ms or "",
+                "modified_microservices": row.get("modified_microservices") or [],
+                "files_changed_count": len(changed_files),
+                "files": changed_files,
+                "target_microservices": sorted(target_ms),
+                "target_microservice_count": len(target_ms),
+                "target_functions": sorted(target_functions),
+                "target_function_count": len(target_functions),
+                "direct_touched_functions_count": sum(f.get("touched_function_count", 0) for f in changed_files),
+                "direct_touched_code_symbols_count": sum(f.get("touched_code_symbol_count", 0) for f in changed_files),
+                "direct_touched_infra_blocks_count": sum(f.get("touched_infra_block_count", 0) for f in changed_files),
+            })
+        return trace_rows
+
+    def _build_direct_retest_from_commit_trace(self, commit_trace):
+        by_ms = {}
+        for commit in commit_trace or []:
+            ms_name = (commit.get("microservice") or "").strip()
+            if not ms_name:
+                continue
+            ms_entry = by_ms.setdefault(
+                ms_name,
+                {
+                    "microservice": ms_name,
+                    "commit_ids": set(),
+                    "files": set(),
+                    "code_functions": {},
+                    "code_symbols": set(),
+                    "infra_blocks": set(),
+                },
+            )
+            if commit.get("commit_id"):
+                ms_entry["commit_ids"].add(commit["commit_id"])
+            for file_entry in commit.get("files", []) or []:
+                path = file_entry.get("path") or ""
+                if path:
+                    ms_entry["files"].add(path)
+                for fn in file_entry.get("touched_functions", []) or []:
+                    fn_id = fn.get("id")
+                    if not fn_id:
+                        continue
+                    ms_entry["code_functions"][fn_id] = {
+                        "id": fn_id,
+                        "name": fn.get("name") or fn_id,
+                        "line_start": int(fn.get("line_start") or 0),
+                        "line_end": int(fn.get("line_end") or 0),
+                    }
+                for symbol in file_entry.get("touched_code_symbols", []) or []:
+                    if symbol:
+                        ms_entry["code_symbols"].add(str(symbol))
+                for block in file_entry.get("touched_infra_blocks", []) or []:
+                    if block:
+                        ms_entry["infra_blocks"].add(str(block))
+
+        out = []
+        for ms_name in sorted(by_ms.keys()):
+            item = by_ms[ms_name]
+            code_functions = sorted(item["code_functions"].values(), key=lambda x: x.get("id", ""))
+            out.append(
+                {
+                    "microservice": ms_name,
+                    "commit_count": len(item["commit_ids"]),
+                    "files_count": len(item["files"]),
+                    "code_functions": code_functions,
+                    "code_function_count": len(code_functions),
+                    "code_symbols": sorted(item["code_symbols"]),
+                    "code_symbol_count": len(item["code_symbols"]),
+                    "infra_blocks": sorted(item["infra_blocks"]),
+                    "infra_block_count": len(item["infra_blocks"]),
+                }
+            )
+        return out
+
+    def _build_target_retest_from_commit_trace(self, commit_trace):
+        by_target = {}
+        for commit in commit_trace or []:
+            commit_id = (commit.get("commit_id") or "").strip()
+            commit_message = str(commit.get("message") or "").strip()
+            for file_entry in commit.get("files", []) or []:
+                path = (file_entry.get("path") or "").strip()
+                touched_functions = file_entry.get("touched_functions", []) or []
+                touched_infra_blocks = file_entry.get("touched_infra_blocks", []) or []
+                for target_ms in file_entry.get("target_microservices", []) or []:
+                    if not target_ms:
+                        continue
+                    entry = by_target.setdefault(
+                        target_ms,
+                        {
+                            "microservice": target_ms,
+                            "commit_ids": set(),
+                            "files": set(),
+                            "target_functions": {},
+                            "code_files": set(),
+                            "code_files_without_lines": set(),
+                            "infra_blocks": set(),
+                            "commit_messages": set(),
+                        },
+                    )
+                    if commit_id:
+                        entry["commit_ids"].add(commit_id)
+                    if commit_message:
+                        entry["commit_messages"].add(commit_message)
+                    if path:
+                        entry["files"].add(path)
+                    if (file_entry.get("type") or "").strip().lower() == "code":
+                        entry["code_files"].add(path)
+                        if not (file_entry.get("changed_lines") or []):
+                            entry["code_files_without_lines"].add(path)
+                    # File-level code evidence: only for real code files.
+                    if (file_entry.get("type") or "").strip().lower() == "code":
+                        for fn in file_entry.get("all_file_functions", []) or []:
+                            fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                            if not fn_id:
+                                continue
+                            fn_entry = entry["target_functions"].setdefault(
+                                fn_id,
+                                {
+                                    "id": fn_id,
+                                    "name": fn.get("name") or fn_id,
+                                    "line_start": int(fn.get("line_start") or 0),
+                                    "line_end": int(fn.get("line_end") or 0),
+                                    "_evidence_commits": set(),
+                                    "_evidence_files": set(),
+                                    "_evidence_lines": set(),
+                                },
+                            )
+                            if commit_id:
+                                fn_entry["_evidence_commits"].add(commit_id)
+                            if path:
+                                fn_entry["_evidence_files"].add(path)
+                    for fn in touched_functions:
+                        fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                        if not fn_id:
+                            continue
+                        fn_entry = entry["target_functions"].setdefault(
+                            fn_id,
+                            {
+                                "id": fn_id,
+                                "name": fn.get("name") or fn_id,
+                                "line_start": int(fn.get("line_start") or 0),
+                                "line_end": int(fn.get("line_end") or 0),
+                                "_evidence_commits": set(),
+                                "_evidence_files": set(),
+                                "_evidence_lines": set(),
+                            },
+                        )
+                        if commit_id:
+                            fn_entry["_evidence_commits"].add(commit_id)
+                        if path:
+                            fn_entry["_evidence_files"].add(path)
+                        for ln in file_entry.get("changed_lines", []) or []:
+                            try:
+                                iln = int(ln)
+                            except (TypeError, ValueError):
+                                continue
+                            if iln > 0:
+                                fn_entry["_evidence_lines"].add(iln)
+                    for block in touched_infra_blocks:
+                        if block:
+                            entry["infra_blocks"].add(str(block))
+
+        out = []
+        for ms_name in sorted(by_target.keys()):
+            item = by_target[ms_name]
+            fn_values = []
+            for raw_fn in item["target_functions"].values():
+                norm = dict(raw_fn)
+                norm["_evidence_commits"] = sorted(raw_fn.get("_evidence_commits", set()))
+                norm["_evidence_files"] = sorted(raw_fn.get("_evidence_files", set()))
+                norm["_evidence_lines"] = sorted(raw_fn.get("_evidence_lines", set()))
+                fn_values.append(norm)
+            fn_values = sorted(fn_values, key=lambda x: x.get("id", ""))
+            retest_items = self._build_retest_items_for_target(
+                microservice=ms_name,
+                files=sorted(item["files"]),
+                commit_ids=sorted(item["commit_ids"]),
+                commit_messages=sorted(item["commit_messages"]),
+                target_functions=fn_values,
+                infra_blocks=sorted(item["infra_blocks"]),
+            )
+            proven_line_count = sum(1 for r in retest_items if r.get("evidence_level") == "TOUCHEE_PROUVEE_LIGNE")
+            potential_count = sum(1 for r in retest_items if r.get("evidence_level") == "IMPACT_POTENTIEL_CANDIDATE")
+            infra_count = sum(1 for r in retest_items if r.get("evidence_level") == "INFRA_PREUVE_FICHIER")
+            top_priority = min([int(r.get("priority_order", 99)) for r in retest_items], default=99)
+            out.append(
+                {
+                    "microservice": ms_name,
+                    "commit_count": len(item["commit_ids"]),
+                    "files_count": len(item["files"]),
+                    "commit_ids": sorted(item["commit_ids"]),
+                    "commit_messages": sorted(item["commit_messages"]),
+                    "files": sorted(item["files"]),
+                    "target_functions": fn_values,
+                    "target_function_count": len(fn_values),
+                    "code_files_count": len(item["code_files"]),
+                    "code_files_without_lines_count": len(item["code_files_without_lines"]),
+                    "has_code_without_line_evidence": len(item["code_files_without_lines"]) > 0,
+                    "infra_blocks": sorted(item["infra_blocks"]),
+                    "infra_block_count": len(item["infra_blocks"]),
+                    "proven_line_count": proven_line_count,
+                    "potential_candidate_count": potential_count,
+                    "infra_retest_count": infra_count,
+                    "top_priority_order": top_priority,
+                    "retest_items": retest_items,
+                }
+            )
+        out.sort(
+            key=lambda x: (
+                int(x.get("top_priority_order", 99)),
+                -int(x.get("proven_line_count", 0)),
+                -int(x.get("potential_candidate_count", 0)),
+                str(x.get("microservice", "")),
+            )
+        )
+        return out
+
+    def _describe_function_from_source(self, microservice, file_path, fn, changed_lines):
+        content = self._get_source_file_content(microservice, file_path)
+        if not content:
+            return "Fonction impactée dans ce fichier (source snapshot indisponible pour description fine)."
+        lines = content.splitlines()
+        start = int(fn.get("line_start") or 0)
+        end = int(fn.get("line_end") or 0)
+        if start <= 0 or end <= 0 or end < start:
+            return "Fonction impactée (bornes ligne invalides)."
+
+        zone_start = max(1, start - 4)
+        zone_end = min(len(lines), end + 6)
+        zone_lines = lines[zone_start - 1:zone_end]
+        zone_text = "\n".join(zone_lines)
+
+        route_match = re.search(r'@(Get|Post|Put|Patch|Delete)\(([^)]*)\)', zone_text)
+        api_part = ""
+        if route_match:
+            method = route_match.group(1).upper()
+            route = route_match.group(2).strip().strip("'\"")
+            api_part = f"Endpoint {method} {route or '(route non littérale)'}."
+
+        service_call = ""
+        svc_match = re.search(r'\bthis\.(\w+)\.(\w+)\s*\(', zone_text)
+        if svc_match:
+            service_call = f" Appelle {svc_match.group(1)}.{svc_match.group(2)}(...)."
+
+        data_contract = ""
+        dto_match = re.search(r'Api(?:Ok|Created|Response)\w*\([^)]*type\s*:\s*([A-Za-z_]\w*)', zone_text)
+        if dto_match:
+            data_contract = f" Réponse typée via {dto_match.group(1)}."
+
+        # Source-based functional hints from real code body (not commit message heuristics).
+        behavior_parts = []
+        lower_zone = zone_text.lower()
+        if "localstorage" in lower_zone:
+            behavior_parts.append("Gère la persistance locale des données utilisateur.")
+        if "filter" in lower_zone or "search" in lower_zone:
+            behavior_parts.append("Gère la logique de filtre/recherche.")
+        if "modal" in lower_zone or "dialog" in lower_zone:
+            behavior_parts.append("Pilote l'ouverture/fermeture d'une fenêtre de dialogue.")
+        if "delete" in lower_zone or "remove" in lower_zone:
+            behavior_parts.append("Prend en charge la suppression d'éléments.")
+        if "save" in lower_zone or "persist" in lower_zone:
+            behavior_parts.append("Prend en charge l'enregistrement des modifications.")
+        if "add" in lower_zone or "create" in lower_zone:
+            behavior_parts.append("Prend en charge l'ajout/création d'éléments.")
+        if "dispatch(" in lower_zone or "commit(" in lower_zone:
+            behavior_parts.append("Met à jour l'état applicatif.")
+        if "axios" in lower_zone or "fetch(" in lower_zone or ".get(" in lower_zone or ".post(" in lower_zone:
+            behavior_parts.append("Déclenche un appel API.")
+
+        line_part = f"Lignes changées: {', '.join(map(str, changed_lines[:8]))}" if changed_lines else "Lignes changées non disponibles."
+        behavior_part = " ".join(behavior_parts[:2]).strip()
+        description = " ".join([p for p in [api_part, service_call, data_contract, behavior_part, line_part] if p]).strip()
+        return description or "Fonction impactée par les lignes modifiées."
+
+    @staticmethod
+    def _extract_first_quoted_v2(value):
+        if not isinstance(value, str):
+            return ""
+        m = re.search(r"""['"]([^'"]+)['"]""", value)
+        return m.group(1).strip() if m else ""
+
+    @staticmethod
+    def _extract_swagger_field_v2(block, field):
+        if not isinstance(block, str):
+            return ""
+        m = re.search(rf"{field}\s*:\s*['\"]([^'\"]+)['\"]", block, flags=re.IGNORECASE)
+        return m.group(1).strip() if m else ""
+
+    @staticmethod
+    def _extract_controller_prefix_v2(content):
+        if not isinstance(content, str):
+            return ""
+        m = re.search(r"@Controller\s*\(([^)]*)\)", content, flags=re.IGNORECASE | re.MULTILINE)
+        if not m:
+            return ""
+        return NRTAnalyzer._extract_first_quoted_v2(m.group(1))
+
+    @staticmethod
+    def _derive_behavior_from_fn_v2(function_id, zone_text):
+        text = f"{function_id} {zone_text}".lower()
+        hints = []
+        if any(k in text for k in ["click", "onclick", "handleclick"]):
+            hints.append("gere une interaction utilisateur (clic/action)")
+        if any(k in text for k in ["filter", "search", "query"]):
+            hints.append("gere le filtrage/recherche metier")
+        if any(k in text for k in ["modal", "dialog", "popup"]):
+            hints.append("gere l'ouverture/fermeture de modal")
+        if any(k in text for k in ["image", "upload", "file", "blob"]):
+            hints.append("gere des donnees media/fichier")
+        if any(k in text for k in ["transcription", "speech", "voice", "mic", "record"]):
+            hints.append("gere la capture/traitement vocal")
+        if any(k in text for k in ["delete", "remove"]):
+            hints.append("supprime des elements")
+        if any(k in text for k in ["save", "update", "edit", "patch"]):
+            hints.append("met a jour des donnees")
+        if any(k in text for k in ["add", "create", "insert"]):
+            hints.append("cree/ajoute des donnees")
+        if "localstorage" in text:
+            hints.append("synchronise le stockage local")
+        if any(k in text for k in ["axios", "fetch(", ".get(", ".post(", ".put(", ".patch("]):
+            hints.append("declenche un appel API")
+        return ", ".join(hints[:2]) if hints else ""
+
+    @staticmethod
+    def _extract_function_short_name(function_id):
+        raw = str(function_id or "").strip()
+        if not raw:
+            return ""
+        # ms::class::method -> method
+        parts = raw.split("::")
+        return parts[-1].strip() if parts else raw
+
+    @staticmethod
+    def _extract_function_container(function_id):
+        raw = str(function_id or "").strip()
+        parts = raw.split("::")
+        if len(parts) >= 3:
+            return parts[-2].strip()
+        return ""
+
+    def _describe_function_from_source_v2(self, microservice, file_path, fn, changed_lines):
+        content = self._get_source_file_content(microservice, file_path)
+        if not content:
+            return "Fonction impactee (source snapshot indisponible)."
+
+        lines = content.splitlines()
+        start = int(fn.get("line_start") or 0)
+        end = int(fn.get("line_end") or 0)
+        if start <= 0 or end <= 0 or end < start:
+            return "Fonction impactee (bornes de lignes invalides)."
+
+        fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+        fn_name = self._extract_function_short_name(fn_id)
+        fn_container = self._extract_function_container(fn_id)
+        controller_prefix = self._extract_controller_prefix_v2(content)
+        zone_start = max(1, start - 20)
+        zone_end = min(len(lines), end + 20)
+        zone_text = "\n".join(lines[zone_start - 1:zone_end])
+
+        route_match = re.search(r"@(Get|Post|Put|Patch|Delete)\s*\(([^)]*)\)", zone_text, flags=re.IGNORECASE)
+        method = ""
+        route = ""
+        if route_match:
+            method = route_match.group(1).upper()
+            route = self._extract_first_quoted_v2(route_match.group(2))
+
+        api_operation_match = re.search(r"@ApiOperation\s*\(\s*\{(.*?)\}\s*\)", zone_text, flags=re.IGNORECASE | re.DOTALL)
+        api_summary = ""
+        api_description = ""
+        if api_operation_match:
+            op_body = api_operation_match.group(1)
+            api_summary = self._extract_swagger_field_v2(op_body, "summary")
+            api_description = self._extract_swagger_field_v2(op_body, "description")
+
+        response_type = ""
+        dto_match = re.search(r"@Api(?:Ok|Created|Response)\s*\(\s*\{(.*?)\}\s*\)", zone_text, flags=re.IGNORECASE | re.DOTALL)
+        if dto_match:
+            type_match = re.search(r"type\s*:\s*([A-Za-z_][A-Za-z0-9_]*)", dto_match.group(1))
+            if type_match:
+                response_type = type_match.group(1)
+
+        service_call = ""
+        svc_match = re.search(r"\bthis\.(\w+)\.(\w+)\s*\(", zone_text)
+        if svc_match:
+            service_call = f"appelle {svc_match.group(1)}.{svc_match.group(2)}(...)"
+
+        endpoint_part = ""
+        if method:
+            full_route = "/".join([p.strip("/") for p in [controller_prefix, route] if p])
+            full_route = f"/{full_route}" if full_route else "/"
+            endpoint_part = f"Endpoint {method} {full_route}"
+
+        behavior_part = self._derive_behavior_from_fn_v2(fn_name, zone_text)
+        line_part = f"lignes changees: {', '.join(map(str, changed_lines[:8]))}" if changed_lines else "lignes changees non disponibles"
+        swagger_part = api_summary or api_description
+
+        parts = []
+        if fn_name:
+            if fn_container:
+                parts.append(f"Fonction {fn_name} ({fn_container})")
+            else:
+                parts.append(f"Fonction {fn_name}")
+        if endpoint_part:
+            parts.append(endpoint_part)
+        if swagger_part:
+            parts.append(swagger_part)
+        if response_type:
+            parts.append(f"reponse typee {response_type}")
+        if service_call:
+            parts.append(service_call)
+        if behavior_part:
+            parts.append(behavior_part)
+        parts.append(line_part)
+        return " | ".join(parts)
+
+    def _describe_function_test_focus_v2(self, function_id, file_path, function_description):
+        text = f"{function_id} {file_path} {function_description}".lower()
+        checks = []
+        if "endpoint get " in text:
+            checks.append("Verifier chargement nominal + cas vide + erreurs API.")
+        if any(k in text for k in ["endpoint post ", "endpoint put ", "endpoint patch ", "endpoint delete "]):
+            checks.append("Verifier validation input, succes de mutation, et gestion erreur.")
+        if any(k in text for k in ["filter", "search", "query"]):
+            checks.append("Verifier filtres/recherche: criteres, reset, coherence des resultats.")
+        if any(k in text for k in ["modal", "dialog", "popup"]):
+            checks.append("Verifier ouverture/fermeture modal et actions associees.")
+        if any(k in text for k in ["delete", "remove"]):
+            checks.append("Verifier suppression: confirmation, succes, et rollback en erreur.")
+        if any(k in text for k in ["save", "update", "edit", "patch"]):
+            checks.append("Verifier mise a jour: validation, persistence, erreurs.")
+        if any(k in text for k in ["image", "upload", "file", "blob"]):
+            checks.append("Verifier upload/selection fichier-image: format, taille, rendu, erreur.")
+        if any(k in text for k in ["transcription", "voice", "speech", "mic", "record"]):
+            checks.append("Verifier parcours vocal: start/stop, transcription, copie/remarque.")
+        if any(k in text for k in ["modal", "dialog", "popup"]):
+            checks.append("Verifier ouverture/fermeture modal + actions associees.")
+        if "localstorage" in text:
+            checks.append("Verifier persistence locale et rechargement des donnees.")
+        if not checks:
+            checks.append("Verifier le parcours metier principal lie a cette fonction.")
+        return " ".join(checks[:2])
+
+    def _describe_front_impact_v2(self, function_id, file_path, function_description, microservice):
+        text = f"{function_id} {file_path} {function_description} {microservice}".lower()
+        impacts = []
+        if any(k in text for k in ["endpoint post ", "::create", " add", " save", "insert"]):
+            impacts.append("UI ciblee: formulaire de creation/enregistrement (validation des champs, message succes/erreur).")
+        if any(k in text for k in ["endpoint put ", "endpoint patch ", "::update", " edit"]):
+            impacts.append("UI ciblee: parcours de modification (edition, sauvegarde, rafraichissement des donnees).")
+        if any(k in text for k in ["endpoint delete ", "::delete", " remove"]):
+            impacts.append("UI ciblee: suppression (confirmation, succes, annulation, gestion erreur).")
+        if any(k in text for k in ["endpoint get ", "::find", "::list", "fetch", "query"]):
+            impacts.append("UI ciblee: chargement liste/table/cards (nominal, vide, erreur API).")
+        if any(k in text for k in ["filter", "search"]):
+            impacts.append("UI ciblee: filtre/recherche (criteres, reset, coherence du resultat).")
+        if any(k in text for k in ["modal", "dialog", "popup"]):
+            impacts.append("UI ciblee: ouverture/fermeture modal et actions associees.")
+        if any(k in text for k in ["image", "upload", "file", "blob"]):
+            impacts.append("UI ciblee: import/selection fichier-image (format, taille, rendu, erreurs).")
+        if any(k in text for k in ["transcription", "voice", "speech", "mic", "record"]):
+            impacts.append("UI ciblee: parcours vocal (start/stop, transcription, copie vers remarque).")
+        if not impacts:
+            if str(microservice or "").endswith("-ui"):
+                return "UI ciblee: ecran et parcours principal lies a cette fonction."
+            return "UI ciblee: parcours front qui consomme cette API/fonction backend."
+        return " ".join(impacts[:2])
+
+    def _describe_infra_front_impact_v2(self, microservice, infra_desc):
+        ms = str(microservice or "").lower()
+        desc = str(infra_desc or "").lower()
+        if ms.endswith("-ui"):
+            return "UI ciblee: ouverture ecran, chargement initial, navigation et actions critiques apres changement de config/deploiement."
+        if ms.endswith("-backend") or ms.endswith("-api"):
+            if "readiness" in desc or "liveness" in desc or "disponibilite" in desc:
+                return "UI ciblee: verifier disponibilite du parcours front dependant (chargement, appels API, absence d'erreur 5xx)."
+            return "UI ciblee: verifier les parcours front relies a cette API (appel, reponse, message erreur)."
+        return "UI ciblee: verifier le parcours nominal de bout en bout lie a ce microservice."
+
+    @staticmethod
+    def _extract_first_quoted(value):
+        if not isinstance(value, str):
+            return ""
+        m = re.search(r"""['"]([^'"]+)['"]""", value)
+        return m.group(1).strip() if m else ""
+
+    @staticmethod
+    def _extract_swagger_field(block, field):
+        if not isinstance(block, str):
+            return ""
+        m = re.search(rf"{field}\s*:\s*['\"]([^'\"]+)['\"]", block, flags=re.IGNORECASE)
+        return m.group(1).strip() if m else ""
+
+    @staticmethod
+    def _extract_controller_prefix(content):
+        if not isinstance(content, str):
+            return ""
+        m = re.search(r"@Controller\s*\(([^)]*)\)", content, flags=re.IGNORECASE | re.MULTILINE)
+        if not m:
+            return ""
+        return NRTAnalyzer._extract_first_quoted(m.group(1))
+
+    @staticmethod
+    def _derive_behavior_from_fn(function_id, zone_text):
+        text = f"{function_id} {zone_text}".lower()
+        hints = []
+        if any(k in text for k in ["click", "onclick", "handleclick"]):
+            hints.append("gere une interaction utilisateur (clic/action)")
+        if any(k in text for k in ["filter", "search", "query"]):
+            hints.append("gere la logique de filtre/recherche")
+        if any(k in text for k in ["modal", "dialog", "popup"]):
+            hints.append("gere l'ouverture/fermeture de modal")
+        if any(k in text for k in ["image", "upload", "file", "blob"]):
+            hints.append("gere des donnees media/fichier")
+        if any(k in text for k in ["transcription", "speech", "voice", "mic", "record"]):
+            hints.append("gere la capture/traitement vocal")
+        if any(k in text for k in ["delete", "remove"]):
+            hints.append("supprime des elements")
+        if any(k in text for k in ["save", "update", "edit", "patch"]):
+            hints.append("met a jour des donnees")
+        if any(k in text for k in ["add", "create", "insert"]):
+            hints.append("cree/ajoute des donnees")
+        if "localstorage" in text:
+            hints.append("synchronise le stockage local")
+        if any(k in text for k in ["axios", "fetch(", ".get(", ".post(", ".put(", ".patch("]):
+            hints.append("declenche un appel API")
+        return ", ".join(hints[:2]) if hints else ""
+
+    def _describe_function_from_source_v2(self, microservice, file_path, fn, changed_lines):
+        content = self._get_source_file_content(microservice, file_path)
+        if not content:
+            return "Fonction impactee (source snapshot indisponible pour description detaillee)."
+
+        lines = content.splitlines()
+        start = int(fn.get("line_start") or 0)
+        end = int(fn.get("line_end") or 0)
+        if start <= 0 or end <= 0 or end < start:
+            return "Fonction impactee (bornes de lignes invalides)."
+
+        fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+        fn_name = self._extract_function_short_name(fn_id)
+        fn_container = self._extract_function_container(fn_id)
+        controller_prefix = self._extract_controller_prefix(content)
+        zone_start = max(1, start - 20)
+        zone_end = min(len(lines), end + 20)
+        zone_text = "\n".join(lines[zone_start - 1:zone_end])
+
+        route_match = re.search(r"@(Get|Post|Put|Patch|Delete)\s*\(([^)]*)\)", zone_text, flags=re.IGNORECASE)
+        method = ""
+        route = ""
+        if route_match:
+            method = route_match.group(1).upper()
+            route = self._extract_first_quoted(route_match.group(2))
+
+        api_operation_match = re.search(r"@ApiOperation\s*\(\s*\{(.*?)\}\s*\)", zone_text, flags=re.IGNORECASE | re.DOTALL)
+        api_summary = ""
+        api_description = ""
+        if api_operation_match:
+            op_body = api_operation_match.group(1)
+            api_summary = self._extract_swagger_field(op_body, "summary")
+            api_description = self._extract_swagger_field(op_body, "description")
+
+        response_type = ""
+        dto_match = re.search(r"@Api(?:Ok|Created|Response)\s*\(\s*\{(.*?)\}\s*\)", zone_text, flags=re.IGNORECASE | re.DOTALL)
+        if dto_match:
+            type_match = re.search(r"type\s*:\s*([A-Za-z_][A-Za-z0-9_]*)", dto_match.group(1))
+            if type_match:
+                response_type = type_match.group(1)
+
+        service_call = ""
+        svc_match = re.search(r"\bthis\.(\w+)\.(\w+)\s*\(", zone_text)
+        if svc_match:
+            service_call = f"appelle {svc_match.group(1)}.{svc_match.group(2)}(...)"
+
+        endpoint_part = ""
+        if method:
+            full_route = "/".join([p.strip("/") for p in [controller_prefix, route] if p])
+            full_route = f"/{full_route}" if full_route else "/"
+            endpoint_part = f"Endpoint {method} {full_route}"
+
+        behavior_part = self._derive_behavior_from_fn(fn_name, zone_text)
+        line_part = f"lignes changees: {', '.join(map(str, changed_lines[:8]))}" if changed_lines else "lignes changees non disponibles"
+        swagger_part = api_summary or api_description
+
+        parts = []
+        if fn_name:
+            if fn_container:
+                parts.append(f"Fonction {fn_name} ({fn_container})")
+            else:
+                parts.append(f"Fonction {fn_name}")
+        if endpoint_part:
+            parts.append(endpoint_part)
+        if swagger_part:
+            parts.append(swagger_part)
+        if response_type:
+            parts.append(f"reponse typee {response_type}")
+        if service_call:
+            parts.append(service_call)
+        if behavior_part:
+            parts.append(behavior_part)
+        parts.append(line_part)
+        return " | ".join(parts)
+
+    def _build_retest_items_for_target(self, microservice, files, commit_ids, commit_messages, target_functions, infra_blocks):
+        items = []
+        file_hint = ", ".join(files[:2]) if files else ""
+        commit_hint = ", ".join([c[:8] for c in commit_ids[:2]]) if commit_ids else ""
+
+        for fn in target_functions or []:
+            fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+            if not fn_id:
+                continue
+            evidence_files = fn.get("_evidence_files", [])
+            evidence_commits = fn.get("_evidence_commits", [])
+            changed_lines = fn.get("_evidence_lines", [])
+            file_for_desc = evidence_files[0] if evidence_files else ""
+            what = self._describe_function_from_source_v2(
+                microservice=microservice,
+                file_path=file_for_desc,
+                fn=fn,
+                changed_lines=changed_lines,
+            )
+            has_line_evidence = bool(changed_lines)
+            why_text = (
+                "Touchée prouvée (preuve ligne du diff commit)."
+                if has_line_evidence
+                else "Impact potentiel (candidate liée au fichier commit, sans preuve ligne)."
+            )
+            evidence_level = "TOUCHEE_PROUVEE_LIGNE" if has_line_evidence else "IMPACT_POTENTIEL_CANDIDATE"
+            priority_order = 1 if has_line_evidence else 2
+            test_focus = self._describe_function_test_focus_v2(fn_id, file_for_desc, what)
+            front_impact = self._describe_front_impact_v2(fn_id, file_for_desc, what, microservice)
+
+            items.append(
+                {
+                    "type": "CODE-RETEST",
+                    "evidence_level": evidence_level,
+                    "priority_order": priority_order,
+                    "element": fn_id,
+                    "why": why_text,
+                    "description": what,
+                    "impact_front": front_impact,
+                    "what_to_test": test_focus,
+                    "evidence": (
+                        f"commit(s): {', '.join([c[:8] for c in evidence_commits[:4]])} | "
+                        f"file(s): {', '.join(evidence_files[:2])}"
+                    ),
+                }
+            )
+
+        if not target_functions:
+            code_files = [f for f in files if Path(f).suffix.lower() in CODE_FILE_EXTENSIONS]
+            for file_path in code_files[:6]:
+                items.append(
+                    {
+                        "type": "FILE-RETEST",
+                        "evidence_level": "IMPACT_POTENTIEL_CANDIDATE",
+                        "priority_order": 2,
+                        "element": file_path,
+                        "why": "Impact potentiel (fichier code touché, sans preuve ligne->fonction).",
+                        "description": "Impact fichier code confirmé par Azure commit+fichier, sans preuve ligne->fonction.",
+                        "what_to_test": self._describe_file_impact(file_path),
+                        "evidence": f"commit(s): {commit_hint} | file(s): {file_path}",
+                    }
+                )
+
+        infra_candidate_files = [f for f in files if Path(f).suffix.lower() in {".tf", ".hcl", ".yaml", ".yml", ".json"}]
+        if infra_blocks or infra_candidate_files:
+            block_text = ", ".join(infra_blocks[:3]) if infra_blocks else "config/deploiement"
+            infra_desc, infra_test = self._describe_infra_target_plan(
+                microservice=microservice,
+                files=files,
+                infra_blocks=infra_blocks,
+                commit_messages=commit_messages or [],
+            )
+
+            items.append(
+                {
+                    "type": "INFRA-RETEST",
+                    "evidence_level": "INFRA_PREUVE_FICHIER",
+                    "priority_order": 3,
+                    "element": microservice,
+                    "why": f"Blocs infra/config touchés: {block_text}",
+                    "description": infra_desc,
+                    "impact_front": self._describe_infra_front_impact_v2(microservice, infra_desc),
+                    "what_to_test": infra_test,
+                    "evidence": f"commit(s): {commit_hint} | file(s): {file_hint}",
+                }
+            )
+
+        items.sort(
+            key=lambda r: (
+                int(r.get("priority_order", 99)),
+                str(r.get("type", "")),
+                str(r.get("element", "")),
+            )
+        )
+        return items
+
+    @staticmethod
+    def _describe_file_impact(file_path):
+        p = (file_path or "").lower()
+        name = Path(p).name
+        if "store" in p and ("filter" in p or "search" in p):
+            return "Valider le filtrage/recherche: saisie critères, reset, persistance, cohérence des résultats."
+        if "service" in p or name in {"api.ts", "api.js"}:
+            return "Valider les appels API du module: succès, vide, erreur et rendu des données."
+        if "component" in p or name.endswith(".vue"):
+            return "Valider le rendu UI du composant, les interactions et la navigation liée."
+        if "controller" in p:
+            return "Valider les endpoints exposés: payload, codes HTTP et gestion d'erreurs."
+        if "interceptor" in p:
+            return "Valider les traitements transverses (transformations, format/timezone, erreurs)."
+        if "module" in p:
+            return "Valider le parcours fonctionnel principal du module impacté."
+        return "Valider le comportement fonctionnel lié à ce fichier touché (preuve commit+fichier)."
+
+    @staticmethod
+    def _describe_function_test_focus(function_id, file_path):
+        text = f"{function_id} {file_path}".lower()
+        checks = []
+        if any(k in text for k in ["filter", "search", "query"]):
+            checks.append("Vérifier filtres/recherche: critères, reset, cohérence des résultats.")
+        if any(k in text for k in ["modal", "popup", "dialog"]):
+            checks.append("Vérifier ouverture/fermeture de modale et actions associées.")
+        if any(k in text for k in ["delete", "remove"]):
+            checks.append("Vérifier suppression: confirmation, succès, gestion d'erreur.")
+        if any(k in text for k in ["save", "update", "edit", "patch"]):
+            checks.append("Vérifier mise à jour/enregistrement: validation, succès, rollback en erreur.")
+        if any(k in text for k in ["add", "create"]):
+            checks.append("Vérifier création/ajout: contrôles de saisie et insertion en liste/table.")
+        if any(k in text for k in ["auth", "login", "token"]):
+            checks.append("Vérifier authentification/session: accès, refresh token, déconnexion.")
+        if any(k in text for k in ["api", "service", "axios", "fetch", "http"]):
+            checks.append("Vérifier appel API nominal, cas vide, timeout/erreur, affichage.")
+        if any(k in text for k in ["date", "time", "timezone"]):
+            checks.append("Vérifier formats date/heure, timezone et bornes.")
+        if not checks:
+            checks.append("Vérifier le parcours métier lié à cette fonction (entrée, sortie, erreurs).")
+        return " ".join(checks[:2])
+
+    def _describe_infra_target_plan(self, microservice, files, infra_blocks, commit_messages):
+        low_blocks = " ".join([str(x).lower() for x in (infra_blocks or [])])
+        low_msgs = " ".join([str(x).lower() for x in (commit_messages or [])])
+        low_files = " ".join([str(x).lower() for x in (files or [])])
+
+        impact = "Configuration de déploiement du microservice modifiée."
+        if any(k in low_blocks or k in low_msgs for k in ["minreplicas", "maxreplicas", "scale"]):
+            impact = "Risque de disponibilité/élasticité (paramètres scale modifiés)."
+        elif any(k in low_blocks for k in ["probe", "readiness", "liveness"]):
+            impact = "Risque sur readiness/liveness (santé et redémarrage)."
+        elif any(k in low_blocks for k in ["dapr", "appid", "appport"]):
+            impact = "Risque de connectivité service (Dapr/appId/appPort)."
+        elif any(k in low_blocks or k in low_msgs for k in ["env", "variable", "key."]):
+            impact = "Risque de comportement lié aux variables de configuration."
+        elif ".tf" in low_files or ".hcl" in low_files:
+            impact = "Paramètres Terraform modifiés pour ce service."
+
+        if microservice.endswith("-admin-ui") or "admin-ui" in microservice:
+            retest = "Retester accès écran Admin, chargement initial, login/navigation de base et actions critiques UI."
+        elif microservice.endswith("-admin-backend") or "admin-backend" in microservice:
+            retest = "Retester API health/readiness, login API, endpoint Admin principal et gestion des erreurs."
+        elif microservice.endswith("-ui"):
+            retest = "Retester écran principal, chargement initial, navigation et actions critiques UI."
+        elif microservice.endswith("-backend") or microservice.endswith("-api"):
+            retest = "Retester API health/readiness, endpoint principal et gestion des erreurs."
+        else:
+            retest = "Retester disponibilité du service et parcours nominal de bout en bout."
+
+        return impact, retest
 
     def _build_ui_screen_index(self):
         """Build a microservice -> confirmed screens index from UI route metadata."""
@@ -865,6 +2026,18 @@ class NRTAnalyzer:
             empty_scope_diagnostics = self._build_empty_scope_diagnostics(workitem_id) if insufficient_data else {}
             tester_scope = self._build_tester_scope(wi_record, direct_ms, indirect_ms)
             test_plan = self._build_prioritized_test_plan(workitem_id, direct_ms, indirect_ms)
+            commit_trace = self._build_commit_trace_for_workitem(workitem_id)
+            direct_retest_from_commit_trace = self._build_direct_retest_from_commit_trace(commit_trace)
+            target_retest_from_commit_trace = self._build_target_retest_from_commit_trace(commit_trace)
+            commit_trace_function_count = sum(
+                int(c.get("direct_touched_functions_count", 0) or 0) for c in commit_trace
+            )
+            commit_trace_code_symbol_count = sum(
+                int(c.get("direct_touched_code_symbols_count", 0) or 0) for c in commit_trace
+            )
+            commit_trace_infra_count = sum(
+                int(c.get("direct_touched_infra_blocks_count", 0) or 0) for c in commit_trace
+            )
 
             direct_function_ids = set()
             for ms in direct_ms:
@@ -891,6 +2064,12 @@ class NRTAnalyzer:
                     "total_functions_raw": total_functions_raw,
                     "direct_touched_functions": len(direct_function_ids),
                     "indirect_ranked_functions": indirect_ranked_count,
+                    "commit_count": len(commit_trace),
+                    "commit_trace_functions": commit_trace_function_count,
+                    "commit_trace_code_symbols": commit_trace_code_symbol_count,
+                    "commit_trace_infra_blocks": commit_trace_infra_count,
+                    "commit_trace_direct_retest_ms_count": len(direct_retest_from_commit_trace),
+                    "commit_trace_target_retest_ms_count": len(target_retest_from_commit_trace),
                     "commit_evidence_added_ms": commit_evidence_added_ms,
                     "commit_evidence_added_functions": commit_evidence_added_functions,
                     "fallback_source": None,
@@ -901,7 +2080,10 @@ class NRTAnalyzer:
                     "estimated_test_cases": len(direct_ms) + len(indirect_ms) * 2 + total_functions_for_testing
                 },
                 "tester_scope": tester_scope,
-                "test_plan": test_plan
+                "test_plan": test_plan,
+                "commit_trace": commit_trace,
+                "direct_retest_from_commit_trace": direct_retest_from_commit_trace,
+                "target_retest_from_commit_trace": target_retest_from_commit_trace
             }
         except Exception as e:
             return {"error": str(e)}

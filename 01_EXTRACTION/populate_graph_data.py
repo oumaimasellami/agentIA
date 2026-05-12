@@ -21,13 +21,18 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 EXTRACTION_DIR = Path(__file__).resolve().parent
 GRAPH_DATA_PATH = EXTRACTION_DIR / "graph_data.json"
 
-CODE_EXTENSIONS = {".java", ".ts", ".js", ".vue"}
+CODE_EXTENSIONS = {".java", ".ts", ".js", ".vue", ".tsx", ".jsx"}
 EXCLUDED_PATH_TOKENS = (
     "/test/",
     "/tests/",
     ".spec.",
     ".mock.",
     "__tests__",
+    "/node_modules/",
+    "/dist/",
+    "/build/",
+    "/docs/",
+    "/documentation/",
 )
 
 RE_SCRIPT_BLOCK = re.compile(r"<script\b[^>]*>(.*?)</script>", re.IGNORECASE | re.DOTALL)
@@ -90,16 +95,39 @@ def should_parse_file(path: str, ext: str) -> bool:
     low = (path or "").lower()
     if ext not in CODE_EXTENSIONS:
         return False
-    if "/src/" not in low:
-        return False
     return not any(token in low for token in EXCLUDED_PATH_TOKENS)
 
 
-def parse_ts_like(content: str) -> List[Tuple[str, str, str, str]]:
+def line_number_from_offset(content: str, offset: int) -> int:
+    safe_offset = max(0, min(len(content), int(offset)))
+    return content.count("\n", 0, safe_offset) + 1
+
+
+def find_block_end_line(content: str, decl_offset: int, fallback_line: int) -> int:
+    if not content:
+        return fallback_line
+    start = max(0, min(len(content), int(decl_offset)))
+    brace_pos = content.find("{", start)
+    if brace_pos == -1:
+        return fallback_line
+
+    depth = 0
+    for idx in range(brace_pos, len(content)):
+        ch = content[idx]
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return line_number_from_offset(content, idx)
+    return fallback_line
+
+
+def parse_ts_like(content: str, line_offset: int = 0) -> List[Tuple[str, str, str, str, int, int]]:
     """
-    Returns tuples: (name, fn_type, http_method, http_path)
+    Returns tuples: (name, fn_type, http_method, http_path, line_start, line_end)
     """
-    out: List[Tuple[str, str, str, str]] = []
+    out: List[Tuple[str, str, str, str, int, int]] = []
     seen = set()
 
     for m in RE_DECORATOR.finditer(content):
@@ -112,7 +140,10 @@ def parse_ts_like(content: str) -> List[Tuple[str, str, str, str]]:
         if key in seen:
             continue
         seen.add(key)
-        out.append((name, "endpoint", http, route))
+        decl_offset = m.end() + (fn.start() if fn else 0)
+        line_start = line_offset + line_number_from_offset(content, decl_offset)
+        line_end = line_offset + find_block_end_line(content, decl_offset, line_start)
+        out.append((name, "endpoint", http, route, line_start, line_end))
 
     for regex, fn_type in ((RE_TS_FN, "function"), (RE_TS_ARROW, "function"), (RE_TS_METHOD, "method")):
         for m in regex.finditer(content):
@@ -129,12 +160,15 @@ def parse_ts_like(content: str) -> List[Tuple[str, str, str, str]]:
             if key in seen:
                 continue
             seen.add(key)
-            out.append((name, fn_type, "", ""))
+            decl_offset = m.start(1)
+            line_start = line_offset + line_number_from_offset(content, decl_offset)
+            line_end = line_offset + find_block_end_line(content, m.end(), line_start)
+            out.append((name, fn_type, "", "", line_start, line_end))
     return out
 
 
-def parse_java(content: str) -> List[Tuple[str, str, str, str]]:
-    out: List[Tuple[str, str, str, str]] = []
+def parse_java(content: str) -> List[Tuple[str, str, str, str, int, int]]:
+    out: List[Tuple[str, str, str, str, int, int]] = []
     seen = set()
 
     for m in RE_JAVA_MAPPING.finditer(content):
@@ -147,7 +181,10 @@ def parse_java(content: str) -> List[Tuple[str, str, str, str]]:
         if key in seen:
             continue
         seen.add(key)
-        out.append((name, "endpoint", http, route))
+        decl_offset = m.end() + (fn.start() if fn else 0)
+        line_start = line_number_from_offset(content, decl_offset)
+        line_end = find_block_end_line(content, decl_offset, line_start)
+        out.append((name, "endpoint", http, route, line_start, line_end))
 
     for m in RE_JAVA_METHOD.finditer(content):
         name = (m.group(1) or "").strip()
@@ -157,7 +194,10 @@ def parse_java(content: str) -> List[Tuple[str, str, str, str]]:
         if key in seen:
             continue
         seen.add(key)
-        out.append((name, "method", "", ""))
+        decl_offset = m.start(1)
+        line_start = line_number_from_offset(content, decl_offset)
+        line_end = find_block_end_line(content, m.end(), line_start)
+        out.append((name, "method", "", "", line_start, line_end))
 
     return out
 
@@ -174,17 +214,19 @@ def parse_functions_from_entry(entry: Dict[str, str]) -> List[Dict[str, str]]:
     if not should_parse_file(file_path, ext):
         return []
 
-    tuples: List[Tuple[str, str, str, str]] = []
-    if ext in {".ts", ".js"}:
+    tuples: List[Tuple[str, str, str, str, int, int]] = []
+    if ext in {".ts", ".js", ".tsx", ".jsx"}:
         tuples = parse_ts_like(content)
     elif ext == ".vue":
-        for block in RE_SCRIPT_BLOCK.findall(content):
-            tuples.extend(parse_ts_like(block))
+        for block_match in RE_SCRIPT_BLOCK.finditer(content):
+            block = block_match.group(1) or ""
+            block_line_offset = line_number_from_offset(content, block_match.start(1)) - 1
+            tuples.extend(parse_ts_like(block, line_offset=block_line_offset))
     elif ext == ".java":
         tuples = parse_java(content)
 
     results = []
-    for name, fn_type, http_method, http_path in tuples:
+    for name, fn_type, http_method, http_path, line_start, line_end in tuples:
         results.append(
             {
                 "id": stable_function_id(microservice, file_path, name),
@@ -196,6 +238,8 @@ def parse_functions_from_entry(entry: Dict[str, str]) -> List[Dict[str, str]]:
                 "path": http_path,
                 "microservice": microservice,
                 "fichier": file_path,
+                "line_start": int(line_start),
+                "line_end": int(line_end),
                 "description": "parsed_from_source_code",
             }
         )

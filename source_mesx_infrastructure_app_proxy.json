@@ -1,11 +1,35 @@
 [
   {
     "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/order-router.yaml",
+    "extension": ".yaml",
+    "prioritaire": true,
+    "contenu": "http:\r\n  services:\r\n    order-di-r:\r\n      loadBalancer:\r\n        servers:\r\n        - url: '{{ env \"URL_ORDER_DI_ROUTER\" }}'\r\n        passHostHeader: false\r\n  \r\n  routers:\r\n    order-di-r:\r\n      entryPoints:\r\n        - \"web\"\r\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_DI_ROUTER\" }}`)'\r\n      middlewares:\r\n      - url-prefix-strip\r\n      service: order-di-r",
+    "taille": 363
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/.azure-pipelines/policies/sonarqube.yml",
     "extension": ".yml",
     "prioritaire": false,
     "contenu": "name: '$(Date:yyyyMMdd)$(Rev:.r)'\n\n# Use the Azure DevOps pipeline templates\nresources:\n  repositories:\n    - repository: 'pipelines'\n      type: 'git'\n      name: 'Azure/template-pipelines'\n\ntrigger:\n  batch: true\n  branches:\n    include:\n      - develop\n      - master\n      - main\n\nextends:\n  template: \"jobs/megalinter.yml@pipelines\"\n  parameters:\n    megalinter_image_name: oxsecurity/megalinter-formatters\n    megalinter_configuration:\n      - name: DISABLE\n        value: SPELL\n    publish_to_sonarqube: true\n",
     "taille": 516
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/Dockerfile",
+    "extension": "",
+    "prioritaire": false,
+    "contenu": "FROM acrprdccr001.azurecr.io/library/traefik:3.4\n\nCOPY traefik.yaml /etc/traefik/\n\nCOPY dynamic/* /etc/traefik/dynamic/\n\nEXPOSE 3001",
+    "taille": 132
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/README.md",
+    "extension": ".md",
+    "prioritaire": false,
+    "contenu": "# App Proxy\n\nThis microservice is a forward proxy routing incoming http requests to different backend services:\n\n- default  --> ui \n- /api     --> api\n- /datahub --> datahub\n\nThe app proxy is based on [Traefik](https://traefik.io/traefik/)\n",
+    "taille": 240
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
@@ -36,8 +60,8 @@
     "chemin": "/dynamic/alert-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "",
-    "taille": 0
+    "contenu": "http:\n  services:\n    alert-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ALERT_UI\" }}'\n        passHostHeader: false\n  routers:\n    alert-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ALERT_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: alert-ui\n",
+    "taille": 326
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
@@ -177,6 +201,22 @@
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/master-setup-be.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    mstr-set-be:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_MASTER_SETUP_BACKEND\" }}'\n        passHostHeader: false\n  \n  routers:\n    mstr-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: mstr-set-be\n",
+    "taille": 362
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/master-setup-ui.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    mstr-set-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_MASTER_SETUP_UI\" }}'\n        passHostHeader: false\n  \n  routers:\n    mstr-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: mstr-set-ui\n",
+    "taille": 352
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/order-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
@@ -198,14 +238,6 @@
     "prioritaire": false,
     "contenu": "http:\n  services:\n    order-management-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ORDER_MANAGEMENT_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    order-management-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_MANAGEMENT_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: order-management-backend\n",
     "taille": 407
-  },
-  {
-    "microservice": "mesx-infrastructure-app-proxy",
-    "chemin": "/dynamic/order-router.yaml",
-    "extension": ".yaml",
-    "prioritaire": false,
-    "contenu": "http:\r\n  services:\r\n    order-di-r:\r\n      loadBalancer:\r\n        servers:\r\n        - url: '{{ env \"URL_ORDER_DI_ROUTER\" }}'\r\n        passHostHeader: false\r\n  \r\n  routers:\r\n    order-di-r:\r\n      entryPoints:\r\n        - \"web\"\r\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_DI_ROUTER\" }}`)'\r\n      middlewares:\r\n      - url-prefix-strip\r\n      service: order-di-r",
-    "taille": 363
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
@@ -238,6 +270,22 @@
     "prioritaire": false,
     "contenu": "http:\n  services:\n    picking-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PICKING_UI\" }}'\n        passHostHeader: false\n  routers:\n    picking-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: picking-ui\n",
     "taille": 336
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/plant-hierarchy-setup-backend.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    hry-set-be:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_BACKEND\" }}'\n        passHostHeader: false\n  \n  routers:\n    hry-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: hry-set-be\n",
+    "taille": 377
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/plant-hierarchy-setup-ui.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    hry-set-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_UI\" }}'\n        passHostHeader: false\n  \n  routers:\n    hry-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: hry-set-ui\n",
+    "taille": 367
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",

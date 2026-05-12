@@ -9,11 +9,43 @@
   },
   {
     "microservice": "mesx-datahub",
+    "chemin": "/.eslintrc.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n  \"env\": {\n    \"browser\": true,\n    \"jasmine\": true,\n    \"jest\": true,\n    \"node\": true\n  },\n  \"extends\": [\n    \"eslint:recommended\",\n    \"plugin:jsdoc/recommended-typescript\",\n    \"plugin:@stylistic/recommended-extends\",\n    \"plugin:unicorn/recommended\"\n  ],\n  \"noInlineConfig\": true,\n  \"plugins\": [\n    \"@stylistic\",\n    \"eslint-plugin-unicorn\",\n    \"import\",\n    \"jsdoc\",\n    \"sort-class-members\",\n    \"unicorn\"\n  ],\n  \"reportUnusedDisableDirectives\": true,\n  \"root\": true,\n  \"rules\": {\n    \"camelcase\": [\n      \"error\",\n      {\n        \"ignoreDestructuring\": true\n      }\n    ],\n    \"capitalized-comments\": [\n      \"error\",\n      \"always\"\n    ],\n    \"complexity\": [\n      \"error\",\n      {\n        \"max\": 30\n      }\n    ],\n    \"default-case\": \"error\",\n    \"eqeqeq\": [\n      \"error\",\n      \"smart\"\n    ],\n    \"guard-for-in\": \"error\",\n    \"id-match\": \"error\",\n    \"import/no-default-export\": \"error\",\n    \"import/no-deprecated\": \"warn\",\n    \"import/order\": [\n      \"error\",\n      {\n        \"alphabetize\": {\n          \"caseInsensitive\": false,\n          \"order\": \"asc\"\n        }\n      }\n    ],\n    \"max-classes-per-file\": [\n      \"error\",\n      1\n    ],\n    \"max-lines\": [\n      \"warn\",\n      {\n        \"max\": 1000,\n        \"skipBlankLines\": true,\n        \"skipComments\": true\n      }\n    ],\n    \"no-bitwise\": \"error\",\n    \"no-caller\": \"error\",\n    \"no-console\": [\n      \"error\",\n      {\n        \"allow\": [\n          \"dirxml\",\n          \"warn\",\n          \"error\",\n          \"dir\",\n          \"timeLog\",\n          \"assert\",\n          \"clear\",\n          \"count\",\n          \"countReset\",\n          \"group\",\n          \"groupCollapsed\",\n          \"groupEnd\",\n          \"table\",\n          \"Console\",\n          \"markTimeline\",\n          \"profile\",\n          \"profileEnd\",\n          \"timeline\",\n          \"timelineEnd\",\n          \"timeStamp\",\n          \"context\"\n        ]\n      }\n    ],\n    \"no-eval\": \"error\",\n    \"no-extra-bind\": \"error\",\n    \"no-invalid-this\": \"off\",\n    \"no-new-func\": \"error\",\n    \"no-new-wrappers\": \"error\",\n    \"no-param-reassign\": \"error\",\n    \"no-restricted-imports\": [\n      \"error\",\n      {\n        \"paths\": [\n          \"rxjs/Rx\"\n        ],\n        \"patterns\": [\n          \"rxjs/internal/*\"\n        ]\n      }\n    ],\n    \"no-restricted-syntax\": [\n      \"error\",\n      \"ForInStatement\"\n    ],\n    \"no-shadow\": [\n      \"error\",\n      {\n        \"hoist\": \"all\"\n      }\n    ],\n    \"no-template-curly-in-string\": \"error\",\n    \"no-throw-literal\": \"error\",\n    \"no-undef-init\": \"error\",\n    \"no-underscore-dangle\": [\n      \"error\",\n      {\n        \"allowAfterThis\": true\n      }\n    ],\n    \"no-useless-constructor\": \"off\",\n    \"no-var\": \"error\",\n    \"no-void\": \"error\",\n    \"one-var\": [\n      \"error\",\n      \"never\"\n    ],\n    \"prefer-const\": \"error\",\n    \"prefer-object-spread\": \"error\",\n    \"prefer-template\": \"error\",\n    \"radix\": \"error\",\n    \"sort-class-members/sort-class-members\": [\n      2,\n      {\n        \"accessorPairPositioning\": \"getThenSet\",\n        \"order\": [\n          \"[static-properties]\",\n          \"[static-methods]\",\n          \"[properties]\",\n          \"[conventional-private-properties]\",\n          \"constructor\",\n          \"[methods]\",\n          \"[conventional-private-methods]\"\n        ]\n      }\n    ],\n    \"sort-keys\": [\n      \"error\",\n      \"asc\",\n      {\n        \"caseSensitive\": true,\n        \"minKeys\": 2,\n        \"natural\": true\n      }\n    ],\n    \"sort-vars\": \"error\",\n    \"yoda\": \"error\"\n  },\n  \"overrides\": []\n}\n",
+    "taille": 3458
+  },
+  {
+    "microservice": "mesx-datahub",
+    "chemin": "/Dockerfile",
+    "extension": "",
+    "prioritaire": false,
+    "contenu": "FROM acrprdccr001.azurecr.io/docker.io/nodered/node-red:3.1.11\n\nCOPY --from=acrprdfaurecia001.azurecr.io/cloud/azure/ca-certificates:latest /ca-certificates.crt /etc/ssl/certs/ca-certificates.crt\nENV NODE_EXTRA_CA_CERTS=\"/etc/ssl/certs/ca-certificates.crt\"\n\nCOPY package.json .\n\nRUN npm install --unsafe-perm --no-update-notifier --no-fund --omit=dev \\\n    && rm -rf /var/lib/apt/lists/* \n\nCOPY settings.js /\n\nCMD [\"--settings\", \"/settings.js\"]\n",
+    "taille": 445
+  },
+  {
+    "microservice": "mesx-datahub",
+    "chemin": "/README.md",
+    "extension": ".md",
+    "prioritaire": false,
+    "contenu": "# Introduction \n\nCustom Node-RED module for data hub",
+    "taille": 52
+  },
+  {
+    "microservice": "mesx-datahub",
     "chemin": "/azure-pipelines.yml",
     "extension": ".yml",
     "prioritaire": false,
     "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  tags:\n    include:\n    - '*'\n  branches:\n    include:\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\n\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: datahub\n\nstages:\n- stage: Build\n  jobs:\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/datahub\n      npmauth: false\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
     "taille": 945
+  },
+  {
+    "microservice": "mesx-datahub",
+    "chemin": "/package.json",
+    "extension": ".json",
+    "prioritaire": false,
+    "contenu": "{\n    \"name\": \"mesx-datahub\",\n    \"description\": \"Node-RED based datahub for MES X.0\",\n    \"version\": \"0.1.0\",\n    \"engines\": {\n        \"node\": \"^20\"\n    },\n    \"private\": true,\n    \"dependencies\": {\n        \"node-red\": \"^3.1.0\",\n        \"node-red-contrib-dl-azure-event-hub\": \"^1.3.8\",\n        \"node-red-contrib-log4nr\": \"^1.0.3\",\n        \"node-red-contrib-loop\": \"^1.0.1\",\n        \"node-red-contrib-moment\": \"^5.0.0\",\n        \"node-red-cosmos-r2\": \"^1.0.1\"\n    },\n    \"devDependencies\": {\n        \"@stylistic/eslint-plugin\": \"^4.2.0\",\n        \"eslint\": \"^9.26.0\",\n        \"eslint-find-rules\": \"^5.0.0\",\n        \"eslint-plugin-import\": \"^2.31.0\",\n        \"eslint-plugin-jsdoc\": \"^50.6.11\",\n        \"eslint-plugin-sort-class-members\": \"^1.21.0\",\n        \"eslint-plugin-unicorn\": \"^59.0.1\"\n    }\n}\n",
+    "taille": 797
   },
   {
     "microservice": "mesx-datahub",
