@@ -123,7 +123,7 @@ def find_block_end_line(content: str, decl_offset: int, fallback_line: int) -> i
     return fallback_line
 
 
-def parse_ts_like(content: str, line_offset: int = 0) -> List[Tuple[str, str, str, str, int, int]]:
+"def parse_ts_like(content: str, line_offset: int = 0) -> List[Tuple[str, str, str, str, int, int]]:
     """
     Returns tuples: (name, fn_type, http_method, http_path, line_start, line_end)
     """

@@ -11,6 +11,9 @@ import os
 import re
 import string
 import urllib.parse
+import threading
+import subprocess
+import traceback
 from pathlib import Path
 import mimetypes
 from neo4j import GraphDatabase
@@ -54,9 +57,143 @@ NRT_INDIRECT_BUSINESS_ONLY = os.getenv("NRT_INDIRECT_BUSINESS_ONLY", "true").str
 BASE_DIR = Path(__file__).parent
 REPO_ROOT = BASE_DIR.parent
 EXTRACTION_DIR = REPO_ROOT / "01_EXTRACTION"
+PYTHON_BIN = os.getenv("NRT_PYTHON_BIN", r"D:\Python\bin\python.exe")
 CODE_FILE_EXTENSIONS = {".ts", ".js", ".java", ".vue", ".tsx", ".jsx", ".py"}
 INFRA_FILE_EXTENSIONS = {".tf", ".bicep"}
 CONFIG_FILE_EXTENSIONS = {".yml", ".yaml", ".json", ".toml", ".ini", ".env", ".xml", ".properties"}
+
+
+def _env_flag(name: str, default: str = "false") -> bool:
+    return str(os.getenv(name, default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+AZURE_WEBHOOK_TOKEN = str(os.getenv("AZURE_WEBHOOK_TOKEN", "")).strip()
+WEBHOOK_AUTO_REFRESH_ENABLED = _env_flag("WEBHOOK_AUTO_REFRESH_ENABLED", "true")
+WEBHOOK_REFRESH_MODE = str(os.getenv("WEBHOOK_REFRESH_MODE", "backfill")).strip().lower()
+WEBHOOK_INCLUDE_STEP3 = _env_flag("WEBHOOK_INCLUDE_STEP3", "true")
+WEBHOOK_AZURE_INSECURE_TLS = _env_flag("WEBHOOK_AZURE_INSECURE_TLS", os.getenv("AZURE_INSECURE_TLS", "true"))
+WEBHOOK_AZURE_DISABLE_ENV_PROXY = _env_flag("WEBHOOK_AZURE_DISABLE_ENV_PROXY", os.getenv("AZURE_DISABLE_ENV_PROXY", "true"))
+WEBHOOK_AZURE_MAX_WORKERS = str(os.getenv("WEBHOOK_AZURE_MAX_WORKERS", os.getenv("AZURE_MAX_WORKERS", "2"))).strip() or "2"
+WEBHOOK_AZURE_MAX_RETRIES = str(os.getenv("WEBHOOK_AZURE_MAX_RETRIES", os.getenv("AZURE_MAX_RETRIES", "8"))).strip() or "8"
+WEBHOOK_AZURE_REQUEST_DELAY_MS = str(os.getenv("WEBHOOK_AZURE_REQUEST_DELAY_MS", os.getenv("AZURE_REQUEST_DELAY_MS", "250"))).strip() or "250"
+
+WEBHOOK_STATE_LOCK = threading.Lock()
+WEBHOOK_STATE = {
+    "running": False,
+    "last_status": "idle",
+    "last_started_at": None,
+    "last_finished_at": None,
+    "last_trigger": None,
+    "last_event_type": None,
+    "last_error": None,
+    "last_log_tail": [],
+}
+
+
+def _set_webhook_state(**kwargs):
+    with WEBHOOK_STATE_LOCK:
+        WEBHOOK_STATE.update(kwargs)
+
+
+def _snapshot_webhook_state():
+    with WEBHOOK_STATE_LOCK:
+        return dict(WEBHOOK_STATE)
+
+
+def _run_refresh_command(args, env_vars):
+    result = subprocess.run(
+        args,
+        cwd=str(REPO_ROOT),
+        capture_output=True,
+        text=True,
+        env=env_vars,
+        timeout=60 * 60,
+    )
+    out = (result.stdout or "").strip()
+    err = (result.stderr or "").strip()
+    return result.returncode, out, err
+
+
+def _refresh_pipeline_worker(trigger, event_type, payload):
+    _set_webhook_state(
+        running=True,
+        last_status="running",
+        last_started_at=datetime.utcnow().isoformat() + "Z",
+        last_finished_at=None,
+        last_trigger=trigger,
+        last_event_type=event_type,
+        last_error=None,
+        last_log_tail=[],
+    )
+
+    logs = []
+    try:
+        env_vars = os.environ.copy()
+        env_vars["AZURE_EXTRACT_COMMIT_DIFF_LINES"] = "true"
+        env_vars["AZURE_INSECURE_TLS"] = "true" if WEBHOOK_AZURE_INSECURE_TLS else "false"
+        env_vars["AZURE_DISABLE_ENV_PROXY"] = "true" if WEBHOOK_AZURE_DISABLE_ENV_PROXY else "false"
+        env_vars["AZURE_MAX_WORKERS"] = WEBHOOK_AZURE_MAX_WORKERS
+        env_vars["AZURE_MAX_RETRIES"] = WEBHOOK_AZURE_MAX_RETRIES
+        env_vars["AZURE_REQUEST_DELAY_MS"] = WEBHOOK_AZURE_REQUEST_DELAY_MS
+        if WEBHOOK_REFRESH_MODE == "backfill":
+            env_vars["BACKFILL_ONLY"] = "true"
+        else:
+            env_vars.pop("BACKFILL_ONLY", None)
+
+        commands = [
+            [PYTHON_BIN, str(EXTRACTION_DIR / "step1_azure_extract.py")],
+            [PYTHON_BIN, str(EXTRACTION_DIR / "populate_graph_data.py")],
+        ]
+
+        step3_path = EXTRACTION_DIR / "step3_strict_broker_ingestion_extractor.py"
+        if WEBHOOK_INCLUDE_STEP3 and step3_path.exists():
+            commands.append([PYTHON_BIN, str(step3_path)])
+
+        commands.append([PYTHON_BIN, str(REPO_ROOT / "02_NEO4J_DATABASE" / "build_graph_database.py")])
+
+        for cmd in commands:
+            rc, out, err = _run_refresh_command(cmd, env_vars)
+            logs.append({
+                "command": " ".join(cmd),
+                "returncode": rc,
+                "stdout_tail": out[-3000:],
+                "stderr_tail": err[-3000:],
+            })
+            if rc != 0:
+                raise RuntimeError(f"Refresh command failed ({rc}): {' '.join(cmd)}")
+
+        _set_webhook_state(
+            running=False,
+            last_status="ok",
+            last_finished_at=datetime.utcnow().isoformat() + "Z",
+            last_log_tail=logs[-6:],
+        )
+    except Exception as e:
+        logs.append({"exception": str(e), "traceback": traceback.format_exc()[-4000:]})
+        _set_webhook_state(
+            running=False,
+            last_status="error",
+            last_finished_at=datetime.utcnow().isoformat() + "Z",
+            last_error=str(e),
+            last_log_tail=logs[-8:],
+        )
+
+
+def _trigger_webhook_refresh(trigger, event_type, payload):
+    if not WEBHOOK_AUTO_REFRESH_ENABLED:
+        return False, "WEBHOOK_AUTO_REFRESH_ENABLED=false"
+
+    current = _snapshot_webhook_state()
+    if current.get("running"):
+        return False, "refresh already running"
+
+    worker = threading.Thread(
+        target=_refresh_pipeline_worker,
+        args=(trigger, event_type, payload),
+        daemon=True,
+    )
+    worker.start()
+    return True, "refresh started"
 
 class NRTAnalyzer:
     """Analyze NRT scopes from Neo4j"""
@@ -2521,6 +2658,20 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
         # API endpoints
         if path == '/api/statistics':
             self.send_json_response(analyzer.get_statistics())
+        elif path == '/api/webhook/status':
+            self.send_json_response({
+                "enabled": WEBHOOK_AUTO_REFRESH_ENABLED,
+                "mode": WEBHOOK_REFRESH_MODE,
+                "include_step3": WEBHOOK_INCLUDE_STEP3,
+                "network_runtime": {
+                    "AZURE_INSECURE_TLS": WEBHOOK_AZURE_INSECURE_TLS,
+                    "AZURE_DISABLE_ENV_PROXY": WEBHOOK_AZURE_DISABLE_ENV_PROXY,
+                    "AZURE_MAX_WORKERS": WEBHOOK_AZURE_MAX_WORKERS,
+                    "AZURE_MAX_RETRIES": WEBHOOK_AZURE_MAX_RETRIES,
+                    "AZURE_REQUEST_DELAY_MS": WEBHOOK_AZURE_REQUEST_DELAY_MS,
+                },
+                "state": _snapshot_webhook_state(),
+            })
         elif path == '/api/workitem-types':
             self.send_json_response(analyzer.get_workitem_types())
         elif path.startswith('/api/workitems-by-type/'):
@@ -2564,6 +2715,67 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_file(file_path)
         else:
             self.send_error(404, 'Not found')
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def do_POST(self):
+        parsed_path = urllib.parse.urlparse(self.path)
+        path = parsed_path.path
+
+        if path == '/api/webhook/azure-devops':
+            self.handle_azure_webhook()
+            return
+
+        self.send_error(404, 'Not found')
+
+    def handle_azure_webhook(self):
+        token_header = self.headers.get("X-NRT-Webhook-Token", "").strip()
+        auth_header = self.headers.get("Authorization", "").strip()
+        bearer_token = ""
+        if auth_header.lower().startswith("bearer "):
+            bearer_token = auth_header[7:].strip()
+
+        if AZURE_WEBHOOK_TOKEN:
+            provided = token_header or bearer_token
+            if provided != AZURE_WEBHOOK_TOKEN:
+                self.send_json_response(
+                    {"ok": False, "error": "unauthorized webhook token"},
+                    status_code=401,
+                )
+                return
+
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+        except Exception:
+            length = 0
+        raw = self.rfile.read(length) if length > 0 else b"{}"
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+            self.send_json_response({"ok": False, "error": "invalid json payload"}, status_code=400)
+            return
+
+        event_type = (
+            str(payload.get("eventType", "")).strip()
+            or str(payload.get("eventTypeName", "")).strip()
+            or str((payload.get("resource") or {}).get("eventType", "")).strip()
+            or "unknown"
+        )
+
+        accepted, reason = _trigger_webhook_refresh("azure-devops-webhook", event_type, payload)
+        state = _snapshot_webhook_state()
+        self.send_json_response(
+            {
+                "ok": accepted,
+                "message": reason,
+                "event_type": event_type,
+                "refresh_mode": WEBHOOK_REFRESH_MODE,
+                "state": state,
+            },
+            status_code=202 if accepted else 200,
+        )
     
     def serve_template(self, template_path):
         """Serve an HTML template"""
@@ -2601,9 +2813,9 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, str(e))
     
-    def send_json_response(self, data):
+    def send_json_response(self, data, status_code=200):
         """Send JSON response"""
-        self.send_response(200)
+        self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
@@ -2617,7 +2829,7 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
         """Add CORS headers"""
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-NRT-Webhook-Token, Authorization')
         super().end_headers()
 
 if __name__ == '__main__':
@@ -2642,6 +2854,8 @@ if __name__ == '__main__':
             print("  - GET /api/commit/<commit_id>")
             print("  - GET /api/workitem/<workitem_id>")
             print("  - GET /api/search?q=<query>")
+            print("  - GET /api/webhook/status")
+            print("  - POST /api/webhook/azure-devops")
             print("Press Ctrl+C to stop the server")
             httpd.serve_forever()
     except KeyboardInterrupt:
