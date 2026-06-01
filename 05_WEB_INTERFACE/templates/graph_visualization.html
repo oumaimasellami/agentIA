@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Graph Visualization - FORVIA NRT Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/vis-network/standalone/umd/vis-network.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -132,13 +131,6 @@
             margin-bottom: 30px;
         }
 
-        #network {
-            width: 100%;
-            height: 600px;
-            background: linear-gradient(135deg, #ffffff 0%, var(--forvia-light) 100%);
-            border-radius: 12px;
-        }
-
         .controls {
             padding: 20px;
             background: white;
@@ -152,6 +144,138 @@
             gap: 15px;
             flex-wrap: wrap;
             align-items: center;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0b2a7a;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .type-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .type-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            cursor: pointer;
+            color: #1a1a1a;
+        }
+
+        .type-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #dce9ff;
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(17, 57, 128, 0.15);
+            z-index: 50;
+            padding: 8px 10px;
+            display: none;
+        }
+
+        .type-dropdown.open .type-dropdown-menu {
+            display: block;
+        }
+
+        .type-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .batch-results {
+            margin-top: 18px;
+        }
+
+        .summary-box {
+            background: #f3f7ff;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #23324d;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            background: white;
+        }
+
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mini-table th,
+        .mini-table td {
+            border-bottom: 1px solid #eef3ff;
+            padding: 8px 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .mini-table td.wrap-text {
+            white-space: normal;
+            min-width: 260px;
+            line-height: 1.35;
+        }
+
+        .mini-table th {
+            background: #f3f7ff;
+            color: #0b2a7a;
+            font-weight: 700;
+        }
+
+        .scope-fn-wrap {
+            max-height: 70vh;
+            overflow: auto;
+        }
+
+        .scope-fn-wrap .mini-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
         }
 
         .btn {
@@ -250,7 +374,7 @@
         }
 
         @media (max-width: 768px) {
-            #network { height: 400px; }
+            .filter-grid { grid-template-columns: 1fr; }
             .page-title { font-size: 24px; }
         }
     </style>
@@ -281,48 +405,46 @@
         </div>
 
         <div class="controls">
+            <div class="filter-grid">
+                <div>
+                    <label class="form-label"><i class="fas fa-layer-group"></i> Iteration</label>
+                    <select id="iterationSelect" class="form-input"></select>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-flag-checkered"></i> Sprint</label>
+                    <select id="sprintSelect" class="form-input"></select>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-bug"></i> WorkItem Type</label>
+                    <div id="typeDropdown" class="type-dropdown">
+                        <button id="typeDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleTypeDropdown()">
+                            <span id="typeDropdownLabel">Bug, User Story</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="typeDropdownMenu" class="type-dropdown-menu">
+                            <label class="type-option">
+                                <input id="typeBug" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <span>Bug</span>
+                            </label>
+                            <label class="type-option">
+                                <input id="typeUserStory" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <span>User Story</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-hashtag"></i> Limit</label>
+                    <input id="limitInput" class="form-input" type="number" min="1" max="1000" value="300">
+                </div>
+            </div>
             <div class="control-group">
-                <button class="btn" onclick="zoomIn()"><i class="fas fa-search-plus"></i> Zoom In</button>
-                <button class="btn" onclick="zoomOut()"><i class="fas fa-search-minus"></i> Zoom Out</button>
-                <button class="btn btn-secondary" onclick="resetView()"><i class="fas fa-home"></i> Reset View</button>
-                <button class="btn btn-secondary" onclick="togglePhysics()"><i class="fas fa-play"></i> Animate</button>
+                <button class="btn" onclick="loadWorkitemsByIteration()"><i class="fas fa-filter"></i> Find WorkItems</button>
+                <button class="btn" onclick="generateConsolidatedScope()"><i class="fas fa-layer-group"></i> Generate Consolidated Scope (Direct Only)</button>
             </div>
+            <div class="batch-results" id="batchResults"></div>
         </div>
 
-        <div class="viz-container">
-            <div id="network"></div>
-        </div>
-
-        <div class="legend">
-            <div class="legend-title"><i class="fas fa-key"></i> Legend</div>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-color" style="background: var(--forvia-blue);"></div>
-                    <span>Commits</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #27AE60;"></div>
-                    <span>Microservices</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: var(--accent);"></div>
-                    <span>Functions</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background: #9B59B6;"></div>
-                    <span>WorkItems</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-panel" style="margin-top: 30px;">
-            <div class="info-title"><i class="fas fa-info-circle"></i> Graph Information</div>
-            <div class="info-content">
-                <p>This graph visualizes the dependency relationships in the NRT system. Click on nodes to highlight their connections, drag to reposition, and use the controls to navigate.</p>
-                <p style="margin-top: 10px;"><strong>Node Types:</strong> Commits represent code changes, Microservices are system modules, Functions are implementations, and WorkItems are user requirements.</p>
-                <p style="margin-top: 10px;"><strong>Edges:</strong> Lines represent relationships: MODIFIES (commits → microservices), IMPLEMENTS (microservices → functions), and COVERS (functions → workitems).</p>
-            </div>
-        </div>
     </div>
 
     <footer>
@@ -330,75 +452,367 @@
     </footer>
 
     <script>
-        let network = null;
-        let nodes = new vis.DataSet();
-        let edges = new vis.DataSet();
+        let lastFoundWorkitems = [];
 
-        function initializeGraph() {
-            const container = document.getElementById('network');
-            const data = { nodes: nodes, edges: edges };
-            const options = {
-                physics: {
-                    enabled: true,
-                    barnesHut: {
-                        gravitationalConstant: -26000,
-                        centralGravity: 0.3,
-                        springLength: 200
-                    }
-                },
-                nodes: {
-                    shape: 'dot',
-                    scaling: {
-                        label: { enabled: true }
-                    },
-                    font: { size: 12, face: 'Arial' }
-                },
-                edges: {
-                    smooth: { type: 'continuous' },
-                    arrows: 'to',
-                    color: { inherit: 'from' },
-                    width: 2
-                },
-                interaction: {
-                    hover: true,
-                    navigationButtons: true,
-                    keyboard: true
+        function escapeHtml(v) {
+            return String(v || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function updateTypeDropdownLabel() {
+            const bug = document.getElementById('typeBug')?.checked;
+            const us = document.getElementById('typeUserStory')?.checked;
+            const label = document.getElementById('typeDropdownLabel');
+            if (!label) return;
+            if (bug && us) {
+                label.textContent = 'Bug, User Story';
+            } else if (bug) {
+                label.textContent = 'Bug';
+            } else if (us) {
+                label.textContent = 'User Story';
+            } else {
+                label.textContent = 'Select ticket type';
+            }
+        }
+
+        function toggleTypeDropdown() {
+            const wrapper = document.getElementById('typeDropdown');
+            if (!wrapper) return;
+            wrapper.classList.toggle('open');
+        }
+
+        function closeTypeDropdown() {
+            const wrapper = document.getElementById('typeDropdown');
+            if (!wrapper) return;
+            wrapper.classList.remove('open');
+        }
+
+        function normalizeRepoPath(pathValue) {
+            let p = String(pathValue || '').replace(/\\/g, '/').trim();
+            if (!p) return '';
+            if (!p.startsWith('/')) p = '/' + p;
+            while (p.includes('//')) p = p.replaceAll('//', '/');
+            return p;
+        }
+
+        function extractPrimaryFile(fn) {
+            if (Array.isArray(fn.files) && fn.files.length > 0) {
+                return normalizeRepoPath(fn.files[0]);
+            }
+            const evidence = String(fn.evidence || '');
+            const m = evidence.match(/file\(s\)\s*:\s*([^|]+)/i);
+            if (!m || !m[1]) return '';
+            const first = String(m[1]).split(',')[0].trim();
+            return normalizeRepoPath(first);
+        }
+
+        function formatAzureBreadcrumb(filePath) {
+            const p = normalizeRepoPath(filePath);
+            if (!p) return '-';
+            return p.replace(/^\//, '').split('/').join(' \u2192 ');
+        }
+
+        function buildAzureFileUrl(microservice, filePath) {
+            const ms = String(microservice || '').trim();
+            const p = normalizeRepoPath(filePath);
+            if (!ms || !p) return '';
+            return `https://dev.azure.com/faurecia-cloud/MES_X.0/_git/${encodeURIComponent(ms)}?path=${encodeURIComponent(p)}`;
+        }
+
+        function initializePage() {
+            updateTypeDropdownLabel();
+            document.addEventListener('click', (event) => {
+                const wrapper = document.getElementById('typeDropdown');
+                if (!wrapper) return;
+                if (!wrapper.contains(event.target)) {
+                    closeTypeDropdown();
                 }
+            });
+            loadIterationCatalog();
+        }
+
+        async function loadIterationCatalog() {
+            const iterationSel = document.getElementById('iterationSelect');
+            const sprintSel = document.getElementById('sprintSelect');
+            iterationSel.innerHTML = '<option value="">All Iterations</option>';
+            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            try {
+                const res = await fetch('/api/iterations');
+                const data = await res.json();
+                const iterations = data.iterations || [];
+                iterations.forEach(it => {
+                    const opt = document.createElement('option');
+                    opt.value = it.iteration_path;
+                    opt.textContent = `${it.iteration_path} (${it.workitem_count})`;
+                    opt.dataset.sprints = JSON.stringify(it.sprints || []);
+                    iterationSel.appendChild(opt);
+                });
+                iterationSel.addEventListener('change', refreshSprintsForIteration);
+            } catch (err) {
+                document.getElementById('batchResults').innerHTML = `<div class="summary-box">Error loading iterations: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function refreshSprintsForIteration() {
+            const iterationSel = document.getElementById('iterationSelect');
+            const sprintSel = document.getElementById('sprintSelect');
+            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            const selectedOpt = iterationSel.options[iterationSel.selectedIndex];
+            if (!selectedOpt || !selectedOpt.dataset.sprints) return;
+            const sprints = JSON.parse(selectedOpt.dataset.sprints || '[]');
+            sprints.forEach(sp => {
+                const opt = document.createElement('option');
+                opt.value = sp.sprint_path;
+                opt.textContent = `${sp.sprint_path} (${sp.workitem_count})`;
+                sprintSel.appendChild(opt);
+            });
+        }
+
+        async function loadWorkitemsByIteration() {
+            const iterationPath = document.getElementById('iterationSelect').value;
+            const sprintPath = document.getElementById('sprintSelect').value;
+            const bugChecked = document.getElementById('typeBug').checked;
+            const usChecked = document.getElementById('typeUserStory').checked;
+            const selectedTypes = [];
+            if (bugChecked) selectedTypes.push('Bug');
+            if (usChecked) selectedTypes.push('User Story');
+            const limit = document.getElementById('limitInput').value || '300';
+            const target = document.getElementById('batchResults');
+            target.innerHTML = `<div class="summary-box">Loading WorkItems...</div>`;
+
+            if (selectedTypes.length === 0) {
+                target.innerHTML = `<div class="summary-box">Error: select at least one ticket type (Bug and/or User Story).</div>`;
+                return;
+            }
+
+            const type = selectedTypes.join(',');
+
+            const qs = new URLSearchParams({
+                iteration_path: iterationPath,
+                sprint_path: sprintPath,
+                type,
+                limit
+            });
+            try {
+                const res = await fetch(`/api/workitems-by-iteration?${qs.toString()}`);
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(data.error || 'Unable to load workitems')}</div>`;
+                    return;
+                }
+                lastFoundWorkitems = data.results || [];
+                renderWorkitemsTable(data);
+            } catch (err) {
+                target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function renderWorkitemsTable(data) {
+            const rows = (data.results || []).map(wi => `
+                <tr>
+                    <td><input type="checkbox" class="wi-check" value="${wi.id}" ${wi.has_dev_activity ? 'checked' : ''}></td>
+                    <td>${wi.id}</td>
+                    <td title="${escapeHtml(wi.titre)}">${escapeHtml(wi.titre)}</td>
+                    <td>${escapeHtml(wi.type)}</td>
+                    <td>${escapeHtml(wi.iteration_path)}</td>
+                    <td>${wi.linked_commit_count}</td>
+                    <td>${wi.linked_pr_count}</td>
+                    <td>${wi.has_dev_activity ? 'Yes' : 'No'}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('batchResults').innerHTML = `
+                <div class="summary-box">
+                    Found: <strong>${data.count}</strong> / ${data.total_found}
+                    &nbsp;|&nbsp; Iteration: <strong>${escapeHtml(data.iteration_path || 'All')}</strong>
+                    &nbsp;|&nbsp; Sprint: <strong>${escapeHtml(data.sprint_path || 'All')}</strong>
+                    &nbsp;|&nbsp; Type: <strong>${escapeHtml(data.type || 'All')}</strong>
+                </div>
+                <div class="table-wrap">
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Iteration Path</th>
+                                <th>Commits</th>
+                                <th>PRs</th>
+                                <th>Dev Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="8">No workitems found</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="scopeSummary" style="margin-top:12px;"></div>
+            `;
+        }
+
+        async function generateConsolidatedScope() {
+            const checks = Array.from(document.querySelectorAll('.wi-check:checked'));
+            const target = document.getElementById('scopeSummary') || document.getElementById('batchResults');
+            if (!checks.length) {
+                target.innerHTML = `<div class="summary-box">Select at least one WorkItem.</div>`;
+                return;
+            }
+            const ids = checks.map(c => c.value);
+            target.innerHTML = `<div class="summary-box">Generating consolidated NRT scope...</div>`;
+            try {
+                const qs = encodeURIComponent(ids.join(','));
+                let data = null;
+
+                // Preferred: strict direct endpoint
+                let res = await fetch(`/api/nrt-scope-batch-direct?workitem_ids=${qs}`);
+                if (res.ok) {
+                    data = await res.json();
+                } else if (res.status === 404) {
+                    // Backward compatibility: fallback to legacy endpoint + direct-only projection in UI
+                    const legacyRes = await fetch(`/api/nrt-scope-batch?workitem_ids=${qs}`);
+                    const legacyData = await legacyRes.json();
+                    if (!legacyRes.ok || legacyData.error) {
+                        target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(legacyData.error || 'Unable to generate scope')}</div>`;
+                        return;
+                    }
+                    data = toDirectOnlyBatch(legacyData);
+                } else {
+                    // Try to parse error if JSON; otherwise generic.
+                    let errText = 'Unable to generate scope';
+                    try {
+                        const maybe = await res.json();
+                        if (maybe && maybe.error) errText = maybe.error;
+                    } catch (_) {}
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(errText)}</div>`;
+                    return;
+                }
+
+                if (!data || data.error) {
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml((data && data.error) || 'Unable to generate scope')}</div>`;
+                    return;
+                }
+                renderConsolidatedSummary(data);
+            } catch (err) {
+                target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function toDirectOnlyBatch(data) {
+            const out = JSON.parse(JSON.stringify(data || {}));
+            const consolidated = out.consolidated || {};
+            const msList = consolidated.microservices || [];
+
+            const directMs = msList.filter(ms => {
+                const tag = String(ms.impact_type || '').toUpperCase();
+                return tag.includes('DIRECT');
+            }).map(ms => ({ ...ms, impact_type: 'DIRECT' }));
+
+            const directSet = new Set(directMs.map(ms => ms.name));
+            const fnList = (consolidated.functions || []).filter(fn =>
+                (fn.microservices || []).some(msName => directSet.has(msName))
+            ).map(fn => ({
+                ...fn,
+                description: fn.description || 'Description métier non disponible (mode fallback).',
+                impact_front: fn.impact_front || 'Impact front non disponible (mode fallback).',
+                what_to_test: fn.what_to_test || 'Retest conseillé non disponible (mode fallback).',
+                evidence: fn.evidence || '',
+                files: fn.files || []
+            }));
+
+            out.mode = 'direct_only_fallback_from_legacy_batch';
+            out.consolidated = {
+                microservice_count: directMs.length,
+                function_count: fnList.length,
+                microservices: directMs,
+                functions: fnList,
             };
 
-            network = new vis.Network(container, data, options);
+            out.workitem_scopes = (out.workitem_scopes || []).map(row => ({
+                ...row,
+                indirect_microservices: [],
+            }));
 
-            // Add sample nodes for demonstration
-            addSampleGraph();
+            return out;
         }
 
-        function addSampleGraph() {
-            // Sample nodes
-            nodes.add([
-                { id: 1, label: 'Commit ABC123', color: { background: '#0033CC' }, shape: 'box' },
-                { id: 2, label: 'mesx-ume-backend', color: { background: '#27AE60' }, shape: 'dot' },
-                { id: 3, label: 'Function 1', color: { background: '#FF6B35' }, shape: 'dot' },
-                { id: 4, label: 'Function 2', color: { background: '#FF6B35' }, shape: 'dot' },
-                { id: 5, label: 'WorkItem 127835', color: { background: '#9B59B6' }, shape: 'diamond' }
-            ]);
+        function renderConsolidatedSummary(data) {
+            const c = data.consolidated || {};
+            const topMs = (c.microservices || []).map(ms => `
+                <tr>
+                    <td>${escapeHtml(ms.name)}</td>
+                    <td>${escapeHtml(ms.impact_type)}</td>
+                    <td>${ms.workitem_count}</td>
+                    <td>${ms.function_count}</td>
+                </tr>
+            `).join('');
+            const topFns = (c.functions || []).map(fn => {
+                const scopeType = String(
+                    fn.function_scope_type || ((fn.evidence_lines_count || 0) > 0 ? 'P1 touchée prouvée' : 'P2/P3 candidate')
+                );
+                const isP1 = scopeType.toLowerCase().includes('p1');
+                const fullFnName = String(fn.id || fn.name || '');
+                const firstMs = Array.isArray(fn.microservices) && fn.microservices.length ? fn.microservices[0] : '';
+                const primaryFile = extractPrimaryFile(fn);
+                const fileBreadcrumb = formatAzureBreadcrumb(primaryFile);
+                const azureFileUrl = buildAzureFileUrl(firstMs, primaryFile);
+                const fileCell = azureFileUrl
+                    ? `<a href="${escapeHtml(azureFileUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(fileBreadcrumb)}</a>`
+                    : escapeHtml(fileBreadcrumb);
+                return `
+                <tr>
+                    <td title="${escapeHtml(fullFnName)}">${isP1 ? escapeHtml(fullFnName) : '-'}</td>
+                    <td title="${escapeHtml(fullFnName)}">${isP1 ? '-' : escapeHtml(fullFnName)}</td>
+                    <td>${escapeHtml((fn.microservices || []).join(', '))}</td>
+                    <td class="wrap-text">${fileCell}</td>
+                    <td class="wrap-text">${escapeHtml(fn.description || 'Description métier non disponible.')}</td>
+                    <td class="wrap-text">${escapeHtml(fn.impact_front || 'Impact front non disponible.')}</td>
+                    <td class="wrap-text">${escapeHtml(fn.what_to_test || 'Retest conseillé non disponible.')}</td>
+                    <td class="wrap-text">${escapeHtml(fn.evidence || '')}</td>
+                </tr>
+                `;
+            }).join('');
 
-            // Sample edges
-            edges.add([
-                { from: 1, to: 2, label: 'MODIFIES', color: '#0033CC' },
-                { from: 2, to: 3, label: 'IMPLEMENTS', color: '#27AE60' },
-                { from: 2, to: 4, label: 'IMPLEMENTS', color: '#27AE60' },
-                { from: 3, to: 5, label: 'COVERS', color: '#FF6B35' },
-                { from: 4, to: 5, label: 'COVERS', color: '#FF6B35' }
-            ]);
+            document.getElementById('scopeSummary').innerHTML = `
+                <div class="summary-box">
+                    Mode: <strong>Strict Direct (PR/Commit/File/Line/Function only)</strong>
+                    &nbsp;|&nbsp;
+                    Scoped WorkItems: <strong>${data.scoped_workitem_count}</strong> / ${data.input_workitem_count}
+                    &nbsp;|&nbsp; Consolidated Microservices: <strong>${c.microservice_count || 0}</strong>
+                    &nbsp;|&nbsp; Consolidated Functions: <strong>${c.function_count || 0}</strong>
+                    &nbsp;|&nbsp; Displayed Functions: <strong>${(c.functions || []).length}</strong>
+                </div>
+                <div class="table-wrap" style="margin-bottom:10px;">
+                    <table class="mini-table">
+                        <thead><tr><th>Top Microservice</th><th>Impact</th><th>WI Count</th><th>Fn Count</th></tr></thead>
+                        <tbody>${topMs || '<tr><td colspan="4">No microservices</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div class="table-wrap scope-fn-wrap">
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th>Fonction touchée (P1)</th>
+                                <th>Fonction candidate (P2/P3)</th>
+                                <th>Microservice</th>
+                                <th>Chemin fichier Azure</th>
+                                <th>Description métier</th>
+                                <th>Impact Front ciblé</th>
+                                <th>Retest conseillé</th>
+                                <th>Preuve</th>
+                            </tr>
+                        </thead>
+                        <tbody>${topFns || '<tr><td colspan="8">No functions</td></tr>'}</tbody>
+                    </table>
+                </div>
+            `;
         }
 
-        function zoomIn() { network && network.focus(1, { scale: 1.5, animation: true }); }
-        function zoomOut() { network && network.focus(1, { scale: 0.5, animation: true }); }
-        function resetView() { network && network.fit({ animation: true }); }
-        function togglePhysics() { network && (network.physics.enabled = !network.physics.enabled); }
-
-        // Initialize on load
-        window.addEventListener('load', initializeGraph);
+        window.addEventListener('load', initializePage);
     </script>
 </body>
 </html>

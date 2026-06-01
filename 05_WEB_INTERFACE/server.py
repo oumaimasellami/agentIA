@@ -17,7 +17,8 @@ import traceback
 from pathlib import Path
 import mimetypes
 from neo4j import GraphDatabase
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
+import time
 from dotenv import load_dotenv
 
 # Load environment variables from .env
@@ -199,26 +200,44 @@ class NRTAnalyzer:
     """Analyze NRT scopes from Neo4j"""
     
     def __init__(self):
-        try:
-            self.driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
-            self.driver.verify_connectivity()
-            print("[OK] Connected to Neo4j database")
-        except Exception as e:
-            print(f"[ERROR] Failed to connect to Neo4j: {e}")
-            self.driver = None
+        self.driver = None
+        # Neo4j in Docker can expose the port a few seconds before Bolt handshake is fully ready.
+        # Retry to avoid noisy false-negative startup failures.
+        max_attempts = 8
+        retry_delay_sec = 2
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+                driver.verify_connectivity()
+                self.driver = driver
+                print(f"[OK] Connected to Neo4j database (attempt {attempt}/{max_attempts})")
+                break
+            except Exception as e:
+                last_error = e
+                if attempt < max_attempts:
+                    print(f"[WARN] Neo4j not ready yet (attempt {attempt}/{max_attempts}): {e}")
+                    time.sleep(retry_delay_sec)
+                else:
+                    print(f"[ERROR] Failed to connect to Neo4j after {max_attempts} attempts: {e}")
+                    self.driver = None
         
         # Load workitems with parent-child relationships
         self.workitems_data = self._load_workitems()
         print(f"[OK] Loaded {len(self.workitems_data)} WorkItems from JSON")
+        self.workitem_dev_links_index = self._load_workitem_dev_links_index()
 
         # Build an index of UI screens from source files to provide tester-friendly output
         self.ui_screen_index = self._build_ui_screen_index()
         print(f"[OK] Indexed UI screens for {len(self.ui_screen_index)} microservices")
         self.commits_index = self._load_commits_index()
+        self.pull_requests_index = self._load_pull_requests_index()
         self.function_index_by_ms_file = self._load_function_index()
         self.known_microservices = self._load_known_microservices()
         self.source_snapshot_cache = {}
         print(f"[OK] Loaded commit index: {len(self.commits_index)} commits")
+        print(f"[OK] Loaded PR index: {len(self.pull_requests_index)} pull requests")
+        print(f"[OK] Loaded workitem-dev links index: {len(self.workitem_dev_links_index)} workitems")
         print(f"[OK] Loaded function file index: {len(self.function_index_by_ms_file)} keys")
         print(f"[OK] Loaded known microservices: {len(self.known_microservices)}")
     
@@ -239,6 +258,660 @@ class NRTAnalyzer:
         except Exception as e:
             print(f"[WARN] Could not load WorkItems JSON: {e}")
             return {}
+
+    def _load_workitem_dev_links_index(self):
+        """Load WorkItem -> PR/Commit links index from extraction output."""
+        candidate_paths = [
+            EXTRACTION_DIR / "workitem_dev_links.json",
+            REPO_ROOT / "workitem_dev_links.json",
+        ]
+        for path in candidate_paths:
+            try:
+                with path.open("r", encoding="utf-8") as f:
+                    items = json.load(f)
+                out = {}
+                for row in items or []:
+                    wi_id = row.get("workitem_id")
+                    if wi_id is None:
+                        continue
+                    try:
+                        wi_int = int(wi_id)
+                    except Exception:
+                        continue
+                    out[wi_int] = {
+                        "linked_pull_request_ids": [int(x) for x in (row.get("linked_pull_request_ids") or []) if x is not None],
+                        "linked_commit_ids": [str(x) for x in (row.get("linked_commit_ids") or []) if x],
+                    }
+                return out
+            except Exception:
+                continue
+        return {}
+
+    def _load_pull_requests_index(self):
+        """Load PR index by PR id for date-based filtering."""
+        try:
+            path = EXTRACTION_DIR / "pull_requests.json"
+            with path.open("r", encoding="utf-8") as f:
+                prs = json.load(f)
+            out = {}
+            for pr in prs or []:
+                pr_id = pr.get("pr_id")
+                if pr_id is None:
+                    continue
+                try:
+                    pr_int = int(pr_id)
+                except Exception:
+                    continue
+                out[pr_int] = pr
+            return out
+        except Exception as e:
+            print(f"[WARN] Could not load pull requests index: {e}")
+            return {}
+
+    @staticmethod
+    def _parse_iso_datetime(value):
+        if not value:
+            return None
+        text = str(value).strip()
+        if not text:
+            return None
+        if text.endswith("Z"):
+            text = text[:-1] + "+00:00"
+        try:
+            dt = datetime.fromisoformat(text)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc)
+        except Exception:
+            return None
+
+    @staticmethod
+    def _normalize_iteration_path(value):
+        text = str(value or "").strip().replace("/", "\\")
+        text = re.sub(r"\\{2,}", "\\\\", text)
+        return text.strip("\\")
+
+    def _build_iteration_catalog(self):
+        """
+        Build iteration -> sprint catalog from extracted work_items.json.
+        Example:
+          iteration: MES_X.0\\mvp
+          sprint:    MES_X.0\\mvp\\Sprint MVP 01
+        """
+        roots = {}
+        for wi in self.workitems_data.values():
+            raw_path = wi.get("iteration_path") or ""
+            norm_path = self._normalize_iteration_path(raw_path)
+            if not norm_path:
+                continue
+            parts = [p for p in norm_path.split("\\") if p]
+            if len(parts) < 2:
+                continue
+
+            root = "\\".join(parts[:2])
+            root_entry = roots.setdefault(root.lower(), {
+                "iteration_path": root,
+                "workitem_count": 0,
+                "sprints": {},
+            })
+            root_entry["workitem_count"] += 1
+
+            if len(parts) >= 3:
+                sprint = "\\".join(parts[:3])
+                sprint_entry = root_entry["sprints"].setdefault(sprint.lower(), {
+                    "sprint_path": sprint,
+                    "workitem_count": 0,
+                })
+                sprint_entry["workitem_count"] += 1
+
+        iterations = []
+        for entry in roots.values():
+            sprints = sorted(
+                list(entry["sprints"].values()),
+                key=lambda x: (x["sprint_path"].lower(), -x["workitem_count"]),
+            )
+            iterations.append({
+                "iteration_path": entry["iteration_path"],
+                "workitem_count": entry["workitem_count"],
+                "sprint_count": len(sprints),
+                "sprints": sprints,
+            })
+
+        iterations.sort(key=lambda x: x["iteration_path"].lower())
+        return iterations
+
+    def get_iteration_catalog(self):
+        catalog = self._build_iteration_catalog()
+        return {
+            "total_iterations": len(catalog),
+            "iterations": catalog,
+        }
+
+    def get_workitems_by_iteration(self, iteration_path="", sprint_path="", workitem_type="All", limit=500):
+        """
+        Filter WorkItems by iteration/sprint path and type using extracted data.
+        """
+        if not self.workitems_data:
+            return {"error": "No WorkItems loaded"}
+
+        iter_norm = self._normalize_iteration_path(iteration_path).lower()
+        sprint_norm = self._normalize_iteration_path(sprint_path).lower()
+        type_norm = str(workitem_type or "All").strip().lower()
+        allowed_types = None
+        if type_norm not in {"all", ""}:
+            # Accept single, CSV, or '+' combinations and keep only supported ticket types.
+            tokens = []
+            if "," in type_norm:
+                tokens = [t.strip() for t in type_norm.split(",") if t.strip()]
+            elif "+" in type_norm:
+                tokens = [t.strip() for t in type_norm.split("+") if t.strip()]
+            else:
+                tokens = [type_norm]
+            normalized = set()
+            for t in tokens:
+                if t in {"bug", "user story"}:
+                    normalized.add(t)
+            if normalized:
+                allowed_types = normalized
+
+        try:
+            max_items = int(limit)
+        except Exception:
+            max_items = 500
+        max_items = max(1, min(max_items, 2000))
+
+        results = []
+        for wi in self.workitems_data.values():
+            wi_id = wi.get("id")
+            if wi_id is None:
+                continue
+            wi_type = str(wi.get("type", "")).strip()
+            if allowed_types is not None and wi_type.lower() not in allowed_types:
+                continue
+
+            wi_iter = self._normalize_iteration_path(wi.get("iteration_path"))
+            wi_iter_l = wi_iter.lower()
+            if sprint_norm:
+                if wi_iter_l != sprint_norm:
+                    continue
+            elif iter_norm:
+                if not (wi_iter_l == iter_norm or wi_iter_l.startswith(iter_norm + "\\")):
+                    continue
+
+            links = self.workitem_dev_links_index.get(int(wi_id), {})
+            linked_commit_ids = [str(x) for x in (links.get("linked_commit_ids") or []) if x]
+            linked_pr_ids = [int(x) for x in (links.get("linked_pull_request_ids") or []) if x is not None]
+            results.append({
+                "id": int(wi_id),
+                "titre": wi.get("titre") or wi.get("title") or "",
+                "type": wi_type,
+                "statut": wi.get("statut") or "",
+                "priorite": wi.get("priorite", 0),
+                "assigne_a": wi.get("assigne_a") or "",
+                "iteration_path": wi_iter,
+                "linked_commit_count": len(linked_commit_ids),
+                "linked_pr_count": len(linked_pr_ids),
+                "has_dev_activity": len(linked_commit_ids) > 0 or len(linked_pr_ids) > 0,
+            })
+
+        results.sort(
+            key=lambda x: (
+                not x.get("has_dev_activity", False),
+                -int(x.get("linked_commit_count", 0)),
+                -int(x.get("linked_pr_count", 0)),
+                x.get("id", 0),
+            )
+        )
+        sliced = results[:max_items]
+        return {
+            "iteration_path": iteration_path,
+            "sprint_path": sprint_path,
+            "type": workitem_type,
+            "count": len(sliced),
+            "total_found": len(results),
+            "results": sliced,
+        }
+
+    def get_nrt_scope_batch(self, workitem_ids):
+        """
+        Build consolidated NRT scope for multiple WorkItems:
+        - deduplicated microservices/functions
+        - retains WorkItem evidence mapping
+        """
+        if not isinstance(workitem_ids, list) or not workitem_ids:
+            return {"error": "workitem_ids is required"}
+
+        wi_ids = []
+        for wid in workitem_ids:
+            try:
+                wi_ids.append(int(wid))
+            except Exception:
+                continue
+        wi_ids = sorted(set(wi_ids))
+        if not wi_ids:
+            return {"error": "No valid workitem IDs provided"}
+
+        scope_rows = []
+        ms_map = {}
+        fn_map = {}
+        wi_meta = []
+
+        for wi_id in wi_ids:
+            result = self.get_nrt_scope(wi_id)
+            if result.get("error"):
+                continue
+
+            wi_obj = result.get("workitem") or {}
+            wi_meta.append({
+                "id": wi_obj.get("id", wi_id),
+                "title": wi_obj.get("title", ""),
+                "type": wi_obj.get("type", ""),
+            })
+
+            direct = result.get("direct_microservices") or []
+            indirect = result.get("indirect_microservices") or []
+            scope_rows.append({
+                "workitem": wi_obj,
+                "direct_microservices": [{"name": m.get("name"), "function_count": len(m.get("functions") or [])} for m in direct],
+                "indirect_microservices": [{"name": m.get("name"), "function_count": len(m.get("functions") or [])} for m in indirect],
+                "summary": result.get("summary") or {},
+            })
+
+            for group_name, ms_list in (("DIRECT", direct), ("INDIRECT", indirect)):
+                for ms in ms_list:
+                    ms_name = ms.get("name")
+                    if not ms_name:
+                        continue
+                    key = ms_name.lower()
+                    entry = ms_map.setdefault(key, {
+                        "name": ms_name,
+                        "impact_types": set(),
+                        "workitem_ids": set(),
+                        "function_ids": set(),
+                    })
+                    entry["impact_types"].add(group_name)
+                    entry["workitem_ids"].add(wi_id)
+
+                    for fn in (ms.get("functions") or []):
+                        fn_id = fn.get("id")
+                        if not fn_id:
+                            continue
+                        entry["function_ids"].add(fn_id)
+                        fkey = fn_id.lower()
+                        fentry = fn_map.setdefault(fkey, {
+                            "id": fn_id,
+                            "name": fn.get("name") or fn_id.split("::")[-1],
+                            "microservices": set(),
+                            "workitem_ids": set(),
+                        })
+                        fentry["microservices"].add(ms_name)
+                        fentry["workitem_ids"].add(wi_id)
+
+        microservices = []
+        for m in ms_map.values():
+            if m["impact_types"] == {"DIRECT"}:
+                impact = "DIRECT"
+            elif m["impact_types"] == {"INDIRECT"}:
+                impact = "INDIRECT"
+            else:
+                impact = "DIRECT+INDIRECT"
+            microservices.append({
+                "name": m["name"],
+                "impact_type": impact,
+                "workitem_count": len(m["workitem_ids"]),
+                "workitem_ids": sorted(m["workitem_ids"]),
+                "function_count": len(m["function_ids"]),
+            })
+        microservices.sort(key=lambda x: (-x["workitem_count"], -x["function_count"], x["name"].lower()))
+
+        functions = []
+        for f in fn_map.values():
+            functions.append({
+                "id": f["id"],
+                "name": f["name"],
+                "microservice_count": len(f["microservices"]),
+                "microservices": sorted(f["microservices"]),
+                "workitem_count": len(f["workitem_ids"]),
+                "workitem_ids": sorted(f["workitem_ids"]),
+            })
+        functions.sort(key=lambda x: (-x["workitem_count"], -x["microservice_count"], x["id"].lower()))
+
+        return {
+            "input_workitem_count": len(wi_ids),
+            "scoped_workitem_count": len(scope_rows),
+            "workitems": wi_meta,
+            "consolidated": {
+                "microservice_count": len(microservices),
+                "function_count": len(functions),
+                "microservices": microservices,
+                "functions": functions,
+            },
+            "workitem_scopes": scope_rows,
+        }
+
+    def get_nrt_scope_batch_direct_trace(self, workitem_ids):
+        """
+        Build consolidated NRT scope for multiple WorkItems using strict direct evidence only:
+        - WorkItem -> (linked PR/commit) -> commit files
+        - microservices from file target resolution
+        - functions from diff line intersection only (touched_functions)
+        No indirect dependency propagation.
+        """
+        if not isinstance(workitem_ids, list) or not workitem_ids:
+            return {"error": "workitem_ids is required"}
+
+        wi_ids = []
+        for wid in workitem_ids:
+            try:
+                wi_ids.append(int(wid))
+            except Exception:
+                continue
+        wi_ids = sorted(set(wi_ids))
+        if not wi_ids:
+            return {"error": "No valid workitem IDs provided"}
+
+        wi_meta = []
+        scope_rows = []
+        ms_map = {}
+        fn_map = {}
+
+        for wi_id in wi_ids:
+            wi_obj = self.workitems_data.get(wi_id, {})
+            wi_meta.append({
+                "id": wi_id,
+                "title": wi_obj.get("titre") or wi_obj.get("title") or "",
+                "type": wi_obj.get("type") or "",
+            })
+
+            commit_trace = self._build_commit_trace_for_workitem(wi_id)
+            local_ms = {}
+
+            for commit in commit_trace or []:
+                commit_id = str(commit.get("commit_id") or "").strip()
+                commit_ms = str(commit.get("microservice") or "").strip()
+
+                for file_entry in commit.get("files", []) or []:
+                    file_path = str(file_entry.get("path") or "").strip()
+                    changed_lines = []
+                    for ln in file_entry.get("changed_lines", []) or []:
+                        try:
+                            iln = int(ln)
+                        except Exception:
+                            continue
+                        if iln > 0:
+                            changed_lines.append(iln)
+
+                    target_ms_list = [m for m in (file_entry.get("target_microservices") or []) if m]
+                    if not target_ms_list and commit_ms:
+                        target_ms_list = [commit_ms]
+
+                    touched_functions = file_entry.get("touched_functions", []) or []
+                    all_file_functions = file_entry.get("all_file_functions", []) or []
+                    file_type = str(file_entry.get("type") or "").strip().lower()
+
+                    for target_ms in target_ms_list:
+                        ms_entry = local_ms.setdefault(target_ms, {
+                            "name": target_ms,
+                            "commit_ids": set(),
+                            "commit_messages": set(),
+                            "files": set(),
+                            "functions": {},
+                        })
+                        if commit_id:
+                            ms_entry["commit_ids"].add(commit_id)
+                        commit_message = str(commit.get("message") or "").strip()
+                        if commit_message:
+                            ms_entry["commit_messages"].add(commit_message)
+                        if file_path:
+                            ms_entry["files"].add(file_path)
+
+                        # Strict function evidence: only functions proven by line diff.
+                        if file_type != "code":
+                            continue
+                        proven_ids = set()
+                        for fn in touched_functions:
+                            fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                            if not fn_id:
+                                continue
+                            line_start = int(fn.get("line_start") or 0)
+                            line_end = int(fn.get("line_end") or 0)
+                            evidence_lines = []
+                            if line_start > 0 and line_end >= line_start:
+                                evidence_lines = [ln for ln in changed_lines if line_start <= ln <= line_end]
+                            if not evidence_lines:
+                                continue
+                            proven_ids.add(fn_id)
+
+                            f_entry = ms_entry["functions"].setdefault(fn_id, {
+                                "id": fn_id,
+                                "name": fn.get("name") or fn_id.split("::")[-1],
+                                "line_start": line_start,
+                                "line_end": line_end,
+                                "_workitem_ids": set(),
+                                "_microservices": set(),
+                                "_commit_ids": set(),
+                                "_files": set(),
+                                "_evidence_lines": set(),
+                            })
+                            f_entry["_workitem_ids"].add(wi_id)
+                            f_entry["_microservices"].add(target_ms)
+                            if commit_id:
+                                f_entry["_commit_ids"].add(commit_id)
+                            if file_path:
+                                f_entry["_files"].add(file_path)
+                            for ln in evidence_lines:
+                                f_entry["_evidence_lines"].add(int(ln))
+
+                        # Candidate functions (P2/P3): file touched without usable line diff.
+                        if not changed_lines:
+                            for fn in all_file_functions:
+                                fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                                if not fn_id or fn_id in proven_ids:
+                                    continue
+                                line_start = int(fn.get("line_start") or 0)
+                                line_end = int(fn.get("line_end") or 0)
+                                f_entry = ms_entry["functions"].setdefault(fn_id, {
+                                    "id": fn_id,
+                                    "name": fn.get("name") or fn_id.split("::")[-1],
+                                    "line_start": line_start,
+                                    "line_end": line_end,
+                                    "_workitem_ids": set(),
+                                    "_microservices": set(),
+                                    "_commit_ids": set(),
+                                    "_files": set(),
+                                    "_evidence_lines": set(),
+                                })
+                                f_entry["_workitem_ids"].add(wi_id)
+                                f_entry["_microservices"].add(target_ms)
+                                if commit_id:
+                                    f_entry["_commit_ids"].add(commit_id)
+                                if file_path:
+                                    f_entry["_files"].add(file_path)
+
+            direct_ms_list = []
+            for ms_name, ms_data in sorted(local_ms.items(), key=lambda x: x[0].lower()):
+                target_fn_payload = []
+                fn_values = []
+                for raw_fn in ms_data["functions"].values():
+                    norm_fn = {
+                        "id": raw_fn["id"],
+                        "name": raw_fn["name"],
+                        "line_start": raw_fn["line_start"],
+                        "line_end": raw_fn["line_end"],
+                        "evidence_lines": sorted(raw_fn["_evidence_lines"]),
+                        "commit_ids": sorted(raw_fn["_commit_ids"]),
+                        "files": sorted(raw_fn["_files"]),
+                    }
+                    fn_values.append(norm_fn)
+                    target_fn_payload.append({
+                        "id": raw_fn["id"],
+                        "name": raw_fn["name"],
+                        "line_start": raw_fn["line_start"],
+                        "line_end": raw_fn["line_end"],
+                        "_evidence_commits": sorted(raw_fn["_commit_ids"]),
+                        "_evidence_files": sorted(raw_fn["_files"]),
+                        "_evidence_lines": sorted(raw_fn["_evidence_lines"]),
+                    })
+                fn_values.sort(key=lambda x: x["id"].lower())
+
+                # Reuse the same tester-facing description logic as workitem-scope.
+                retest_items = self._build_retest_items_for_target(
+                    microservice=ms_name,
+                    files=sorted(ms_data["files"]),
+                    commit_ids=sorted(ms_data["commit_ids"]),
+                    commit_messages=sorted(ms_data["commit_messages"]),
+                    target_functions=target_fn_payload,
+                    infra_blocks=[],
+                )
+                retest_by_fn = {}
+                for item in retest_items or []:
+                    if str(item.get("type") or "").upper() != "CODE-RETEST":
+                        continue
+                    element = str(item.get("element") or "").strip()
+                    if not element:
+                        continue
+                    retest_by_fn[element] = item
+
+                for fn in fn_values:
+                    rt = retest_by_fn.get(fn.get("id"), {})
+                    has_line_evidence = bool(fn.get("evidence_lines"))
+                    fn["function_scope_type"] = "P1 touchée prouvée" if has_line_evidence else "P2/P3 candidate"
+                    fn["priority_order"] = 1 if has_line_evidence else 2
+                    fn["description"] = rt.get("description") or "Description métier non disponible."
+                    fn["impact_front"] = rt.get("impact_front") or "Impact front non disponible."
+                    fn["what_to_test"] = rt.get("what_to_test") or "Retest conseillé non disponible."
+                    fn["evidence"] = rt.get("evidence") or (
+                        f"commit(s): {', '.join([c[:8] for c in fn.get('commit_ids', [])[:4]])} | "
+                        f"file(s): {', '.join(fn.get('files', [])[:2])}"
+                    )
+
+                direct_ms_list.append({
+                    "name": ms_name,
+                    "impact_type": "DIRECT",
+                    "commit_count": len(ms_data["commit_ids"]),
+                    "files_count": len(ms_data["files"]),
+                    "function_count": len(fn_values),
+                    "functions": fn_values,
+                })
+
+                global_ms = ms_map.setdefault(ms_name.lower(), {
+                    "name": ms_name,
+                    "impact_type": "DIRECT",
+                    "workitem_ids": set(),
+                    "commit_ids": set(),
+                    "files": set(),
+                    "function_ids": set(),
+                })
+                global_ms["workitem_ids"].add(wi_id)
+                global_ms["commit_ids"].update(ms_data["commit_ids"])
+                global_ms["files"].update(ms_data["files"])
+                global_ms["function_ids"].update([f["id"] for f in fn_values])
+
+                for f in fn_values:
+                    gfn = fn_map.setdefault(f["id"].lower(), {
+                        "id": f["id"],
+                        "name": f["name"],
+                        "microservices": set(),
+                        "workitem_ids": set(),
+                        "commit_ids": set(),
+                        "files": set(),
+                        "evidence_lines": set(),
+                        "description": "",
+                        "impact_front": "",
+                        "what_to_test": "",
+                        "evidence_texts": set(),
+                        "function_scope_type": "P2/P3 candidate",
+                        "priority_order": 2,
+                    })
+                    gfn["microservices"].add(ms_name)
+                    gfn["workitem_ids"].add(wi_id)
+                    gfn["commit_ids"].update(f.get("commit_ids", []))
+                    gfn["files"].update(f.get("files", []))
+                    gfn["evidence_lines"].update(f.get("evidence_lines", []))
+                    if f.get("description") and not gfn["description"]:
+                        gfn["description"] = f.get("description")
+                    if f.get("impact_front") and not gfn["impact_front"]:
+                        gfn["impact_front"] = f.get("impact_front")
+                    if f.get("what_to_test") and not gfn["what_to_test"]:
+                        gfn["what_to_test"] = f.get("what_to_test")
+                    if f.get("evidence"):
+                        gfn["evidence_texts"].add(str(f.get("evidence")))
+                    if int(f.get("priority_order", 2)) < int(gfn.get("priority_order", 2)):
+                        gfn["priority_order"] = int(f.get("priority_order", 2))
+                        gfn["function_scope_type"] = f.get("function_scope_type") or gfn.get("function_scope_type")
+
+            scope_rows.append({
+                "workitem": {
+                    "id": wi_id,
+                    "title": wi_obj.get("titre") or wi_obj.get("title") or "",
+                    "type": wi_obj.get("type") or "",
+                },
+                "direct_microservices": [
+                    {
+                        "name": m["name"],
+                        "function_count": m["function_count"],
+                        "commit_count": m["commit_count"],
+                        "files_count": m["files_count"],
+                    }
+                    for m in direct_ms_list
+                ],
+                "summary": {
+                    "commit_count": len(commit_trace or []),
+                    "direct_ms_count": len(direct_ms_list),
+                    "direct_touched_functions": sum(m["function_count"] for m in direct_ms_list),
+                },
+            })
+
+        microservices = []
+        for ms in ms_map.values():
+            microservices.append({
+                "name": ms["name"],
+                "impact_type": "DIRECT",
+                "workitem_count": len(ms["workitem_ids"]),
+                "workitem_ids": sorted(ms["workitem_ids"]),
+                "commit_count": len(ms["commit_ids"]),
+                "files_count": len(ms["files"]),
+                "function_count": len(ms["function_ids"]),
+            })
+        microservices.sort(key=lambda x: (-x["workitem_count"], -x["function_count"], x["name"].lower()))
+
+        functions = []
+        for fn in fn_map.values():
+            functions.append({
+                "id": fn["id"],
+                "name": fn["name"],
+                "microservice_count": len(fn["microservices"]),
+                "microservices": sorted(fn["microservices"]),
+                "workitem_count": len(fn["workitem_ids"]),
+                "workitem_ids": sorted(fn["workitem_ids"]),
+                "commit_count": len(fn["commit_ids"]),
+                "files_count": len(fn["files"]),
+                "files": sorted(fn["files"]),
+                "evidence_lines_count": len(fn["evidence_lines"]),
+                "function_scope_type": fn.get("function_scope_type") or ("P1 touchée prouvée" if len(fn["evidence_lines"]) > 0 else "P2/P3 candidate"),
+                "priority_order": int(fn.get("priority_order", 2)),
+                "description": fn.get("description") or "Description métier non disponible.",
+                "impact_front": fn.get("impact_front") or "Impact front non disponible.",
+                "what_to_test": fn.get("what_to_test") or "Retest conseillé non disponible.",
+                "evidence": " || ".join(sorted(fn.get("evidence_texts") or [])) if fn.get("evidence_texts") else (
+                    f"commit(s): {', '.join([c[:8] for c in sorted(fn['commit_ids'])[:4]])} | file(s): {', '.join(sorted(fn['files'])[:2])}"
+                ),
+            })
+        functions.sort(key=lambda x: (int(x.get("priority_order", 9)), x["id"].lower()))
+
+        return {
+            "mode": "strict_direct_commit_trace_only",
+            "input_workitem_count": len(wi_ids),
+            "scoped_workitem_count": len(scope_rows),
+            "workitems": wi_meta,
+            "consolidated": {
+                "microservice_count": len(microservices),
+                "function_count": len(functions),
+                "microservices": microservices,
+                "functions": functions,
+            },
+            "workitem_scopes": scope_rows,
+        }
 
     @staticmethod
     def _normalize_repo_path(path_value):
@@ -2095,6 +2768,121 @@ class NRTAnalyzer:
             }
         except Exception as e:
             return {"error": str(e)}
+
+    def get_workitems_by_activity_date(self, date_from, date_to, workitem_type="All", date_source="any", limit=300):
+        """
+        Filter WorkItems (Bug/User Story) by PR/Commit activity date interval
+        using already extracted JSON evidence.
+        """
+        if not self.workitems_data:
+            return {"error": "No WorkItems loaded"}
+
+        try:
+            start = datetime.strptime(str(date_from), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            end_exclusive = (
+                datetime.strptime(str(date_to), "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                + timedelta(days=1)
+            )
+            if end_exclusive <= start:
+                return {"error": "Invalid date range: date_to must be >= date_from"}
+        except Exception:
+            return {"error": "Invalid date format. Use YYYY-MM-DD."}
+
+        date_source_norm = str(date_source or "any").strip().lower()
+        if date_source_norm not in {"commit", "pr", "any"}:
+            date_source_norm = "any"
+
+        type_norm = str(workitem_type or "All").strip().lower()
+        allowed_types = {"all", "bug", "user story"}
+        if type_norm not in allowed_types:
+            type_norm = "all"
+
+        try:
+            max_items = int(limit)
+        except Exception:
+            max_items = 300
+        max_items = max(1, min(max_items, 1000))
+
+        def in_range(dt):
+            return dt is not None and start <= dt < end_exclusive
+
+        results = []
+        for wi in self.workitems_data.values():
+            wi_id = wi.get("id")
+            if wi_id is None:
+                continue
+
+            wi_type = str(wi.get("type", "")).strip()
+            if type_norm != "all" and wi_type.lower() != type_norm:
+                continue
+
+            links = self.workitem_dev_links_index.get(int(wi_id), {})
+            commit_ids = [str(cid) for cid in (links.get("linked_commit_ids") or []) if cid]
+            pr_ids = [int(pid) for pid in (links.get("linked_pull_request_ids") or []) if pid is not None]
+
+            matched_commit_ids = []
+            matched_pr_ids = []
+            last_activity = None
+
+            for cid in commit_ids:
+                commit = self.commits_index.get(cid)
+                c_dt = self._parse_iso_datetime((commit or {}).get("date"))
+                if in_range(c_dt):
+                    matched_commit_ids.append(cid)
+                    if last_activity is None or c_dt > last_activity:
+                        last_activity = c_dt
+
+            for pid in pr_ids:
+                pr = self.pull_requests_index.get(pid)
+                p_dt = self._parse_iso_datetime((pr or {}).get("date_creation"))
+                if in_range(p_dt):
+                    matched_pr_ids.append(pid)
+                    if last_activity is None or p_dt > last_activity:
+                        last_activity = p_dt
+
+            has_commit = len(matched_commit_ids) > 0
+            has_pr = len(matched_pr_ids) > 0
+            if date_source_norm == "commit" and not has_commit:
+                continue
+            if date_source_norm == "pr" and not has_pr:
+                continue
+            if date_source_norm == "any" and not (has_commit or has_pr):
+                continue
+
+            results.append({
+                "id": int(wi_id),
+                "titre": wi.get("titre") or wi.get("title") or "",
+                "type": wi_type,
+                "statut": wi.get("statut") or "",
+                "priorite": wi.get("priorite", 0),
+                "assigne_a": wi.get("assigne_a") or "",
+                "matched_commit_count": len(matched_commit_ids),
+                "matched_pr_count": len(matched_pr_ids),
+                "matched_commit_ids": matched_commit_ids,
+                "matched_pr_ids": matched_pr_ids,
+                "last_activity_date": last_activity.isoformat().replace("+00:00", "Z") if last_activity else "",
+            })
+
+        results.sort(
+            key=lambda r: (
+                r.get("last_activity_date") or "",
+                r.get("matched_commit_count", 0),
+                r.get("matched_pr_count", 0),
+                r.get("id", 0),
+            ),
+            reverse=True,
+        )
+        sliced = results[:max_items]
+
+        return {
+            "date_from": date_from,
+            "date_to": date_to,
+            "type": workitem_type,
+            "date_source": date_source_norm,
+            "count": len(sliced),
+            "total_found": len(results),
+            "results": sliced,
+        }
     
     def get_nrt_scope(self, workitem_id):
         """NEW ARCHITECTURE: Get complete NRT scope for a WorkItem
@@ -2674,9 +3462,47 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
             })
         elif path == '/api/workitem-types':
             self.send_json_response(analyzer.get_workitem_types())
+        elif path == '/api/iterations':
+            self.send_json_response(analyzer.get_iteration_catalog())
+        elif path == '/api/workitems-by-iteration':
+            iteration_path = query_params.get('iteration_path', [''])[0]
+            sprint_path = query_params.get('sprint_path', [''])[0]
+            workitem_type = query_params.get('type', ['All'])[0]
+            limit = query_params.get('limit', ['500'])[0]
+            self.send_json_response(
+                analyzer.get_workitems_by_iteration(
+                    iteration_path=iteration_path,
+                    sprint_path=sprint_path,
+                    workitem_type=workitem_type,
+                    limit=limit,
+                )
+            )
+        elif path == '/api/nrt-scope-batch':
+            raw_ids = query_params.get('workitem_ids', [''])[0]
+            ids = [x.strip() for x in str(raw_ids).split(',') if x.strip()]
+            self.send_json_response(analyzer.get_nrt_scope_batch(ids))
+        elif path == '/api/nrt-scope-batch-direct':
+            raw_ids = query_params.get('workitem_ids', [''])[0]
+            ids = [x.strip() for x in str(raw_ids).split(',') if x.strip()]
+            self.send_json_response(analyzer.get_nrt_scope_batch_direct_trace(ids))
         elif path.startswith('/api/workitems-by-type/'):
             workitem_type = urllib.parse.unquote(path.split('/api/workitems-by-type/')[-1])
             self.send_json_response(analyzer.get_workitems_by_type(workitem_type))
+        elif path == '/api/workitems-by-activity-date':
+            date_from = query_params.get('date_from', [''])[0]
+            date_to = query_params.get('date_to', [''])[0]
+            workitem_type = query_params.get('type', ['All'])[0]
+            date_source = query_params.get('date_source', ['any'])[0]
+            limit = query_params.get('limit', ['300'])[0]
+            self.send_json_response(
+                analyzer.get_workitems_by_activity_date(
+                    date_from=date_from,
+                    date_to=date_to,
+                    workitem_type=workitem_type,
+                    date_source=date_source,
+                    limit=limit,
+                )
+            )
         elif path == '/api/nrt-scope' or path.startswith('/api/nrt-scope/'):
             # NEW: NRT Scope by WorkItem ID only
             workitem_id = query_params.get('workitem_id', [None])[0]

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports - FORVIA NRT Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -15,10 +14,12 @@
             --gray-dark: #1a1a1a;
             --gray-light: #f8f9fa;
             --accent: #FF6B35;
+            --ok: #1c9a5f;
+            --warn: #d98c00;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
             color: var(--gray-dark);
@@ -96,7 +97,7 @@
         }
 
         .nav-links a::after {
-            content: '';
+            content: "";
             position: absolute;
             bottom: -8px;
             left: 0;
@@ -111,163 +112,120 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 30px 20px 50px;
         }
 
         .page-title {
-            font-size: 36px;
+            font-size: 34px;
             color: var(--forvia-dark);
-            margin-bottom: 40px;
+            margin-bottom: 10px;
             font-weight: 700;
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 12px;
         }
 
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+        .subtitle {
+            margin-bottom: 20px;
+            color: #344e75;
+            font-size: 14px;
         }
 
-        .kpi-card {
+        .panel {
             background: white;
-            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            border: 2px solid transparent;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
+            border: 1px solid #dce9ff;
+            padding: 18px;
+            margin-bottom: 16px;
         }
 
-        .kpi-card::before {
-            content: '';
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(170px, 1fr));
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #0b2a7a;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+        }
+
+        .type-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .type-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            cursor: pointer;
+            color: #1a1a1a;
+        }
+
+        .type-dropdown-menu {
             position: absolute;
-            top: 0;
+            top: calc(100% + 6px);
             left: 0;
             right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--accent) 100%);
+            background: #fff;
+            border: 1px solid #dce9ff;
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(17, 57, 128, 0.15);
+            z-index: 50;
+            padding: 8px 10px;
+            display: none;
         }
 
-        .kpi-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 8px 25px rgba(0, 51, 204, 0.15);
-            border-color: var(--forvia-light);
+        .type-dropdown.open .type-dropdown-menu {
+            display: block;
         }
 
-        .kpi-icon {
-            font-size: 32px;
-            margin-bottom: 15px;
-            color: var(--forvia-blue);
-        }
-
-        .kpi-label {
-            color: #666;
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
-        }
-
-        .kpi-value {
-            font-size: 36px;
-            font-weight: 700;
-            color: var(--forvia-blue);
-            margin-bottom: 8px;
-        }
-
-        .kpi-trend {
-            font-size: 12px;
-            color: #27AE60;
-            font-weight: 600;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .chart-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            border: 2px solid var(--forvia-light);
-        }
-
-        .chart-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--forvia-dark);
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--forvia-light);
-        }
-
-        canvas {
-            max-height: 300px;
-        }
-
-        .health-status {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
-            border-left: 4px solid #27AE60;
-        }
-
-        .health-title {
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--forvia-dark);
-            margin-bottom: 20px;
+        .type-option {
             display: flex;
             align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .control-group {
+            display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
         }
 
-        .status-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .status-table td {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .status-label {
-            font-weight: 600;
-            color: var(--gray-dark);
-        }
-
-        .status-value {
-            color: #27AE60;
-            font-weight: 600;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: #d1f2eb;
-            color: #27AE60;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .export-btn {
+        .btn {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
             color: white;
             border: none;
@@ -275,27 +233,530 @@
             font-weight: 600;
             font-size: 13px;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 20px;
+            transition: all 0.2s;
         }
 
-        .export-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 51, 204, 0.3);
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 14px rgba(0, 51, 204, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-ghost {
+            background: #f4f8ff;
+            color: #0f3a92;
+            border: 1px solid #d6e4ff;
+        }
+
+        .btn-ghost:hover {
+            background: #edf4ff;
+            box-shadow: none;
+        }
+
+        .spin {
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .hero-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .hero-pill {
+            background: #f3f7ff;
+            border: 1px solid #dce9ff;
+            color: #113776;
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .summary-box {
+            background: #f3f7ff;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #23324d;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            background: white;
+            box-shadow: inset 0 0 0 1px #f6f9ff;
+        }
+
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .mini-table th, .mini-table td {
+            border-bottom: 1px solid #eef3ff;
+            padding: 8px 10px;
+            text-align: left;
+            white-space: nowrap;
+            vertical-align: top;
+        }
+
+        .mini-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+        .mini-table th {
+            background: #f3f7ff;
+            color: #0b2a7a;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        .mini-table td.wrap-text {
+            white-space: normal;
+            line-height: 1.35;
+            min-width: 260px;
+        }
+
+        .scope-by-ms {
+            display: grid;
+            gap: 12px;
+        }
+
+        .ms-card {
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            background: #fff;
+            overflow: hidden;
+            animation: cardIn 0.45s ease both;
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .ms-head {
+            padding: 10px 12px;
+            background: #f3f7ff;
+            border-bottom: 1px solid #dce9ff;
+            font-size: 14px;
+            color: #0b2a7a;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .ms-head::-webkit-details-marker {
+            display: none;
+        }
+
+        .ms-head .caret {
+            transition: transform 0.2s ease;
+        }
+
+        details[open] .ms-head .caret {
+            transform: rotate(180deg);
+        }
+
+        .ms-body {
+            max-height: 60vh;
+            overflow: auto;
+            padding: 12px;
+        }
+
+        .pill {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-right: 6px;
+            margin-bottom: 4px;
+            border: 1px solid #dce9ff;
+            background: #f8fbff;
+            color: #133f9c;
+        }
+
+        .p1 { color: var(--ok); border-color: #bfead3; background: #eefaf3; }
+        .p23 { color: var(--warn); border-color: #ffe1a3; background: #fff8e7; }
+
+        .fn-list {
+            min-width: 280px;
+            max-width: 380px;
+            white-space: normal;
+            line-height: 1.35;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #47628f;
+        }
+
+        .scope-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .scope-kpi {
+            background: #fff;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .scope-kpi .k {
+            font-size: 11px;
+            color: #4c6392;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 4px;
+        }
+
+        .scope-kpi .v {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0b2a7a;
+        }
+
+        .group-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .group-card {
+            border: 1px solid #e7efff;
+            border-radius: 10px;
+            background: #fbfdff;
+            overflow: hidden;
+            transition: transform 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .group-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 7px 14px rgba(18, 57, 128, 0.08);
+        }
+
+        .group-card.p1-group {
+            border-left: 4px solid var(--ok);
+        }
+
+        .group-card.p23-group {
+            border-left: 4px solid var(--warn);
+        }
+
+        .group-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #f7faff;
+            border-bottom: 1px solid #e7efff;
+            flex-wrap: wrap;
+        }
+
+        .group-meta {
+            font-size: 12px;
+            color: #345183;
+            font-weight: 600;
+        }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(280px, 1fr));
+            gap: 10px;
+            padding: 10px 12px 12px;
+        }
+
+        .group-row {
+            background: #fff;
+            border: 1px solid #edf3ff;
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        .group-key {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #3f5f93;
+            font-weight: 700;
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+        }
+
+        .group-val {
+            font-size: 13px;
+            color: #1c2f4e;
+            line-height: 1.45;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .chip {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid #d9e7ff;
+            background: #f6f9ff;
+            color: #0f3a92;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        .chip-fn {
+            cursor: default;
+        }
+
+        .links-list a {
+            display: inline-block;
+            margin-bottom: 4px;
+            color: #0033CC;
+            text-decoration: underline;
+            overflow-wrap: anywhere;
+        }
+
+        .evidence-box {
+            max-height: 120px;
+            overflow: auto;
+            background: #f4f8ff;
+            border: 1px dashed #cfe0ff;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 12px;
+            color: #294374;
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+
+        .selected-badge {
+            border: 1px solid #d7e6ff;
+            background: #f6f9ff;
+            color: #204078;
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .report-tools {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            background: #f8fbff;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tool-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #dce9ff;
+            background: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #1f3f79;
+            font-weight: 600;
+        }
+
+        .tool-search {
+            width: 100%;
+            border: 2px solid #dce9ff;
+            background: #fff;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 13px;
+            color: #1c2f4e;
+        }
+
+        .tool-search:focus, .form-input:focus {
+            outline: none;
+            border-color: #8db6ff;
+            box-shadow: 0 0 0 3px rgba(0, 51, 204, 0.12);
+        }
+
+        .tool-select {
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            color: #1c2f4e;
+            background: #fff;
+            min-width: 150px;
+        }
+
+        .tool-select-wide {
+            width: 100%;
+            min-width: 200px;
+            font-size: 13px;
+        }
+
+        .filter-pack {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            width: 100%;
+            flex: 1 1 280px;
+        }
+
+        .filter-pack .tool-select {
+            flex: 1;
+        }
+
+        .filter-pack-main {
+            max-width: 380px;
+        }
+
+        .compact-pack {
+            flex: 0 0 auto;
+            width: auto;
+        }
+
+        .clear-btn {
+            border: 1px solid #dce9ff;
+            background: #fff;
+            color: #2c4e8a;
+            border-radius: 8px;
+            padding: 7px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .clear-btn:hover {
+            background: #edf4ff;
+            border-color: #bcd6ff;
+        }
+
+        .live-kpi {
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #305088;
+            font-weight: 700;
+        }
+
+        .function-inspector {
+            margin-top: 10px;
+            border: 1px solid #dce9ff;
+            background: #f7fbff;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        .function-inspector .title {
+            font-size: 13px;
+            color: #0f3a92;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .function-inspector .line {
+            font-size: 12px;
+            color: #243d6b;
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .compact-mode .group-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding: 8px 10px 10px;
+        }
+
+        .compact-mode .group-row {
+            padding: 7px 8px;
+        }
+
+        .compact-mode .group-val {
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .compact-mode .chip {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 9999;
+            background: #0f3a92;
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            box-shadow: 0 10px 24px rgba(0, 40, 128, 0.35);
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+            transition: all 0.22s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         footer {
             background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
             color: white;
             text-align: center;
-            padding: 30px 20px;
-            margin-top: 60px;
+            padding: 26px 20px;
+            margin-top: 50px;
             font-size: 13px;
         }
 
-        @media (max-width: 768px) {
-            .charts-grid { grid-template-columns: 1fr; }
+        @media (max-width: 920px) {
+            .filter-grid { grid-template-columns: 1fr; }
             .page-title { font-size: 24px; }
+            .group-grid { grid-template-columns: 1fr; }
+            .report-tools { gap: 10px; }
+            .filter-pack { flex: 1 1 100%; max-width: 100%; }
+            .compact-pack { width: 100%; justify-content: space-between; }
         }
     </style>
 </head>
@@ -321,157 +782,665 @@
 
     <div class="container">
         <div class="page-title">
-            <i class="fas fa-chart-bar"></i> System Analytics & Reports
+            <i class="fas fa-clipboard-check"></i> Tester Scope Report
+        </div>
+        <div class="subtitle">
+            Vue optimisee pour testeurs: scope direct only, regroupe par microservice et dedoublonne les descriptions metier equivalentes.
+        </div>
+        <div class="hero-strip">
+            <span class="hero-pill"><i class="fas fa-bolt"></i> Live Scope Consolidation</span>
+            <span class="hero-pill"><i class="fas fa-bullseye"></i> Direct Evidence Only</span>
+            <span class="hero-pill"><i class="fas fa-user-check"></i> Tester Friendly Output</span>
+            <span class="hero-pill"><i class="fas fa-layer-group"></i> Grouped By Business Meaning</span>
         </div>
 
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <div class="kpi-icon"><i class="fas fa-database"></i></div>
-                <div class="kpi-label">Total Nodes</div>
-                <div class="kpi-value" id="kpiNodes">-</div>
-                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +12% vs last month</div>
+        <div class="panel">
+            <div class="filter-grid">
+                <div>
+                    <label class="form-label"><i class="fas fa-layer-group"></i> Iteration</label>
+                    <select id="iterationSelect" class="form-input"></select>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-flag-checkered"></i> Sprint</label>
+                    <select id="sprintSelect" class="form-input"></select>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-bug"></i> WorkItem Type</label>
+                    <div id="typeDropdown" class="type-dropdown">
+                        <button id="typeDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleTypeDropdown()">
+                            <span id="typeDropdownLabel">Bug, User Story</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="typeDropdownMenu" class="type-dropdown-menu">
+                            <label class="type-option">
+                                <input id="typeBug" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <span>Bug</span>
+                            </label>
+                            <label class="type-option">
+                                <input id="typeUserStory" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <span>User Story</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label"><i class="fas fa-hashtag"></i> Limit</label>
+                    <input id="limitInput" class="form-input" type="number" min="1" max="1000" value="300">
+                </div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-icon"><i class="fas fa-link"></i></div>
-                <div class="kpi-label">Graph Relations</div>
-                <div class="kpi-value" id="kpiRelations">-</div>
-                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +8% connectivity</div>
+            <div class="control-group">
+                <button id="findBtn" class="btn" onclick="loadWorkitemsByIteration()"><i class="fas fa-filter"></i> Find WorkItems</button>
+                <button id="generateBtn" class="btn" onclick="generateTesterReport()"><i class="fas fa-layer-group"></i> Generate Scope Report</button>
+                <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(true)"><i class="fas fa-check-square"></i> Select All</button>
+                <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(false)"><i class="fas fa-square"></i> Clear Selection</button>
+                <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(true)"><i class="fas fa-angle-down"></i> Expand All</button>
+                <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(false)"><i class="fas fa-angle-up"></i> Collapse All</button>
+                <span id="selectionMeta" class="selected-badge">Selected: 0</span>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-icon"><i class="fas fa-git-alt"></i></div>
-                <div class="kpi-label">Commits Analyzed</div>
-                <div class="kpi-value" id="kpiCommits">-</div>
-                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +25% this week</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-icon"><i class="fas fa-cog"></i></div>
-                <div class="kpi-label">Avg Scope Size</div>
-                <div class="kpi-value" id="kpiAvgScope">-</div>
-                <div class="kpi-trend"><i class="fas fa-minus"></i> Stable</div>
-            </div>
-        </div>
-
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-title"><i class="fas fa-chart-line"></i> Commits Over Time</div>
-                <canvas id="commitsChart"></canvas>
-            </div>
-            <div class="chart-card">
-                <div class="chart-title"><i class="fas fa-chart-pie"></i> Distribution by Microservice</div>
-                <canvas id="microservicesChart"></canvas>
-            </div>
-        </div>
-
-        <div class="health-status">
-            <div class="health-title">
-                <i class="fas fa-heartbeat"></i> System Health Status
-            </div>
-            <table class="status-table">
-                <tr>
-                    <td class="status-label"><i class="fas fa-database"></i> Database Connection</td>
-                    <td class="status-value"><span class="status-badge"><i class="fas fa-check-circle"></i> Healthy</span></td>
-                </tr>
-                <tr>
-                    <td class="status-label"><i class="fas fa-server"></i> Neo4j Instance</td>
-                    <td class="status-value"><span class="status-badge"><i class="fas fa-check-circle"></i> Running</span></td>
-                </tr>
-                <tr>
-                    <td class="status-label"><i class="fas fa-tasks"></i> Query Performance</td>
-                    <td class="status-value"><span class="status-badge"><i class="fas fa-check-circle"></i> Optimal</span></td>
-                </tr>
-                <tr>
-                    <td class="status-label"><i class="fas fa-shield-alt"></i> Data Integrity</td>
-                    <td class="status-value"><span class="status-badge"><i class="fas fa-check-circle"></i> Verified</span></td>
-                </tr>
-                <tr>
-                    <td class="status-label"><i class="fas fa-electric"></i> System Uptime</td>
-                    <td class="status-value"><span class="status-badge"><i class="fas fa-check-circle"></i> 99.9%</span></td>
-                </tr>
-            </table>
-            <button class="export-btn" onclick="exportReport()">
-                <i class="fas fa-download"></i> Export Full Report
-            </button>
+            <div id="workitemsZone" style="margin-top:12px;"></div>
+            <div id="reportZone" style="margin-top:12px;"></div>
         </div>
     </div>
 
     <footer>
         <p>&copy; 2025 FORVIA NRT Scope System | <strong>Automated Non-Regression Test Orchestration</strong></p>
     </footer>
+    <div id="uxToast" class="toast"></div>
 
     <script>
-        function loadCharts() {
-            // Commits over time
-            const commitsCtx = document.getElementById('commitsChart').getContext('2d');
-            new Chart(commitsCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                    datasets: [{
-                        label: 'Commits',
-                        data: [45, 52, 48, 61],
-                        borderColor: '#0033CC',
-                        backgroundColor: 'rgba(0, 51, 204, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#FF6B35',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
-                        pointRadius: 5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#666' } },
-                        x: { ticks: { color: '#666' } }
+        function escapeHtml(v) {
+            return String(v || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function normalizeRepoPath(pathValue) {
+            let p = String(pathValue || "").replace(/\\/g, "/").trim();
+            if (!p) return "";
+            if (!p.startsWith("/")) p = "/" + p;
+            while (p.includes("//")) p = p.replaceAll("//", "/");
+            return p;
+        }
+
+        function updateTypeDropdownLabel() {
+            const bug = document.getElementById("typeBug")?.checked;
+            const us = document.getElementById("typeUserStory")?.checked;
+            const label = document.getElementById("typeDropdownLabel");
+            if (!label) return;
+            if (bug && us) label.textContent = "Bug, User Story";
+            else if (bug) label.textContent = "Bug";
+            else if (us) label.textContent = "User Story";
+            else label.textContent = "Select ticket type";
+        }
+
+        function toggleTypeDropdown() {
+            const wrapper = document.getElementById("typeDropdown");
+            if (!wrapper) return;
+            wrapper.classList.toggle("open");
+        }
+
+        function closeTypeDropdown() {
+            const wrapper = document.getElementById("typeDropdown");
+            if (!wrapper) return;
+            wrapper.classList.remove("open");
+        }
+
+        function showToast(message) {
+            const el = document.getElementById("uxToast");
+            if (!el) return;
+            el.textContent = message;
+            el.classList.add("show");
+            clearTimeout(showToast._timer);
+            showToast._timer = setTimeout(() => el.classList.remove("show"), 2200);
+        }
+
+        function setButtonBusy(buttonId, busy, busyLabel) {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+            if (busy) {
+                if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fas fa-circle-notch spin"></i> ${escapeHtml(busyLabel || "Loading...")}`;
+            } else {
+                btn.disabled = false;
+                if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+            }
+        }
+
+        function updateSelectionMeta() {
+            const all = Array.from(document.querySelectorAll(".wi-check"));
+            const checked = all.filter(c => c.checked).length;
+            const badge = document.getElementById("selectionMeta");
+            if (badge) badge.textContent = `Selected: ${checked}`;
+        }
+
+        function toggleSelectAllRows(checked) {
+            document.querySelectorAll(".wi-check").forEach(cb => { cb.checked = !!checked; });
+            updateSelectionMeta();
+            showToast(checked ? "All workitems selected" : "Selection cleared");
+        }
+
+        function toggleAllMsCards(open) {
+            document.querySelectorAll(".ms-card").forEach(card => {
+                if (card.tagName.toLowerCase() === "details") {
+                    card.open = !!open;
+                }
+            });
+            showToast(open ? "All microservices expanded" : "All microservices collapsed");
+        }
+
+        function clearMsFilter() {
+            const el = document.getElementById("msFilter");
+            if (!el) return;
+            el.value = "__all__";
+            applyReportDisplayOptions();
+            showToast("Microservice filter cleared");
+        }
+
+        function clearPriorityFilter() {
+            const el = document.getElementById("priorityFilter");
+            if (!el) return;
+            el.value = "__all__";
+            applyReportDisplayOptions();
+            showToast("Priority filter cleared");
+        }
+
+        function clearFunctionFilter() {
+            const el = document.getElementById("functionFilter");
+            if (!el) return;
+            el.value = "__all__";
+            applyReportDisplayOptions();
+            showToast("Function filter cleared");
+        }
+
+        function clearCompactView() {
+            const el = document.getElementById("compactView");
+            if (!el) return;
+            el.checked = false;
+            applyReportDisplayOptions();
+            showToast("Compact view cleared");
+        }
+
+        async function loadIterationCatalog() {
+            const iterationSel = document.getElementById("iterationSelect");
+            const sprintSel = document.getElementById("sprintSelect");
+            iterationSel.innerHTML = '<option value="">All Iterations</option>';
+            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            try {
+                const res = await fetch("/api/iterations");
+                const data = await res.json();
+                const iterations = data.iterations || [];
+                iterations.forEach(it => {
+                    const opt = document.createElement("option");
+                    opt.value = it.iteration_path;
+                    opt.textContent = `${it.iteration_path} (${it.workitem_count})`;
+                    opt.dataset.sprints = JSON.stringify(it.sprints || []);
+                    iterationSel.appendChild(opt);
+                });
+                iterationSel.addEventListener("change", refreshSprintsForIteration);
+            } catch (err) {
+                document.getElementById("workitemsZone").innerHTML =
+                    `<div class="summary-box">Error loading iterations: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function refreshSprintsForIteration() {
+            const iterationSel = document.getElementById("iterationSelect");
+            const sprintSel = document.getElementById("sprintSelect");
+            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            const selectedOpt = iterationSel.options[iterationSel.selectedIndex];
+            if (!selectedOpt || !selectedOpt.dataset.sprints) return;
+            const sprints = JSON.parse(selectedOpt.dataset.sprints || "[]");
+            sprints.forEach(sp => {
+                const opt = document.createElement("option");
+                opt.value = sp.sprint_path;
+                opt.textContent = `${sp.sprint_path} (${sp.workitem_count})`;
+                sprintSel.appendChild(opt);
+            });
+        }
+
+        async function loadWorkitemsByIteration() {
+            const iterationPath = document.getElementById("iterationSelect").value;
+            const sprintPath = document.getElementById("sprintSelect").value;
+            const bugChecked = document.getElementById("typeBug").checked;
+            const usChecked = document.getElementById("typeUserStory").checked;
+            const selectedTypes = [];
+            if (bugChecked) selectedTypes.push("Bug");
+            if (usChecked) selectedTypes.push("User Story");
+            const limit = document.getElementById("limitInput").value || "300";
+            const target = document.getElementById("workitemsZone");
+            document.getElementById("reportZone").innerHTML = "";
+
+            if (selectedTypes.length === 0) {
+                target.innerHTML = `<div class="summary-box">Error: select at least one ticket type (Bug and/or User Story).</div>`;
+                return;
+            }
+
+            const qs = new URLSearchParams({
+                iteration_path: iterationPath,
+                sprint_path: sprintPath,
+                type: selectedTypes.join(","),
+                limit
+            });
+
+            target.innerHTML = `<div class="summary-box">Loading WorkItems...</div>`;
+            setButtonBusy("findBtn", true, "Finding...");
+            try {
+                const res = await fetch(`/api/workitems-by-iteration?${qs.toString()}`);
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(data.error || "Unable to load workitems")}</div>`;
+                    return;
+                }
+                renderWorkitemsTable(data);
+                showToast(`${data.count || 0} workitems loaded`);
+            } catch (err) {
+                target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                setButtonBusy("findBtn", false);
+            }
+        }
+
+        function renderWorkitemsTable(data) {
+            const rows = (data.results || []).map(wi => `
+                <tr>
+                    <td><input type="checkbox" class="wi-check" value="${wi.id}" ${wi.has_dev_activity ? "checked" : ""} onchange="updateSelectionMeta()"></td>
+                    <td>${wi.id}</td>
+                    <td title="${escapeHtml(wi.titre)}">${escapeHtml(wi.titre)}</td>
+                    <td>${escapeHtml(wi.type)}</td>
+                    <td>${escapeHtml(wi.iteration_path)}</td>
+                    <td>${wi.linked_commit_count}</td>
+                    <td>${wi.linked_pr_count}</td>
+                    <td>${wi.has_dev_activity ? "Yes" : "No"}</td>
+                </tr>
+            `).join("");
+
+            document.getElementById("workitemsZone").innerHTML = `
+                <div class="summary-box">
+                    Found: <strong>${data.count}</strong> / ${data.total_found}
+                    &nbsp;|&nbsp; Iteration: <strong>${escapeHtml(data.iteration_path || "All")}</strong>
+                    &nbsp;|&nbsp; Sprint: <strong>${escapeHtml(data.sprint_path || "All")}</strong>
+                    &nbsp;|&nbsp; Type: <strong>${escapeHtml(data.type || "All")}</strong>
+                </div>
+                <div class="table-wrap">
+                    <table class="mini-table">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="masterSelect" onchange="toggleSelectAllRows(this.checked)"></th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Type</th>
+                                <th>Iteration Path</th>
+                                <th>Commits</th>
+                                <th>PRs</th>
+                                <th>Dev Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows || '<tr><td colspan="8">No workitems found</td></tr>'}</tbody>
+                    </table>
+                </div>
+            `;
+            updateSelectionMeta();
+        }
+
+        function normalizeText(v) {
+            return String(v || "").toLowerCase().replace(/\s+/g, " ").trim();
+        }
+
+        function normalizeBusinessDescription(desc) {
+            let text = String(desc || "").trim();
+            if (!text) return "";
+            text = text.replace(/^Fonction\s+[^|]+\|\s*/i, "");
+            text = text.replace(/\|\s*lignes\s+changees[^|]*/i, "");
+            text = text.replace(/\|\s*lignes\s+changes[^|]*/i, "");
+            text = text.replace(/\s+/g, " ").trim();
+            return text;
+        }
+
+        async function generateTesterReport() {
+            const checks = Array.from(document.querySelectorAll(".wi-check:checked"));
+            const target = document.getElementById("reportZone");
+            if (!checks.length) {
+                target.innerHTML = `<div class="summary-box">Select at least one WorkItem.</div>`;
+                return;
+            }
+            const ids = checks.map(c => c.value);
+            target.innerHTML = `<div class="summary-box">Generating tester report...</div>`;
+            setButtonBusy("generateBtn", true, "Generating...");
+
+            try {
+                const qs = encodeURIComponent(ids.join(","));
+                let data = null;
+                let res = await fetch(`/api/nrt-scope-batch-direct?workitem_ids=${qs}`);
+                if (res.ok) {
+                    data = await res.json();
+                } else if (res.status === 404) {
+                    const legacyRes = await fetch(`/api/nrt-scope-batch?workitem_ids=${qs}`);
+                    const legacyData = await legacyRes.json();
+                    if (!legacyRes.ok || legacyData.error) {
+                        target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(legacyData.error || "Unable to generate report")}</div>`;
+                        return;
                     }
+                    data = legacyData;
+                } else {
+                    let errText = "Unable to generate report";
+                    try {
+                        const maybe = await res.json();
+                        if (maybe && maybe.error) errText = maybe.error;
+                    } catch (_) {}
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(errText)}</div>`;
+                    return;
                 }
-            });
 
-            // Microservices distribution
-            const msCtx = document.getElementById('microservicesChart').getContext('2d');
-            new Chart(msCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['mesx-ume-backend', 'mesx-admin', 'mesx-job-scheduler', 'Others'],
-                    datasets: [{
-                        data: [35, 25, 20, 20],
-                        backgroundColor: ['#0033CC', '#27AE60', '#FF6B35', '#9B59B6'],
-                        borderColor: '#fff',
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { position: 'bottom' } }
+                if (!data || data.error) {
+                    target.innerHTML = `<div class="summary-box">Error: ${escapeHtml((data && data.error) || "Unable to generate report")}</div>`;
+                    return;
                 }
-            });
+                renderTesterReport(data);
+                showToast("Scope report generated");
+            } catch (err) {
+                target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+            } finally {
+                setButtonBusy("generateBtn", false);
+            }
         }
 
-        function loadKPIs() {
-            fetch('/api/statistics')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('kpiNodes').textContent = (data.total_nodes || 0).toLocaleString();
-                    document.getElementById('kpiRelations').textContent = (data.total_relations || 0).toLocaleString();
-                    document.getElementById('kpiCommits').textContent = (data.commit_count || 0).toLocaleString();
-                    document.getElementById('kpiAvgScope').textContent = Math.round((data.function_count || 0) / (data.commit_count || 1));
+        let reportState = null;
+
+        function buildReportModel(data) {
+            const c = data.consolidated || {};
+            const allFunctions = c.functions || [];
+            const groupedByMs = {};
+
+            for (const fn of allFunctions) {
+                const msList = (Array.isArray(fn.microservices) && fn.microservices.length) ? fn.microservices : ["unknown-microservice"];
+                const scopeTypeRaw = String(fn.function_scope_type || ((fn.evidence_lines_count || 0) > 0 ? "P1 touchee prouvee" : "P2/P3 candidate"));
+                const priority = scopeTypeRaw.toLowerCase().includes("p1") ? "P1" : "P2/P3";
+                const desc = fn.description || "Description metier non disponible.";
+                const impact = fn.impact_front || "Impact front non disponible.";
+                const retest = fn.what_to_test || "Retest conseille non disponible.";
+                const descCore = normalizeBusinessDescription(desc);
+                const impactCore = normalizeText(impact);
+                const retestCore = normalizeText(retest);
+                const groupKey = `${priority}|${descCore}|${impactCore}|${retestCore}`;
+                const fnId = String(fn.id || fn.name || "").trim();
+
+                for (const ms of msList) {
+                    if (!groupedByMs[ms]) groupedByMs[ms] = { name: ms, groups: {} };
+                    if (!groupedByMs[ms].groups[groupKey]) {
+                        groupedByMs[ms].groups[groupKey] = {
+                            priority,
+                            desc,
+                            impact,
+                            retest,
+                            functions: new Set(),
+                            searchBlob: ""
+                        };
+                    }
+                    const g = groupedByMs[ms].groups[groupKey];
+                    g.functions.add(fnId);
+                    g.searchBlob += ` ${ms} ${fnId} ${desc} ${impact} ${retest}`;
+                }
+            }
+
+            const microservices = Object.values(groupedByMs).map(msObj => ({
+                name: msObj.name,
+                groups: Object.values(msObj.groups).map(g => ({
+                    priority: g.priority,
+                    desc: g.desc,
+                    impact: g.impact,
+                    retest: g.retest,
+                    functions: Array.from(g.functions).sort(),
+                    searchBlob: normalizeText(g.searchBlob)
+                }))
+            }));
+
+            return {
+                raw: data,
+                consolidated: c,
+                microservices
+            };
+        }
+
+        function getReportViewOptions() {
+            return {
+                priority: document.getElementById("priorityFilter")?.value || "__all__",
+                selectedFunction: document.getElementById("functionFilter")?.value || "__all__",
+                compact: !!document.getElementById("compactView")?.checked,
+                selectedMs: document.getElementById("msFilter")?.value || "__all__"
+            };
+        }
+
+        function populateMicroserviceFilter(msList) {
+            const sel = document.getElementById("msFilter");
+            if (!sel) return;
+            const previous = sel.value || "__all__";
+            const options = [`<option value="__all__">All microservices (${msList.length})</option>`];
+            msList
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(ms => {
+                    const p1 = ms.groups.filter(g => g.priority === "P1").length;
+                    const p23 = ms.groups.length - p1;
+                    const fnCount = ms.groups.reduce((acc, g) => acc + g.functions.length, 0);
+                    options.push(
+                        `<option value="${escapeHtml(ms.name)}">${escapeHtml(ms.name)} (P1:${p1} | P2/P3:${p23} | fn:${fnCount})</option>`
+                    );
+                });
+            sel.innerHTML = options.join("");
+            const hasPrev = msList.some(ms => ms.name === previous);
+            sel.value = hasPrev ? previous : "__all__";
+        }
+
+        function populateFunctionFilter(msList, opts) {
+            const sel = document.getElementById("functionFilter");
+            if (!sel) return;
+            const previous = sel.value || "__all__";
+            const functionSet = new Set();
+            msList.forEach(msObj => {
+                if (opts.selectedMs !== "__all__" && msObj.name !== opts.selectedMs) return;
+                msObj.groups.forEach(g => {
+                    if (opts.priority === "P1" && g.priority !== "P1") return;
+                    if (opts.priority === "P23" && g.priority === "P1") return;
+                    g.functions.forEach(fn => functionSet.add(fn));
+                });
+            });
+            const sortedFns = Array.from(functionSet).sort((a, b) => a.localeCompare(b));
+            const options = [`<option value="__all__">All functions (${sortedFns.length})</option>`]
+                .concat(sortedFns.map(fn => `<option value="${escapeHtml(fn)}">${escapeHtml(fn)}</option>`));
+            sel.innerHTML = options.join("");
+            const hasPrev = sortedFns.includes(previous);
+            sel.value = hasPrev ? previous : "__all__";
+        }
+
+        function updateFunctionInspector(selectedFn, group) {
+            const panel = document.getElementById("functionInspector");
+            if (!panel) return;
+            if (!selectedFn || selectedFn === "__all__" || !group) {
+                panel.innerHTML = `
+                    <div class="title"><i class="fas fa-lightbulb"></i> Function details</div>
+                    <div class="line">Choose a function to view business details.</div>
+                `;
+                return;
+            }
+            panel.innerHTML = `
+                <div class="title"><i class="fas fa-code"></i> ${escapeHtml(selectedFn)}</div>
+                <div class="line"><strong>Description metier:</strong> ${escapeHtml(group.desc || "N/A")}</div>
+                <div class="line"><strong>Impact Front cible:</strong> ${escapeHtml(group.impact || "N/A")}</div>
+                <div class="line"><strong>Retest conseille:</strong> ${escapeHtml(group.retest || "N/A")}</div>
+            `;
+        }
+
+        function renderMsCards(msList, opts) {
+            const filteredMs = msList
+                .map(msObj => {
+                    if (opts.selectedMs !== "__all__" && msObj.name !== opts.selectedMs) {
+                        return { ...msObj, groups: [] };
+                    }
+                    let groups = msObj.groups.filter(g => {
+                        if (opts.priority === "P1" && g.priority !== "P1") return false;
+                        if (opts.priority === "P23" && g.priority === "P1") return false;
+                        if (opts.selectedFunction !== "__all__" && !g.functions.includes(opts.selectedFunction)) return false;
+                        return true;
+                    });
+                    return { ...msObj, groups };
                 })
-                .catch(error => console.error('Error loading KPIs:', error));
+                .filter(msObj => msObj.groups.length > 0);
+
+            const getImpactStats = (msObj) => {
+                const p1 = msObj.groups.filter(g => g.priority === "P1").length;
+                const p23 = msObj.groups.length - p1;
+                const fn = msObj.groups.reduce((acc, g) => acc + g.functions.length, 0);
+                return { p1, p23, fn };
+            };
+
+            filteredMs.sort((a, b) => {
+                const sa = getImpactStats(a);
+                const sb = getImpactStats(b);
+                if (sb.p1 !== sa.p1) return sb.p1 - sa.p1;
+                if (sb.p23 !== sa.p23) return sb.p23 - sa.p23;
+                if (sb.fn !== sa.fn) return sb.fn - sa.fn;
+                if (b.groups.length !== a.groups.length) return b.groups.length - a.groups.length;
+                return a.name.localeCompare(b.name);
+            });
+
+            const totalGroups = filteredMs.reduce((acc, ms) => acc + ms.groups.length, 0);
+            const totalFunctions = filteredMs.reduce((acc, ms) => acc + ms.groups.reduce((gAcc, g) => gAcc + g.functions.length, 0), 0);
+            let matchedGroupForFunction = null;
+
+            const msCards = filteredMs.map((msObj, msIndex) => {
+                const groups = msObj.groups.sort((a, b) => {
+                    if (a.priority === b.priority) return a.desc.localeCompare(b.desc);
+                    return a.priority === "P1" ? -1 : 1;
+                });
+                const p1Count = groups.filter(g => g.priority === "P1").length;
+                const p23Count = groups.filter(g => g.priority !== "P1").length;
+
+                const groupCards = groups.map(g => `
+                    <div class="group-card ${g.priority === "P1" ? "p1-group" : "p23-group"}">
+                        <div class="group-head">
+                            <span class="pill ${g.priority === "P1" ? "p1" : "p23"}">${escapeHtml(g.priority)}</span>
+                            <span class="group-meta">${g.functions.length} fonction(s) dans ce groupe</span>
+                        </div>
+                        <div class="group-grid">
+                            <div class="group-row">
+                                <div class="group-key">Fonctions concernees</div>
+                                <div class="group-val chips">
+                                    ${g.functions.map(fnName => `<span class="chip chip-fn">${escapeHtml(fnName)}</span>`).join("")}
+                                </div>
+                            </div>
+                            <div class="group-row">
+                                <div class="group-key">Description metier</div>
+                                <div class="group-val">${escapeHtml(g.desc)}</div>
+                            </div>
+                            <div class="group-row">
+                                <div class="group-key">Impact Front cible</div>
+                                <div class="group-val">${escapeHtml(g.impact)}</div>
+                            </div>
+                            <div class="group-row">
+                                <div class="group-key">Retest conseille</div>
+                                <div class="group-val">${escapeHtml(g.retest)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join("");
+
+                if (opts.selectedFunction !== "__all__" && !matchedGroupForFunction) {
+                    matchedGroupForFunction = groups.find(g => g.functions.includes(opts.selectedFunction)) || null;
+                }
+
+                return `
+                    <details class="ms-card" style="animation-delay:${Math.min(msIndex * 0.06, 0.4)}s" ${msIndex < 2 ? "open" : ""}>
+                        <summary class="ms-head">
+                            <span><i class="fas fa-cubes"></i> ${escapeHtml(msObj.name)}</span>
+                            <span class="hint">Groupes: ${groups.length} | P1: ${p1Count} | P2/P3: ${p23Count} <i class="fas fa-chevron-down caret"></i></span>
+                        </summary>
+                        <div class="ms-body">
+                            <div class="group-list">
+                                ${groupCards || '<div class="summary-box">No function groups</div>'}
+                            </div>
+                        </div>
+                    </details>
+                `;
+            }).join("");
+
+            const cardsZone = document.getElementById("msCardsZone");
+            if (cardsZone) {
+                cardsZone.classList.toggle("compact-mode", !!opts.compact);
+                cardsZone.innerHTML = msCards || '<div class="summary-box">No microservices/functions for current filters.</div>';
+            }
+            updateFunctionInspector(opts.selectedFunction, matchedGroupForFunction);
+            return { filteredMs, totalGroups, totalFunctions };
         }
 
-        function exportReport() {
-            alert('📊 Report export feature coming soon!\n\nFormats will include: PDF, Excel, and JSON');
+        function applyReportDisplayOptions() {
+            if (!reportState) return;
+            const opts = getReportViewOptions();
+            populateFunctionFilter(reportState.microservices, opts);
+            const optsAfterFunctionRefresh = getReportViewOptions();
+            renderMsCards(reportState.microservices, optsAfterFunctionRefresh);
         }
 
-        // Load on page load
-        window.addEventListener('load', () => {
-            loadCharts();
-            loadKPIs();
+        function renderTesterReport(data) {
+            reportState = buildReportModel(data);
+            const c = reportState.consolidated || {};
+
+            document.getElementById("reportZone").innerHTML = `
+                <div class="scope-kpi-grid">
+                    <div class="scope-kpi"><div class="k">WorkItems scopes</div><div class="v">${data.scoped_workitem_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">Microservices directs</div><div class="v">${c.microservice_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">Fonctions consolidees</div><div class="v">${c.function_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">Mode</div><div class="v" style="font-size:16px">Direct only</div></div>
+                </div>
+                <div class="report-tools">
+                    <div class="tool-inline filter-pack filter-pack-main">
+                        <select id="msFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
+                            <option value="__all__">All microservices</option>
+                        </select>
+                        <button class="clear-btn" type="button" onclick="clearMsFilter()">Clear</button>
+                    </div>
+                    <div class="tool-inline filter-pack filter-pack-main">
+                        <select id="priorityFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
+                            <option value="__all__">All priorities (P1 + P2/P3)</option>
+                            <option value="P1">P1 touched only</option>
+                            <option value="P23">P2/P3 candidates only</option>
+                        </select>
+                        <button class="clear-btn" type="button" onclick="clearPriorityFilter()">Clear</button>
+                    </div>
+                    <div class="tool-inline filter-pack filter-pack-main">
+                        <select id="functionFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
+                            <option value="__all__">All functions</option>
+                        </select>
+                        <button class="clear-btn" type="button" onclick="clearFunctionFilter()">Clear</button>
+                    </div>
+                    <div class="tool-inline filter-pack compact-pack">
+                        <label><input id="compactView" type="checkbox" onchange="applyReportDisplayOptions()"> Compact view</label>
+                        <button class="clear-btn" type="button" onclick="clearCompactView()">Clear</button>
+                    </div>
+                </div>
+                <div id="functionInspector" class="function-inspector">
+                    <div class="title"><i class="fas fa-lightbulb"></i> Function details</div>
+                    <div class="line">Choose a function to view business details.</div>
+                </div>
+                <div id="msCardsZone" class="scope-by-ms"></div>
+            `;
+
+            populateMicroserviceFilter(reportState.microservices);
+            applyReportDisplayOptions();
+        }
+
+        window.addEventListener("load", () => {
+            updateTypeDropdownLabel();
+            updateSelectionMeta();
+            document.addEventListener("click", (event) => {
+                const wrapper = document.getElementById("typeDropdown");
+                if (!wrapper) return;
+                if (!wrapper.contains(event.target)) closeTypeDropdown();
+            });
+            loadIterationCatalog();
         });
     </script>
 </body>

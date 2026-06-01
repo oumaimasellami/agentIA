@@ -347,6 +347,93 @@
             margin-bottom: 20px;
         }
 
+        .batch-panel {
+            background: white;
+            padding: 28px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            border: 2px solid #dce9ff;
+        }
+
+        .batch-title {
+            color: var(--forvia-dark);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(180px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--forvia-blue);
+            border: 2px solid var(--forvia-blue);
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .batch-results {
+            margin-top: 20px;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #dce9ff;
+            border-radius: 10px;
+        }
+
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .mini-table th,
+        .mini-table td {
+            border-bottom: 1px solid #eef3ff;
+            padding: 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .mini-table th {
+            background: #f3f7ff;
+            color: #0b2a7a;
+            font-weight: 700;
+        }
+
+        .scope-batch-card {
+            background: #fff;
+            border: 1px solid #dce9ff;
+            border-left: 4px solid var(--forvia-blue);
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .scope-batch-title {
+            font-weight: 700;
+            color: #0b2a7a;
+            margin-bottom: 8px;
+        }
+
+        .scope-batch-lines {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.5;
+        }
+
         /* DATALIST STYLES */
         datalist {
             display: none;
@@ -371,6 +458,7 @@
 
         @media (max-width: 768px) {
             .input-grid { grid-template-columns: 1fr; }
+            .batch-grid { grid-template-columns: 1fr; }
             .page-title { font-size: 24px; }
         }
     </style>
@@ -415,6 +503,41 @@
                 </div>
                 <button type="submit" class="btn"><i class="fas fa-search"></i> Analyze Commit</button>
             </form>
+        </div>
+
+        <div class="batch-panel">
+            <div class="batch-title"><i class="fas fa-calendar-alt"></i> Batch NRT Scope by Date Range</div>
+            <div class="batch-grid">
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-calendar-day"></i> Date From</label>
+                    <input type="date" id="dateFrom" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-calendar-day"></i> Date To</label>
+                    <input type="date" id="dateTo" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-bug"></i> WorkItem Type</label>
+                    <select id="batchType" class="form-input">
+                        <option value="All">All</option>
+                        <option value="Bug">Bug</option>
+                        <option value="User Story">User Story</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-link"></i> Date Source</label>
+                    <select id="dateSource" class="form-input">
+                        <option value="any">Commit OR PR</option>
+                        <option value="commit">Commit only</option>
+                        <option value="pr">PR only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="batch-actions">
+                <button class="btn" id="btnFindWorkitems" type="button"><i class="fas fa-filter"></i> Find WorkItems</button>
+                <button class="btn btn-secondary" id="btnGenerateBatchScope" type="button"><i class="fas fa-layer-group"></i> Generate NRT Scope (Batch)</button>
+            </div>
+            <div class="batch-results" id="batchResults"></div>
         </div>
 
         <div class="results-section" id="results" style="display: none;">
@@ -479,6 +602,8 @@
         // Charger l'historique au démarrage (when DOM is ready)
         window.addEventListener('DOMContentLoaded', function() {
             loadCommitHistory();
+            initDefaultDateRange();
+            wireBatchActions();
             
             // Attach form event listener after DOM is ready
             const form = document.getElementById('analysisForm');
@@ -559,6 +684,167 @@
                         <div class="functions-title"><i class="fas fa-code"></i> Affected Functions</div>
                         <div id="functionsList">${functionsHtml}</div>
                     </div>
+                </div>
+            `;
+        }
+
+        function initDefaultDateRange() {
+            const to = new Date();
+            const from = new Date();
+            from.setDate(to.getDate() - 14);
+            document.getElementById('dateTo').value = to.toISOString().slice(0, 10);
+            document.getElementById('dateFrom').value = from.toISOString().slice(0, 10);
+        }
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function wireBatchActions() {
+            const findBtn = document.getElementById('btnFindWorkitems');
+            const scopeBtn = document.getElementById('btnGenerateBatchScope');
+            if (findBtn) findBtn.addEventListener('click', loadWorkitemsByDateRange);
+            if (scopeBtn) scopeBtn.addEventListener('click', generateBatchScope);
+        }
+
+        async function loadWorkitemsByDateRange() {
+            const target = document.getElementById('batchResults');
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            const type = document.getElementById('batchType').value;
+            const dateSource = document.getElementById('dateSource').value;
+
+            if (!dateFrom || !dateTo) {
+                target.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Please select both dates.</div>';
+                return;
+            }
+
+            target.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading WorkItems by activity date...</p></div>';
+            const query = new URLSearchParams({
+                date_from: dateFrom,
+                date_to: dateTo,
+                type,
+                date_source: dateSource,
+                limit: '300'
+            });
+
+            try {
+                const res = await fetch(`/api/workitems-by-activity-date?${query.toString()}`);
+                const data = await res.json();
+                if (!res.ok || data.error) {
+                    target.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${escapeHtml(data.error || 'Error loading workitems')}</div>`;
+                    return;
+                }
+                window.__batchWorkitems = data.results || [];
+                renderBatchSelection(data);
+            } catch (err) {
+                target.innerHTML = `<div class="error-message"><i class="fas fa-exclamation-circle"></i> ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function renderBatchSelection(data) {
+            const rows = (data.results || []).map(wi => `
+                <tr>
+                    <td><input type="checkbox" class="wi-check" value="${wi.id}" checked></td>
+                    <td>${wi.id}</td>
+                    <td title="${escapeHtml(wi.titre)}">${escapeHtml(wi.titre)}</td>
+                    <td>${escapeHtml(wi.type)}</td>
+                    <td>${wi.matched_commit_count || 0}</td>
+                    <td>${wi.matched_pr_count || 0}</td>
+                    <td>${escapeHtml(wi.last_activity_date || '')}</td>
+                </tr>
+            `).join('');
+
+            const target = document.getElementById('batchResults');
+            target.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-title"><i class="fas fa-list"></i> WorkItems in selected interval</span>
+                        <span class="badge badge-mode">${data.count} shown / ${data.total_found} found</span>
+                    </div>
+                    <div class="table-wrap">
+                        <table class="mini-table">
+                            <thead>
+                                <tr>
+                                    <th>Select</th>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Commits</th>
+                                    <th>PRs</th>
+                                    <th>Last activity (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows || '<tr><td colspan="7">No workitems found.</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="batchScopeOutput"></div>
+            `;
+        }
+
+        async function generateBatchScope() {
+            const checks = Array.from(document.querySelectorAll('.wi-check:checked'));
+            const output = document.getElementById('batchScopeOutput') || document.getElementById('batchResults');
+            if (!checks.length) {
+                output.innerHTML = '<div class="error-message"><i class="fas fa-exclamation-circle"></i> Select at least one WorkItem.</div>';
+                return;
+            }
+            const ids = checks.map(c => c.value);
+            output.innerHTML = '<div class="loading"><div class="spinner"></div><p>Generating NRT scopes...</p></div>';
+
+            const cards = [];
+            for (let i = 0; i < ids.length; i++) {
+                const wiId = ids[i];
+                try {
+                    const res = await fetch(`/api/nrt-scope?workitem_id=${encodeURIComponent(wiId)}`);
+                    const data = await res.json();
+                    if (!res.ok || data.error) {
+                        cards.push(`
+                            <div class="scope-batch-card">
+                                <div class="scope-batch-title">WorkItem ${wiId}</div>
+                                <div class="scope-batch-lines">Error: ${escapeHtml(data.error || 'Unable to build scope')}</div>
+                            </div>
+                        `);
+                        continue;
+                    }
+
+                    const direct = data.summary?.direct_ms_count ?? 0;
+                    const indirect = data.summary?.indirect_ms_count ?? 0;
+                    const functions = data.summary?.total_functions ?? 0;
+                    const targets = (data.target_retest_from_commit_trace || []).slice(0, 3).map(ms => ms.microservice);
+                    const targetText = targets.length ? targets.join(', ') : 'No direct target microservice from commit trace';
+                    cards.push(`
+                        <div class="scope-batch-card">
+                            <div class="scope-batch-title">[${escapeHtml(data.workitem?.type || '')}] ${escapeHtml(data.workitem?.id || wiId)} - ${escapeHtml(data.workitem?.title || '')}</div>
+                            <div class="scope-batch-lines">
+                                Direct MS: <strong>${direct}</strong> | Indirect MS: <strong>${indirect}</strong> | Functions: <strong>${functions}</strong><br>
+                                Retest targets (sample): ${escapeHtml(targetText)}
+                            </div>
+                        </div>
+                    `);
+                } catch (err) {
+                    cards.push(`
+                        <div class="scope-batch-card">
+                            <div class="scope-batch-title">WorkItem ${wiId}</div>
+                            <div class="scope-batch-lines">Error: ${escapeHtml(err.message)}</div>
+                        </div>
+                    `);
+                }
+            }
+
+            output.innerHTML = `
+                <div class="result-card">
+                    <div class="result-header">
+                        <span class="result-title"><i class="fas fa-layer-group"></i> Batch Scope Results (${cards.length} WorkItems)</span>
+                        <span class="badge badge-success"><i class="fas fa-check-circle"></i> Generated</span>
+                    </div>
+                    ${cards.join('')}
                 </div>
             `;
         }
