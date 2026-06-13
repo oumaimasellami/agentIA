@@ -1,0 +1,874 @@
+{
+  "repos_count": 89,
+  "total_files": 9323,
+  "total_folders": 3036,
+  "repos_with_modules": 37,
+  "repos_with_views": 10,
+  "repos_with_components": 12,
+  "ui_roles": {
+    "component_file": 286,
+    "components_folder": 19,
+    "file": 8768,
+    "folder": 2422,
+    "layout_file": 10,
+    "module_folder": 588,
+    "page_file": 1,
+    "router_file": 6,
+    "service_file": 109,
+    "service_folder": 3,
+    "store_file": 63,
+    "view_file": 80,
+    "views_folder": 4
+  },
+  "extensions": {
+    ".bak": 1,
+    ".bash": 2,
+    ".cdc": 2,
+    ".code-workspace": 1,
+    ".conf": 15,
+    ".config": 5,
+    ".cs": 139,
+    ".csproj": 19,
+    ".css": 43,
+    ".csv": 48,
+    ".dist": 60,
+    ".example": 1,
+    ".hbs": 1,
+    ".hcl": 1,
+    ".html": 18,
+    ".ico": 14,
+    ".idoc": 2,
+    ".js": 52,
+    ".json": 891,
+    ".md": 178,
+    ".mjs": 8,
+    ".png": 192,
+    ".proto": 1,
+    ".ps1": 11,
+    ".runsettings": 8,
+    ".sass": 29,
+    ".scss": 26,
+    ".sh": 38,
+    ".sln": 2,
+    ".slnx": 2,
+    ".sql": 2,
+    ".svg": 74,
+    ".tex": 1,
+    ".tf": 160,
+    ".ts": 5952,
+    ".ttf": 20,
+    ".txt": 17,
+    ".vue": 404,
+    ".wav": 1,
+    ".webp": 3,
+    ".woff": 20,
+    ".woff2": 20,
+    ".xlsx": 24,
+    ".xml": 4,
+    ".yaml": 84,
+    ".yml": 289
+  },
+  "repos": [
+    {
+      "repo_name": "mesx-order-api",
+      "items_count": 367,
+      "folders_count": 62,
+      "files_count": 305,
+      "modules_count": 20,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-data-ingestion",
+      "items_count": 288,
+      "folders_count": 84,
+      "files_count": 204,
+      "modules_count": 16,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-admin-ui",
+      "items_count": 322,
+      "folders_count": 95,
+      "files_count": 227,
+      "modules_count": 13,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-master-api",
+      "items_count": 378,
+      "folders_count": 75,
+      "files_count": 303,
+      "modules_count": 13,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-api",
+      "items_count": 504,
+      "folders_count": 100,
+      "files_count": 404,
+      "modules_count": 12,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-production-api",
+      "items_count": 241,
+      "folders_count": 53,
+      "files_count": 188,
+      "modules_count": 11,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-production-data-ingestion",
+      "items_count": 246,
+      "folders_count": 73,
+      "files_count": 173,
+      "modules_count": 10,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-api",
+      "items_count": 149,
+      "folders_count": 38,
+      "files_count": 111,
+      "modules_count": 10,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-data-ingestion",
+      "items_count": 280,
+      "folders_count": 92,
+      "files_count": 188,
+      "modules_count": 10,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-shipment-api",
+      "items_count": 153,
+      "folders_count": 35,
+      "files_count": 118,
+      "modules_count": 9,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-shipment-data-ingestion",
+      "items_count": 213,
+      "folders_count": 64,
+      "files_count": 149,
+      "modules_count": 9,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-data-ingestion-actor",
+      "items_count": 177,
+      "folders_count": 62,
+      "files_count": 115,
+      "modules_count": 7,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-data-ingestion-v2",
+      "items_count": 195,
+      "folders_count": 64,
+      "files_count": 131,
+      "modules_count": 7,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-common-lib",
+      "items_count": 110,
+      "folders_count": 41,
+      "files_count": 69,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ewm-gateway-backend",
+      "items_count": 237,
+      "folders_count": 73,
+      "files_count": 164,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-master-setup-backend",
+      "items_count": 134,
+      "folders_count": 33,
+      "files_count": 101,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-quality-data-ingestion",
+      "items_count": 228,
+      "folders_count": 73,
+      "files_count": 155,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-data-ingestion-v2",
+      "items_count": 229,
+      "folders_count": 73,
+      "files_count": 156,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ume-api",
+      "items_count": 296,
+      "folders_count": 59,
+      "files_count": 237,
+      "modules_count": 6,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-epart-board-ui",
+      "items_count": 339,
+      "folders_count": 65,
+      "files_count": 274,
+      "modules_count": 5,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-picking-ui",
+      "items_count": 193,
+      "folders_count": 43,
+      "files_count": 150,
+      "modules_count": 5,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-quality-api",
+      "items_count": 108,
+      "folders_count": 29,
+      "files_count": 79,
+      "modules_count": 5,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-transfer-api",
+      "items_count": 114,
+      "folders_count": 31,
+      "files_count": 83,
+      "modules_count": 5,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-management-api",
+      "items_count": 175,
+      "folders_count": 49,
+      "files_count": 126,
+      "modules_count": 4,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-dlq-data-ingestion",
+      "items_count": 123,
+      "folders_count": 36,
+      "files_count": 87,
+      "modules_count": 4,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-transfer-data-ingestion",
+      "items_count": 218,
+      "folders_count": 67,
+      "files_count": 151,
+      "modules_count": 4,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-common-ui-lib",
+      "items_count": 209,
+      "folders_count": 40,
+      "files_count": 169,
+      "modules_count": 3,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-master-setup-ui",
+      "items_count": 156,
+      "folders_count": 47,
+      "files_count": 109,
+      "modules_count": 3,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-ume-ui",
+      "items_count": 130,
+      "folders_count": 36,
+      "files_count": 94,
+      "modules_count": 3,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-central-error-backend",
+      "items_count": 78,
+      "folders_count": 23,
+      "files_count": 55,
+      "modules_count": 2,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-downtime-ui",
+      "items_count": 195,
+      "folders_count": 37,
+      "files_count": 158,
+      "modules_count": 2,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-setup-backend",
+      "items_count": 140,
+      "folders_count": 39,
+      "files_count": 101,
+      "modules_count": 2,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-setup-ui",
+      "items_count": 224,
+      "folders_count": 55,
+      "files_count": 169,
+      "modules_count": 2,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-design-system-ui",
+      "items_count": 101,
+      "folders_count": 28,
+      "files_count": 73,
+      "modules_count": 1,
+      "has_views": false,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-job-scheduler-ui",
+      "items_count": 130,
+      "folders_count": 33,
+      "files_count": 97,
+      "modules_count": 1,
+      "has_views": false,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-leveling-board-ui",
+      "items_count": 201,
+      "folders_count": 40,
+      "files_count": 161,
+      "modules_count": 1,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-wk-integration-ui",
+      "items_count": 133,
+      "folders_count": 31,
+      "files_count": 102,
+      "modules_count": 1,
+      "has_views": true,
+      "has_components": true
+    },
+    {
+      "repo_name": "mesx-admin-backend",
+      "items_count": 166,
+      "folders_count": 38,
+      "files_count": 128,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-central-error-ui",
+      "items_count": 90,
+      "folders_count": 25,
+      "files_count": 65,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-chronos-backend",
+      "items_count": 51,
+      "folders_count": 11,
+      "files_count": 40,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-chronos-ui",
+      "items_count": 66,
+      "folders_count": 14,
+      "files_count": 52,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-copilot-config",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-datahub",
+      "items_count": 14,
+      "folders_count": 3,
+      "files_count": 11,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-docs-user-docs",
+      "items_count": 177,
+      "folders_count": 10,
+      "files_count": 167,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-downtime-backend",
+      "items_count": 112,
+      "folders_count": 23,
+      "files_count": 89,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-epart-board-backend",
+      "items_count": 201,
+      "folders_count": 31,
+      "files_count": 170,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-eslint-config-lib",
+      "items_count": 13,
+      "folders_count": 3,
+      "files_count": 10,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-infrastructure",
+      "items_count": 195,
+      "folders_count": 7,
+      "files_count": 188,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-infrastructure-app-proxy",
+      "items_count": 56,
+      "folders_count": 4,
+      "files_count": 52,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-infrastructure-helm",
+      "items_count": 26,
+      "folders_count": 5,
+      "files_count": 21,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-input-binding",
+      "items_count": 31,
+      "folders_count": 5,
+      "files_count": 26,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-job-scheduler-backend",
+      "items_count": 114,
+      "folders_count": 25,
+      "files_count": 89,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-leveling-board-backend",
+      "items_count": 95,
+      "folders_count": 22,
+      "files_count": 73,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-leveling-board-mv-processor",
+      "items_count": 204,
+      "folders_count": 49,
+      "files_count": 155,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-master-data-ingestion",
+      "items_count": 316,
+      "folders_count": 96,
+      "files_count": 220,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-mv-orchestrator",
+      "items_count": 112,
+      "folders_count": 30,
+      "files_count": 82,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-auth-proxy",
+      "items_count": 115,
+      "folders_count": 32,
+      "files_count": 83,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-data-init",
+      "items_count": 61,
+      "folders_count": 4,
+      "files_count": 57,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-load-tests-di",
+      "items_count": 31,
+      "folders_count": 8,
+      "files_count": 23,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-mv-update",
+      "items_count": 6,
+      "folders_count": 3,
+      "files_count": 3,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-pipelines",
+      "items_count": 20,
+      "folders_count": 11,
+      "files_count": 9,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ops-troubleshooting-ca",
+      "items_count": 12,
+      "folders_count": 3,
+      "files_count": 9,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-data-ingestion-router",
+      "items_count": 147,
+      "folders_count": 43,
+      "files_count": 104,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-order-management-backend",
+      "items_count": 70,
+      "folders_count": 18,
+      "files_count": 52,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-picking-backend",
+      "items_count": 163,
+      "folders_count": 31,
+      "files_count": 132,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-picking-job-service",
+      "items_count": 102,
+      "folders_count": 29,
+      "files_count": 73,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-picking-mv-processor",
+      "items_count": 217,
+      "folders_count": 48,
+      "files_count": 169,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-data-ingestion",
+      "items_count": 334,
+      "folders_count": 99,
+      "files_count": 235,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-integration",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-setup-backend-proto",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-plant-hierarchy-setup-ui-proto",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-cross-org-artifacts",
+      "items_count": 9,
+      "folders_count": 2,
+      "files_count": 7,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-dependency-management",
+      "items_count": 20,
+      "folders_count": 3,
+      "files_count": 17,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-dependency-mgt-be",
+      "items_count": 162,
+      "folders_count": 39,
+      "files_count": 123,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-dependency-mgt-ui",
+      "items_count": 123,
+      "folders_count": 34,
+      "files_count": 89,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-digital-twin-simulator-be",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-digital-twin-simulator-ui",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-docs-gen",
+      "items_count": 88,
+      "folders_count": 23,
+      "files_count": 65,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-easyauth",
+      "items_count": 39,
+      "folders_count": 9,
+      "files_count": 30,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-proto-edge-api",
+      "items_count": 57,
+      "folders_count": 14,
+      "files_count": 43,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-redis-stream-scaler",
+      "items_count": 79,
+      "folders_count": 24,
+      "files_count": 55,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-api-component-tests",
+      "items_count": 42,
+      "folders_count": 9,
+      "files_count": 33,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-resource-data-ingestion-component-tests",
+      "items_count": 28,
+      "folders_count": 8,
+      "files_count": 20,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-system-design-lib",
+      "items_count": 118,
+      "folders_count": 17,
+      "files_count": 101,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-test-auto",
+      "items_count": 250,
+      "folders_count": 75,
+      "files_count": 175,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-test-auto-qua",
+      "items_count": 2,
+      "folders_count": 1,
+      "files_count": 1,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-tools-dev",
+      "items_count": 12,
+      "folders_count": 4,
+      "files_count": 8,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-ume-backend",
+      "items_count": 95,
+      "folders_count": 25,
+      "files_count": 70,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    },
+    {
+      "repo_name": "mesx-wk-integration-backend",
+      "items_count": 192,
+      "folders_count": 35,
+      "files_count": 157,
+      "modules_count": 0,
+      "has_views": false,
+      "has_components": false
+    }
+  ]
+}

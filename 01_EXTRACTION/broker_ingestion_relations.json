@@ -16,7 +16,7 @@
     "evidence_mode": "STRICT_SOURCE",
     "evidence_files": [
       "/src/Subscribe/subscribe.controller.ts",
-      "/src/subscribe/subscribe.service.ts"
+      "/src/orchestrator/orchestrator.service.ts"
     ]
   },
   {
@@ -36,7 +36,7 @@
     "evidence_mode": "STRICT_SOURCE",
     "evidence_files": [
       "/src/Subscribe/subscribe.controller.ts",
-      "/src/subscribe/subscribe.service.ts"
+      "/src/orchestrator/orchestrator.service.ts"
     ]
   },
   {
@@ -254,7 +254,7 @@
     "evidence_mode": "STRICT_SOURCE",
     "evidence_files": [
       "/src/Subscribe/subscribe.controller.ts",
-      "/src/subscribe/subscribe.service.ts"
+      "/src/orchestrator/orchestrator.service.ts"
     ]
   },
   {
@@ -272,7 +272,7 @@
     "evidence_mode": "STRICT_SOURCE",
     "evidence_files": [
       "/src/Subscribe/subscribe.controller.ts",
-      "/src/subscribe/subscribe.service.ts"
+      "/src/orchestrator/orchestrator.service.ts"
     ]
   },
   {
@@ -515,24 +515,6 @@
     "type": "MESSAGE_BROKER",
     "broker_type": "Azure Event Hubs",
     "topics": [
-      "var:topictpaassignement"
-    ],
-    "direction": "OUTPUT",
-    "communication_mode": "event-driven",
-    "service_namespace": "",
-    "source_detected": "explicit_topic_coupling",
-    "evidence_mode": "STRICT_SOURCE",
-    "evidence_files": [
-      "/src/modules/tpa-assignment/tpa-assignment.service.ts",
-      "/src/subscribe/subscribe.controller.ts"
-    ]
-  },
-  {
-    "source": "mesx-shipment-data-ingestion",
-    "cible": "mesx-mv-orchestrator",
-    "type": "MESSAGE_BROKER",
-    "broker_type": "Azure Event Hubs",
-    "topics": [
       "var:topicoutbound"
     ],
     "direction": "OUTPUT",
@@ -542,6 +524,24 @@
     "evidence_mode": "STRICT_SOURCE",
     "evidence_files": [
       "/src/modules/outbound-delivery/outbound-delivery.service.ts",
+      "/src/subscribe/subscribe.controller.ts"
+    ]
+  },
+  {
+    "source": "mesx-shipment-data-ingestion",
+    "cible": "mesx-mv-orchestrator",
+    "type": "MESSAGE_BROKER",
+    "broker_type": "Azure Event Hubs",
+    "topics": [
+      "var:topictpaassignement"
+    ],
+    "direction": "OUTPUT",
+    "communication_mode": "event-driven",
+    "service_namespace": "",
+    "source_detected": "explicit_topic_coupling",
+    "evidence_mode": "STRICT_SOURCE",
+    "evidence_files": [
+      "/src/modules/tpa-assignment/tpa-assignment.service.ts",
       "/src/subscribe/subscribe.controller.ts"
     ]
   },

@@ -12,7 +12,9 @@ Strict rules:
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
@@ -75,8 +77,19 @@ def load_json(path: Path, default):
 
 
 def save_json(path: Path, data) -> None:
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    payload = json.dumps(data, ensure_ascii=False, indent=2)
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    last_error: Exception | None = None
+    for _ in range(6):
+        try:
+            tmp_path.write_text(payload, encoding="utf-8")
+            os.replace(tmp_path, path)
+            return
+        except Exception as exc:
+            last_error = exc
+            time.sleep(0.5)
+    if last_error:
+        raise last_error
 
 
 def normalize_symbol(text: str) -> str:
@@ -123,7 +136,7 @@ def find_block_end_line(content: str, decl_offset: int, fallback_line: int) -> i
     return fallback_line
 
 
-"def parse_ts_like(content: str, line_offset: int = 0) -> List[Tuple[str, str, str, str, int, int]]:
+def parse_ts_like(content: str, line_offset: int = 0) -> List[Tuple[str, str, str, str, int, int]]:
     """
     Returns tuples: (name, fn_type, http_method, http_path, line_start, line_end)
     """

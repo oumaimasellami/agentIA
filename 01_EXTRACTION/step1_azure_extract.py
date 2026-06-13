@@ -126,7 +126,7 @@ def load_config() -> Dict[str, Any]:
         "snapshot_only": str(snapshot_only_raw).strip().lower() in {"1", "true", "yes", "on"},
         "snapshot_precheck": os.getenv("SNAPSHOT_PRECHECK", "false").strip().lower() in {"1", "true", "yes", "on"},
         "backfill_only": os.getenv("AZURE_BACKFILL_ONLY", "false").strip().lower() in {"1", "true", "yes", "on"},
-        "extract_commit_diff_lines": os.getenv("AZURE_EXTRACT_COMMIT_DIFF_LINES", "false").strip().lower() in {"1", "true", "yes", "on"},
+        "extract_commit_diff_lines": os.getenv("AZURE_EXTRACT_COMMIT_DIFF_LINES", "true").strip().lower() in {"1", "true", "yes", "on"},
         "commit_diff_max_files_per_commit": int(os.getenv("AZURE_COMMIT_DIFF_MAX_FILES", "20")),
         "commit_diff_max_lines_per_file": int(os.getenv("AZURE_COMMIT_DIFF_MAX_LINES_PER_FILE", "500")),
     }

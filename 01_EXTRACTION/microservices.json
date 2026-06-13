@@ -5,7 +5,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-admin-backend",
     "default_branch": "refs/heads/main",
-    "size": 3719438,
+    "size": 3727663,
     "is_disabled": false
   },
   {
@@ -14,7 +14,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-admin-ui",
     "default_branch": "refs/heads/main",
-    "size": 3977936,
+    "size": 4192356,
     "is_disabled": false
   },
   {
@@ -41,7 +41,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-chronos-backend",
     "default_branch": "refs/heads/main",
-    "size": 0,
+    "size": 250623,
     "is_disabled": false
   },
   {
@@ -50,7 +50,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-chronos-ui",
     "default_branch": "refs/heads/main",
-    "size": 13046,
+    "size": 232074,
     "is_disabled": false
   },
   {
@@ -59,7 +59,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-common-lib",
     "default_branch": "refs/heads/main",
-    "size": 2330126,
+    "size": 2355385,
     "is_disabled": false
   },
   {
@@ -68,7 +68,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-common-ui-lib",
     "default_branch": "refs/heads/main",
-    "size": 6932219,
+    "size": 6969600,
     "is_disabled": false
   },
   {
@@ -95,7 +95,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-design-system-ui",
     "default_branch": "refs/heads/main",
-    "size": 551251,
+    "size": 3906496,
     "is_disabled": false
   },
   {
@@ -113,7 +113,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-downtime-backend",
     "default_branch": "refs/heads/main",
-    "size": 1751048,
+    "size": 1752017,
     "is_disabled": false
   },
   {
@@ -131,7 +131,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-downtime-ui",
     "default_branch": "refs/heads/main",
-    "size": 4025651,
+    "size": 4110598,
     "is_disabled": false
   },
   {
@@ -140,7 +140,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-epart-board-backend",
     "default_branch": "refs/heads/main",
-    "size": 831938,
+    "size": 935060,
     "is_disabled": false
   },
   {
@@ -149,7 +149,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-epart-board-ui",
     "default_branch": "refs/heads/main",
-    "size": 2618424,
+    "size": 3346544,
     "is_disabled": false
   },
   {
@@ -176,7 +176,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-infrastructure",
     "default_branch": "refs/heads/main",
-    "size": 4262021,
+    "size": 4530932,
     "is_disabled": false
   },
   {
@@ -185,7 +185,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-infrastructure-app-proxy",
     "default_branch": "refs/heads/main",
-    "size": 63343,
+    "size": 70082,
     "is_disabled": false
   },
   {
@@ -221,7 +221,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-job-scheduler-ui",
     "default_branch": "refs/heads/main",
-    "size": 627005,
+    "size": 628383,
     "is_disabled": false
   },
   {
@@ -230,7 +230,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-leveling-board-backend",
     "default_branch": "refs/heads/main",
-    "size": 489573,
+    "size": 493145,
     "is_disabled": false
   },
   {
@@ -248,7 +248,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-leveling-board-mv-processor",
     "default_branch": "refs/heads/main",
-    "size": 1280664,
+    "size": 1284129,
     "is_disabled": false
   },
   {
@@ -257,7 +257,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-leveling-board-ui",
     "default_branch": "refs/heads/main",
-    "size": 2770539,
+    "size": 2829199,
     "is_disabled": false
   },
   {
@@ -266,7 +266,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-master-api",
     "default_branch": "refs/heads/main",
-    "size": 928798,
+    "size": 1152038,
     "is_disabled": false
   },
   {
@@ -275,7 +275,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-master-data-ingestion",
     "default_branch": "refs/heads/main",
-    "size": 1340595,
+    "size": 1375014,
     "is_disabled": false
   },
   {
@@ -284,7 +284,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-master-setup-backend",
     "default_branch": "refs/heads/main",
-    "size": 282498,
+    "size": 345501,
     "is_disabled": false
   },
   {
@@ -293,7 +293,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-master-setup-ui",
     "default_branch": "refs/heads/main",
-    "size": 862037,
+    "size": 1010761,
     "is_disabled": false
   },
   {
@@ -320,7 +320,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-ops-data-init",
     "default_branch": "refs/heads/main",
-    "size": 105565,
+    "size": 106629,
     "is_disabled": false
   },
   {
@@ -437,7 +437,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-picking-backend",
     "default_branch": "refs/heads/main",
-    "size": 1178664,
+    "size": 1182054,
     "is_disabled": false
   },
   {
@@ -464,7 +464,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-picking-mv-processor",
     "default_branch": "refs/heads/main",
-    "size": 1021105,
+    "size": 1068515,
     "is_disabled": false
   },
   {
@@ -473,7 +473,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-picking-ui",
     "default_branch": "refs/heads/main",
-    "size": 3914602,
+    "size": 4000961,
     "is_disabled": false
   },
   {
@@ -482,7 +482,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-plant-hierarchy-api",
     "default_branch": "refs/heads/main",
-    "size": 1691827,
+    "size": 2057024,
     "is_disabled": false
   },
   {
@@ -491,7 +491,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-plant-hierarchy-data-ingestion",
     "default_branch": "refs/heads/main",
-    "size": 1289588,
+    "size": 1282281,
     "is_disabled": false
   },
   {
@@ -509,7 +509,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-plant-hierarchy-setup-backend",
     "default_branch": "refs/heads/main",
-    "size": 290211,
+    "size": 331390,
     "is_disabled": false
   },
   {
@@ -527,7 +527,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-plant-hierarchy-setup-ui",
     "default_branch": "refs/heads/main",
-    "size": 1218788,
+    "size": 1622397,
     "is_disabled": false
   },
   {
@@ -545,7 +545,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-production-api",
     "default_branch": "refs/heads/main",
-    "size": 1072945,
+    "size": 1093845,
     "is_disabled": false
   },
   {
@@ -572,7 +572,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-proto-dependency-management",
     "default_branch": "refs/heads/main",
-    "size": 4718012,
+    "size": 4720671,
     "is_disabled": false
   },
   {
@@ -581,7 +581,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-proto-dependency-mgt-be",
     "default_branch": "refs/heads/main",
-    "size": 488265,
+    "size": 499645,
     "is_disabled": false
   },
   {
@@ -590,7 +590,25 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-proto-dependency-mgt-ui",
     "default_branch": "refs/heads/main",
-    "size": 1538336,
+    "size": 1552444,
+    "is_disabled": false
+  },
+  {
+    "name": "mesx-proto-digital-twin-simulator-be",
+    "id": "969238d4-78d2-4b31-8bf8-6b718a96e1a5",
+    "project": "MES_X.0",
+    "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-proto-digital-twin-simulator-be",
+    "default_branch": "refs/heads/main",
+    "size": 219243,
+    "is_disabled": false
+  },
+  {
+    "name": "mesx-proto-digital-twin-simulator-ui",
+    "id": "a92814d9-a150-4f3a-973b-1da7d8545f69",
+    "project": "MES_X.0",
+    "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-proto-digital-twin-simulator-ui",
+    "default_branch": "refs/heads/main",
+    "size": 456190,
     "is_disabled": false
   },
   {
@@ -626,7 +644,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-quality-api",
     "default_branch": "refs/heads/main",
-    "size": 277830,
+    "size": 298609,
     "is_disabled": false
   },
   {
@@ -635,7 +653,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-quality-data-ingestion",
     "default_branch": "refs/heads/main",
-    "size": 405644,
+    "size": 457088,
     "is_disabled": false
   },
   {
@@ -653,7 +671,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-resource-api",
     "default_branch": "refs/heads/main",
-    "size": 455318,
+    "size": 497602,
     "is_disabled": false
   },
   {
@@ -662,7 +680,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-resource-api-component-tests",
     "default_branch": "refs/heads/main",
-    "size": 28020,
+    "size": 39279,
     "is_disabled": false
   },
   {
@@ -671,7 +689,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-resource-data-ingestion",
     "default_branch": "refs/heads/main",
-    "size": 928293,
+    "size": 943633,
     "is_disabled": false
   },
   {
@@ -680,7 +698,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-resource-data-ingestion-component-tests",
     "default_branch": "refs/heads/main",
-    "size": 21403,
+    "size": 41128,
     "is_disabled": false
   },
   {
@@ -716,7 +734,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-shipment-data-ingestion",
     "default_branch": "refs/heads/main",
-    "size": 670871,
+    "size": 671838,
     "is_disabled": false
   },
   {
@@ -725,7 +743,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-system-design-lib",
     "default_branch": "refs/heads/main",
-    "size": 265078,
+    "size": 266585,
     "is_disabled": false
   },
   {
@@ -734,7 +752,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-test-auto",
     "default_branch": "refs/heads/main",
-    "size": 11145027,
+    "size": 13613698,
     "is_disabled": false
   },
   {
@@ -743,7 +761,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-test-auto-qua",
     "default_branch": "refs/heads/main",
-    "size": 348359,
+    "size": 351025,
     "is_disabled": false
   },
   {
@@ -779,7 +797,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-ume-api",
     "default_branch": "refs/heads/main",
-    "size": 984424,
+    "size": 999010,
     "is_disabled": false
   },
   {
@@ -797,7 +815,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-ume-ui",
     "default_branch": "refs/heads/main",
-    "size": 874719,
+    "size": 889619,
     "is_disabled": false
   },
   {
@@ -815,7 +833,7 @@
     "project": "MES_X.0",
     "repo_url": "https://dev.azure.com/faurecia-cloud/MES_X.0/_git/mesx-wk-integration-ui",
     "default_branch": "refs/heads/main",
-    "size": 1031414,
+    "size": 1040621,
     "is_disabled": false
   }
 ]

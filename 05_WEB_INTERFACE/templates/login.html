@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FORVIA NRT Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --forvia-blue: #0033CC;
+            --forvia-dark: #001a99;
+            --forvia-light: #e8efff;
+            --accent: #FF6B35;
+            --text: #15233c;
+            --muted: #66758f;
+            --border: #dbe5ff;
+            --danger-bg: #fff2f0;
+            --danger-text: #c0392b;
+        }
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(0, 51, 204, 0.18), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(255, 107, 53, 0.12), transparent 28%),
+                linear-gradient(135deg, #f8fbff 0%, #dbe7fb 52%, #eef4ff 100%);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 28px;
+        }
+        .login-shell {
+            width: min(1040px, 100%);
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid rgba(0, 51, 204, 0.10);
+            box-shadow: 0 24px 70px rgba(0, 51, 204, 0.14);
+            border-radius: 28px;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .login-aside {
+            padding: 48px;
+            background:
+                linear-gradient(160deg, rgba(0, 51, 204, 0.96) 0%, rgba(0, 26, 153, 0.96) 100%),
+                linear-gradient(120deg, rgba(255, 107, 53, 0.18), transparent 60%);
+            color: #fff;
+            position: relative;
+        }
+        .login-aside::after {
+            content: "";
+            position: absolute;
+            inset: auto -60px -80px auto;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            filter: blur(2px);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 34px;
+        }
+        .brand img {
+            height: 40px;
+            width: auto;
+        }
+        .brand-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .brand-copy strong {
+            font-size: 18px;
+            letter-spacing: 0.2px;
+        }
+        .brand-copy span {
+            font-size: 12px;
+            opacity: 0.88;
+            letter-spacing: 0.9px;
+            text-transform: uppercase;
+        }
+        .hero-title {
+            font-size: clamp(30px, 4vw, 42px);
+            line-height: 1.08;
+            margin-bottom: 18px;
+            max-width: 440px;
+        }
+        .hero-text {
+            font-size: 16px;
+            line-height: 1.7;
+            max-width: 460px;
+            opacity: 0.94;
+            margin-bottom: 30px;
+        }
+        .hero-list {
+            list-style: none;
+            display: grid;
+            gap: 14px;
+        }
+        .hero-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+        }
+        .hero-list i {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.12);
+        }
+        .login-card {
+            padding: 52px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .login-card h1 {
+            font-size: 30px;
+            color: var(--forvia-dark);
+            margin-bottom: 10px;
+        }
+        .login-card p {
+            color: var(--muted);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+        .login-alert {
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid rgba(192, 57, 43, 0.18);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--forvia-dark);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .field {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .field i {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%);
+            color: #8ca0c3;
+        }
+        .field input {
+            width: 100%;
+            height: 54px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: #fff;
+            padding: 0 16px 0 46px;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            transition: 0.25s ease;
+        }
+        .field input:focus {
+            border-color: var(--forvia-blue);
+            box-shadow: 0 0 0 4px rgba(0, 51, 204, 0.10);
+        }
+        .hint {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+        .hint strong {
+            color: var(--forvia-dark);
+        }
+        .login-btn {
+            width: 100%;
+            height: 54px;
+            border: none;
+            border-radius: 16px;
+            background: linear-gradient(90deg, var(--forvia-blue) 0%, var(--forvia-dark) 100%);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 14px 28px rgba(0, 51, 204, 0.18);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(0, 51, 204, 0.24);
+        }
+        .login-note {
+            margin-top: 18px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center;
+            line-height: 1.6;
+        }
+        @media (max-width: 900px) {
+            .login-shell {
+                grid-template-columns: 1fr;
+            }
+            .login-aside, .login-card {
+                padding: 34px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-shell">
+        <aside class="login-aside">
+            <div class="brand">
+                <img src="/static/forvia_logo.png" alt="FORVIA">
+                <div class="brand-copy">
+                    <strong>MESX.0 NRT</strong>
+                    <span>Scope Intelligence</span>
+                </div>
+            </div>
+            <h2 class="hero-title">Secure access to the NRT Scope Platform</h2>
+            <p class="hero-text">
+                Access the technical and functional NRT views using your FORVIA corporate email address.
+                This access gate keeps the platform restricted to internal collaborators only.
+            </p>
+            <ul class="hero-list">
+                <li><i class="fas fa-code-branch"></i><span>Detailed technical traceability from WorkItem to commit, file and function.</span></li>
+                <li><i class="fas fa-flask"></i><span>Functional tester-oriented scope with grouped retest recommendations.</span></li>
+                <li><i class="fas fa-shield-alt"></i><span>Restricted access to corporate email domain only.</span></li>
+            </ul>
+        </aside>
+
+        <section class="login-card">
+            <h1>Login</h1>
+            <p>Enter your corporate email address to access the FORVIA NRT platform.</p>
+
+            {{ERROR_BLOCK}}
+
+            <form method="post" action="/login">
+                <label class="field-label" for="email">Corporate Email</label>
+                <div class="field">
+                    <i class="fas fa-envelope"></i>
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="name@{{ALLOWED_DOMAIN}}"
+                        value="{{EMAIL_VALUE}}"
+                        required
+                    >
+                </div>
+                <div class="hint">
+                    Allowed domain: <strong>@{{ALLOWED_DOMAIN}}</strong>
+                </div>
+                <button class="login-btn" type="submit">
+                    <i class="fas fa-right-to-bracket"></i>
+                    <span>Access Platform</span>
+                </button>
+            </form>
+
+            <div class="login-note">
+                This local authentication gate validates the email domain and creates a session on this server.
+            </div>
+        </section>
+    </div>
+</body>
+</html>

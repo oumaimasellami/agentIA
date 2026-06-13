@@ -10,12 +10,14 @@ import json
 import os
 import re
 import string
+import secrets
 import urllib.parse
 import threading
 import subprocess
 import traceback
 from pathlib import Path
 import mimetypes
+from http import cookies
 from neo4j import GraphDatabase
 from datetime import datetime, timedelta, timezone
 import time
@@ -62,10 +64,77 @@ PYTHON_BIN = os.getenv("NRT_PYTHON_BIN", r"D:\Python\bin\python.exe")
 CODE_FILE_EXTENSIONS = {".ts", ".js", ".java", ".vue", ".tsx", ".jsx", ".py"}
 INFRA_FILE_EXTENSIONS = {".tf", ".bicep"}
 CONFIG_FILE_EXTENSIONS = {".yml", ".yaml", ".json", ".toml", ".ini", ".env", ".xml", ".properties"}
+AUTH_ALLOWED_DOMAIN = str(os.getenv("NRT_LOGIN_ALLOWED_DOMAIN", "forvia.com")).strip().lower()
+AUTH_COOKIE_NAME = str(os.getenv("NRT_AUTH_COOKIE_NAME", "nrt_scope_auth")).strip() or "nrt_scope_auth"
+AUTH_SESSION_HOURS = max(1, int(str(os.getenv("NRT_AUTH_SESSION_HOURS", "12")).strip() or "12"))
+AUTH_SESSIONS_LOCK = threading.Lock()
+AUTH_SESSIONS = {}
 
 
 def _env_flag(name: str, default: str = "false") -> bool:
     return str(os.getenv(name, default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _utc_now():
+    return datetime.now(timezone.utc)
+
+
+def _normalize_auth_email(email):
+    value = str(email or "").strip().lower()
+    value = re.sub(r"\s+", "", value)
+    return value
+
+
+def _is_allowed_auth_email(email):
+    value = _normalize_auth_email(email)
+    if not value or "@" not in value:
+        return False
+    pattern = rf"^[a-z0-9._%+\-]+@{re.escape(AUTH_ALLOWED_DOMAIN)}$"
+    return re.match(pattern, value, flags=re.IGNORECASE) is not None
+
+
+def _prune_auth_sessions():
+    now = _utc_now()
+    with AUTH_SESSIONS_LOCK:
+        expired = [
+            token for token, row in AUTH_SESSIONS.items()
+            if not isinstance(row, dict) or row.get("expires_at") <= now
+        ]
+        for token in expired:
+            AUTH_SESSIONS.pop(token, None)
+
+
+def _create_auth_session(email):
+    _prune_auth_sessions()
+    token = secrets.token_urlsafe(32)
+    expires_at = _utc_now() + timedelta(hours=AUTH_SESSION_HOURS)
+    with AUTH_SESSIONS_LOCK:
+        AUTH_SESSIONS[token] = {
+            "email": _normalize_auth_email(email),
+            "expires_at": expires_at,
+        }
+    return token, expires_at
+
+
+def _get_auth_session_email(token):
+    if not token:
+        return None
+    _prune_auth_sessions()
+    with AUTH_SESSIONS_LOCK:
+        row = AUTH_SESSIONS.get(str(token))
+        if not isinstance(row, dict):
+            return None
+        if row.get("expires_at") <= _utc_now():
+            AUTH_SESSIONS.pop(str(token), None)
+            return None
+        return str(row.get("email") or "").strip() or None
+
+
+def _clear_auth_session(token):
+    if not token:
+        return
+    with AUTH_SESSIONS_LOCK:
+        AUTH_SESSIONS.pop(str(token), None)
 
 
 AZURE_WEBHOOK_TOKEN = str(os.getenv("AZURE_WEBHOOK_TOKEN", "")).strip()
@@ -233,13 +302,19 @@ class NRTAnalyzer:
         self.commits_index = self._load_commits_index()
         self.pull_requests_index = self._load_pull_requests_index()
         self.function_index_by_ms_file = self._load_function_index()
+        self.function_code_index = self._load_function_code_index()
+        self.repo_inventory_index = self._load_repo_inventory_index()
         self.known_microservices = self._load_known_microservices()
         self.source_snapshot_cache = {}
+        self.front_endpoint_usage_index = self._build_front_endpoint_usage_index()
         print(f"[OK] Loaded commit index: {len(self.commits_index)} commits")
         print(f"[OK] Loaded PR index: {len(self.pull_requests_index)} pull requests")
         print(f"[OK] Loaded workitem-dev links index: {len(self.workitem_dev_links_index)} workitems")
         print(f"[OK] Loaded function file index: {len(self.function_index_by_ms_file)} keys")
+        print(f"[OK] Loaded function code index: {len(self.function_code_index)} functions")
+        print(f"[OK] Loaded repo inventory index: {len(self.repo_inventory_index)} repos")
         print(f"[OK] Loaded known microservices: {len(self.known_microservices)}")
+        print(f"[OK] Indexed front endpoint usage: {len(self.front_endpoint_usage_index)} endpoints")
     
     def _load_workitems(self):
         """Load WorkItems from JSON file with parent-child relationships"""
@@ -387,16 +462,95 @@ class NRTAnalyzer:
             "iterations": catalog,
         }
 
-    def get_workitems_by_iteration(self, iteration_path="", sprint_path="", workitem_type="All", limit=500):
+    def get_workitem_status_catalog(self, iteration_path="", sprint_path="", workitem_type="All"):
+        statuses = {}
+        iter_norm = self._normalize_iteration_path(iteration_path).lower()
+        type_norm = str(workitem_type or "All").strip().lower()
+        sprint_tokens = []
+        raw_sprint = str(sprint_path or "").strip()
+        if raw_sprint and raw_sprint.lower() not in {"all", "all sprints"}:
+            if "," in raw_sprint:
+                sprint_tokens = [x.strip() for x in raw_sprint.split(",") if x.strip()]
+            elif "+" in raw_sprint:
+                sprint_tokens = [x.strip() for x in raw_sprint.split("+") if x.strip()]
+            else:
+                sprint_tokens = [raw_sprint]
+        allowed_sprints = {
+            self._normalize_iteration_path(token).lower()
+            for token in sprint_tokens
+            if self._normalize_iteration_path(token)
+        }
+        allowed_types = None
+        if type_norm not in {"all", ""}:
+            tokens = []
+            if "," in type_norm:
+                tokens = [t.strip() for t in type_norm.split(",") if t.strip()]
+            elif "+" in type_norm:
+                tokens = [t.strip() for t in type_norm.split("+") if t.strip()]
+            else:
+                tokens = [type_norm]
+            normalized = set()
+            for t in tokens:
+                if t in {"bug", "user story"}:
+                    normalized.add(t)
+            if normalized:
+                allowed_types = normalized
+
+        for wi in self.workitems_data.values():
+            wi_type = str(wi.get("type", "")).strip()
+            if allowed_types is not None and wi_type.lower() not in allowed_types:
+                continue
+            wi_iter = self._normalize_iteration_path(wi.get("iteration_path"))
+            wi_iter_l = wi_iter.lower()
+            if allowed_sprints:
+                if wi_iter_l not in allowed_sprints:
+                    continue
+            elif iter_norm:
+                if not (wi_iter_l == iter_norm or wi_iter_l.startswith(iter_norm + "\\")):
+                    continue
+            raw_status = str(wi.get("statut") or "").strip()
+            if not raw_status:
+                continue
+            key = raw_status.lower()
+            entry = statuses.setdefault(key, {
+                "status": raw_status,
+                "workitem_count": 0,
+            })
+            entry["workitem_count"] += 1
+
+        rows = sorted(
+            list(statuses.values()),
+            key=lambda x: (x["status"].lower(), -x["workitem_count"]),
+        )
+        return {
+            "total_statuses": len(rows),
+            "statuses": rows,
+        }
+
+    def get_workitems_by_iteration(self, iteration_path="", sprint_path="", workitem_type="All", status="All", limit=500):
         """
-        Filter WorkItems by iteration/sprint path and type using extracted data.
+        Filter WorkItems by iteration/sprint path, type, and status using extracted data.
         """
         if not self.workitems_data:
             return {"error": "No WorkItems loaded"}
 
         iter_norm = self._normalize_iteration_path(iteration_path).lower()
-        sprint_norm = self._normalize_iteration_path(sprint_path).lower()
         type_norm = str(workitem_type or "All").strip().lower()
+        status_norm = str(status or "All").strip().lower()
+        sprint_tokens = []
+        raw_sprint = str(sprint_path or "").strip()
+        if raw_sprint and raw_sprint.lower() not in {"all", "all sprints"}:
+            if "," in raw_sprint:
+                sprint_tokens = [x.strip() for x in raw_sprint.split(",") if x.strip()]
+            elif "+" in raw_sprint:
+                sprint_tokens = [x.strip() for x in raw_sprint.split("+") if x.strip()]
+            else:
+                sprint_tokens = [raw_sprint]
+        allowed_sprints = {
+            self._normalize_iteration_path(token).lower()
+            for token in sprint_tokens
+            if self._normalize_iteration_path(token)
+        }
         allowed_types = None
         if type_norm not in {"all", ""}:
             # Accept single, CSV, or '+' combinations and keep only supported ticket types.
@@ -428,11 +582,14 @@ class NRTAnalyzer:
             wi_type = str(wi.get("type", "")).strip()
             if allowed_types is not None and wi_type.lower() not in allowed_types:
                 continue
+            wi_status = str(wi.get("statut") or "").strip()
+            if status_norm not in {"all", ""} and wi_status.lower() != status_norm:
+                continue
 
             wi_iter = self._normalize_iteration_path(wi.get("iteration_path"))
             wi_iter_l = wi_iter.lower()
-            if sprint_norm:
-                if wi_iter_l != sprint_norm:
+            if allowed_sprints:
+                if wi_iter_l not in allowed_sprints:
                     continue
             elif iter_norm:
                 if not (wi_iter_l == iter_norm or wi_iter_l.startswith(iter_norm + "\\")):
@@ -445,7 +602,7 @@ class NRTAnalyzer:
                 "id": int(wi_id),
                 "titre": wi.get("titre") or wi.get("title") or "",
                 "type": wi_type,
-                "statut": wi.get("statut") or "",
+                "statut": wi_status,
                 "priorite": wi.get("priorite", 0),
                 "assigne_a": wi.get("assigne_a") or "",
                 "iteration_path": wi_iter,
@@ -466,7 +623,9 @@ class NRTAnalyzer:
         return {
             "iteration_path": iteration_path,
             "sprint_path": sprint_path,
+            "selected_sprint_count": len(allowed_sprints),
             "type": workitem_type,
+            "status": status,
             "count": len(sliced),
             "total_found": len(results),
             "results": sliced,
@@ -617,9 +776,10 @@ class NRTAnalyzer:
 
         for wi_id in wi_ids:
             wi_obj = self.workitems_data.get(wi_id, {})
+            wi_title = str(wi_obj.get("titre") or wi_obj.get("title") or "").strip()
             wi_meta.append({
                 "id": wi_id,
-                "title": wi_obj.get("titre") or wi_obj.get("title") or "",
+                "title": wi_title,
                 "type": wi_obj.get("type") or "",
             })
 
@@ -702,31 +862,32 @@ class NRTAnalyzer:
                             for ln in evidence_lines:
                                 f_entry["_evidence_lines"].add(int(ln))
 
-                        # Candidate functions (P2/P3): file touched without usable line diff.
-                        if not changed_lines:
-                            for fn in all_file_functions:
-                                fn_id = str(fn.get("id") or fn.get("name") or "").strip()
-                                if not fn_id or fn_id in proven_ids:
-                                    continue
-                                line_start = int(fn.get("line_start") or 0)
-                                line_end = int(fn.get("line_end") or 0)
-                                f_entry = ms_entry["functions"].setdefault(fn_id, {
-                                    "id": fn_id,
-                                    "name": fn.get("name") or fn_id.split("::")[-1],
-                                    "line_start": line_start,
-                                    "line_end": line_end,
-                                    "_workitem_ids": set(),
-                                    "_microservices": set(),
-                                    "_commit_ids": set(),
-                                    "_files": set(),
-                                    "_evidence_lines": set(),
-                                })
-                                f_entry["_workitem_ids"].add(wi_id)
-                                f_entry["_microservices"].add(target_ms)
-                                if commit_id:
-                                    f_entry["_commit_ids"].add(commit_id)
-                                if file_path:
-                                    f_entry["_files"].add(file_path)
+                        # Candidate functions (P2/P3): any other parsed function in the same
+                        # touched code file remains in the NRT scope as a same-file candidate,
+                        # even when another function in that file is already proven by line diff.
+                        for fn in all_file_functions:
+                            fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+                            if not fn_id or fn_id in proven_ids:
+                                continue
+                            line_start = int(fn.get("line_start") or 0)
+                            line_end = int(fn.get("line_end") or 0)
+                            f_entry = ms_entry["functions"].setdefault(fn_id, {
+                                "id": fn_id,
+                                "name": fn.get("name") or fn_id.split("::")[-1],
+                                "line_start": line_start,
+                                "line_end": line_end,
+                                "_workitem_ids": set(),
+                                "_microservices": set(),
+                                "_commit_ids": set(),
+                                "_files": set(),
+                                "_evidence_lines": set(),
+                            })
+                            f_entry["_workitem_ids"].add(wi_id)
+                            f_entry["_microservices"].add(target_ms)
+                            if commit_id:
+                                f_entry["_commit_ids"].add(commit_id)
+                            if file_path:
+                                f_entry["_files"].add(file_path)
 
             direct_ms_list = []
             for ms_name, ms_data in sorted(local_ms.items(), key=lambda x: x[0].lower()):
@@ -784,6 +945,47 @@ class NRTAnalyzer:
                         f"commit(s): {', '.join([c[:8] for c in fn.get('commit_ids', [])[:4]])} | "
                         f"file(s): {', '.join(fn.get('files', [])[:2])}"
                     )
+                    endpoint_info = self._extract_endpoint_from_description_text(fn.get("description"))
+                    fn["endpoint"] = endpoint_info or {}
+                    front_eq = []
+                    if endpoint_info:
+                        front_eq = self._find_front_equivalents_for_endpoint(
+                            endpoint_info.get("method"),
+                            endpoint_info.get("path"),
+                        )
+                    fn["frontend_equivalents"] = front_eq
+                    fn["frontend_equivalent_count"] = len(front_eq)
+                    preferred_file = ""
+                    for candidate_path in (fn.get("files") or []):
+                        if candidate_path:
+                            preferred_file = str(candidate_path)
+                            break
+                    ui_ctx = self._derive_ui_context_for_function(
+                        fn_id=fn.get("id"),
+                        microservice=ms_name,
+                        file_path=preferred_file,
+                        frontend_equivalents=front_eq,
+                    )
+                    fn["ui_components"] = ui_ctx.get("ui_components", [])
+                    fn["ui_files"] = ui_ctx.get("ui_files", [])
+                    fn["ui_screens"] = ui_ctx.get("ui_screens", [])
+                    fn["ui_labels"] = ui_ctx.get("ui_labels", [])
+                    fn["functional_description"] = self._build_functional_description(
+                        fn_id=fn.get("id"),
+                        microservice=ms_name,
+                        file_path=preferred_file,
+                    ) or "Description fonctionnelle non disponible."
+
+                fallback_group = None
+                if not fn_values:
+                    fallback_group = self._build_non_function_scope_group(
+                        microservice=ms_name,
+                        files=sorted(ms_data["files"]),
+                        commit_ids=sorted(ms_data["commit_ids"]),
+                        commit_messages=sorted(ms_data["commit_messages"]),
+                        retest_items=retest_items,
+                        workitem_titles=[wi_title] if wi_title else [],
+                    )
 
                 direct_ms_list.append({
                     "name": ms_name,
@@ -791,8 +993,11 @@ class NRTAnalyzer:
                     "commit_count": len(ms_data["commit_ids"]),
                     "files_count": len(ms_data["files"]),
                     "function_count": len(fn_values),
+                    "fallback_groups": [],
                     "functions": fn_values,
                 })
+                if fallback_group:
+                    direct_ms_list[-1]["fallback_groups"] = [fallback_group]
 
                 global_ms = ms_map.setdefault(ms_name.lower(), {
                     "name": ms_name,
@@ -801,11 +1006,14 @@ class NRTAnalyzer:
                     "commit_ids": set(),
                     "files": set(),
                     "function_ids": set(),
+                    "fallback_groups": [],
                 })
                 global_ms["workitem_ids"].add(wi_id)
                 global_ms["commit_ids"].update(ms_data["commit_ids"])
                 global_ms["files"].update(ms_data["files"])
                 global_ms["function_ids"].update([f["id"] for f in fn_values])
+                if fallback_group:
+                    global_ms["fallback_groups"].append(fallback_group)
 
                 for f in fn_values:
                     gfn = fn_map.setdefault(f["id"].lower(), {
@@ -817,9 +1025,15 @@ class NRTAnalyzer:
                         "files": set(),
                         "evidence_lines": set(),
                         "description": "",
+                        "functional_description": "",
                         "impact_front": "",
                         "what_to_test": "",
                         "evidence_texts": set(),
+                        "ui_components": set(),
+                        "ui_files": set(),
+                        "ui_screens": set(),
+                        "ui_labels": set(),
+                        "frontend_equivalent_count": 0,
                         "function_scope_type": "P2/P3 candidate",
                         "priority_order": 2,
                     })
@@ -830,12 +1044,33 @@ class NRTAnalyzer:
                     gfn["evidence_lines"].update(f.get("evidence_lines", []))
                     if f.get("description") and not gfn["description"]:
                         gfn["description"] = f.get("description")
+                    if f.get("functional_description") and not gfn["functional_description"]:
+                        gfn["functional_description"] = f.get("functional_description")
                     if f.get("impact_front") and not gfn["impact_front"]:
                         gfn["impact_front"] = f.get("impact_front")
                     if f.get("what_to_test") and not gfn["what_to_test"]:
                         gfn["what_to_test"] = f.get("what_to_test")
                     if f.get("evidence"):
                         gfn["evidence_texts"].add(str(f.get("evidence")))
+                    for comp in (f.get("ui_components") or []):
+                        if comp:
+                            gfn["ui_components"].add(str(comp))
+                    for fp in (f.get("ui_files") or []):
+                        if fp:
+                            gfn["ui_files"].add(str(fp))
+                    for screen in (f.get("ui_screens") or []):
+                        if screen:
+                            gfn["ui_screens"].add(str(screen))
+                    for label in (f.get("ui_labels") or []):
+                        if label:
+                            gfn["ui_labels"].add(str(label))
+                    try:
+                        gfn["frontend_equivalent_count"] = max(
+                            int(gfn.get("frontend_equivalent_count", 0) or 0),
+                            int(f.get("frontend_equivalent_count", 0) or 0),
+                        )
+                    except Exception:
+                        pass
                     if int(f.get("priority_order", 2)) < int(gfn.get("priority_order", 2)):
                         gfn["priority_order"] = int(f.get("priority_order", 2))
                         gfn["function_scope_type"] = f.get("function_scope_type") or gfn.get("function_scope_type")
@@ -852,6 +1087,7 @@ class NRTAnalyzer:
                         "function_count": m["function_count"],
                         "commit_count": m["commit_count"],
                         "files_count": m["files_count"],
+                        "fallback_group_count": len(m.get("fallback_groups") or []),
                     }
                     for m in direct_ms_list
                 ],
@@ -864,6 +1100,19 @@ class NRTAnalyzer:
 
         microservices = []
         for ms in ms_map.values():
+            fallback_groups = []
+            seen_fb = set()
+            for group in ms.get("fallback_groups", []) or []:
+                key = "|".join([
+                    str(group.get("priority_order", "")),
+                    str(group.get("description", "")).strip().lower(),
+                    str(group.get("functional_description", "")).strip().lower(),
+                    str(group.get("what_to_test", "")).strip().lower(),
+                ])
+                if key in seen_fb:
+                    continue
+                seen_fb.add(key)
+                fallback_groups.append(group)
             microservices.append({
                 "name": ms["name"],
                 "impact_type": "DIRECT",
@@ -872,6 +1121,7 @@ class NRTAnalyzer:
                 "commit_count": len(ms["commit_ids"]),
                 "files_count": len(ms["files"]),
                 "function_count": len(ms["function_ids"]),
+                "fallback_groups": fallback_groups,
             })
         microservices.sort(key=lambda x: (-x["workitem_count"], -x["function_count"], x["name"].lower()))
 
@@ -891,8 +1141,14 @@ class NRTAnalyzer:
                 "function_scope_type": fn.get("function_scope_type") or ("P1 touchée prouvée" if len(fn["evidence_lines"]) > 0 else "P2/P3 candidate"),
                 "priority_order": int(fn.get("priority_order", 2)),
                 "description": fn.get("description") or "Description métier non disponible.",
+                "functional_description": fn.get("functional_description") or "Description fonctionnelle non disponible.",
                 "impact_front": fn.get("impact_front") or "Impact front non disponible.",
                 "what_to_test": fn.get("what_to_test") or "Retest conseillé non disponible.",
+                "ui_components": sorted(fn.get("ui_components") or []),
+                "ui_files": sorted(fn.get("ui_files") or []),
+                "ui_screens": sorted(fn.get("ui_screens") or []),
+                "ui_labels": sorted(fn.get("ui_labels") or []),
+                "frontend_equivalent_count": int(fn.get("frontend_equivalent_count", 0) or 0),
                 "evidence": " || ".join(sorted(fn.get("evidence_texts") or [])) if fn.get("evidence_texts") else (
                     f"commit(s): {', '.join([c[:8] for c in sorted(fn['commit_ids'])[:4]])} | file(s): {', '.join(sorted(fn['files'])[:2])}"
                 ),
@@ -969,6 +1225,335 @@ class NRTAnalyzer:
         except Exception as e:
             print(f"[WARN] Could not load function index: {e}")
             return {}
+
+    def _load_function_code_index(self):
+        try:
+            path = EXTRACTION_DIR / "function_code_index.json"
+            with path.open("r", encoding="utf-8") as f:
+                rows = json.load(f)
+            out = {}
+            for row in rows or []:
+                if not isinstance(row, dict):
+                    continue
+                fn_id = str(row.get("id", "")).strip()
+                if not fn_id:
+                    continue
+                out[fn_id.lower()] = row
+            return out
+        except Exception as e:
+            print(f"[WARN] Could not load function code index: {e}")
+            return {}
+
+    def _load_repo_inventory_index(self):
+        try:
+            path = EXTRACTION_DIR / "repo_inventory.json"
+            with path.open("r", encoding="utf-8") as f:
+                rows = json.load(f)
+            out = {}
+            for repo in rows or []:
+                repo_name = str(repo.get("repo_name", "")).strip()
+                if not repo_name:
+                    continue
+                module_views = {}
+                for entry in repo.get("entries", []) or []:
+                    if entry.get("is_folder"):
+                        continue
+                    file_path = self._normalize_repo_path(entry.get("path"))
+                    if not file_path:
+                        continue
+                    ext = Path(file_path).suffix.lower()
+                    if ext not in {".vue", ".tsx", ".jsx", ".ts", ".js"}:
+                        continue
+                    if "/views/" in file_path or "/pages/" in file_path:
+                        module_name = self._extract_module_name_from_path(file_path)
+                        screen_name = self._extract_artifact_name_from_path(file_path)
+                        if module_name and screen_name:
+                            module_views.setdefault(module_name, set()).add(screen_name)
+                out[repo_name] = {
+                    "module_views": {k: sorted(v) for k, v in module_views.items()}
+                }
+            return out
+        except Exception as e:
+            print(f"[WARN] Could not load repo inventory index: {e}")
+            return {}
+
+    @staticmethod
+    def _extract_module_name_from_path(file_path):
+        raw = str(file_path or "").replace("\\", "/")
+        match = re.search(r"/modules/([^/]+)/", raw, flags=re.IGNORECASE)
+        return (match.group(1) or "").strip() if match else ""
+
+    @staticmethod
+    def _extract_artifact_name_from_path(file_path):
+        path = Path(str(file_path or ""))
+        stem = path.stem.strip()
+        return stem or ""
+
+    @staticmethod
+    def _short_code_excerpt(text, max_len=220):
+        value = " ".join(str(text or "").split())
+        if len(value) <= max_len:
+            return value
+        return value[: max_len - 3].rstrip() + "..."
+
+    def _build_functional_description(self, fn_id, microservice, file_path):
+        row = self.function_code_index.get(str(fn_id or "").lower())
+        if not isinstance(row, dict):
+            return ""
+
+        function_name = str(row.get("function_name", "")).strip()
+        code_excerpt = str(row.get("code_excerpt", "")).strip()
+        template_usages = row.get("template_usages", []) or []
+        ui_behavior = row.get("ui_behavior", []) or []
+        http_method = str(row.get("http_method", "")).strip().upper()
+        http_path = str(row.get("http_path", "")).strip()
+        module_name = self._extract_module_name_from_path(file_path)
+        artifact_name = self._extract_artifact_name_from_path(file_path)
+        extension = str(row.get("extension", "")).strip().lower()
+        lowered_name = function_name.lower()
+        lowered_code = code_excerpt.lower()
+        readable_name = function_name or artifact_name or "cette fonction"
+
+        def uniq_keep_order(values):
+            out = []
+            seen = set()
+            for value in values:
+                cleaned = str(value or "").strip()
+                if not cleaned:
+                    continue
+                key = cleaned.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(cleaned)
+            return out
+
+        verb = ""
+        action_label = ""
+        if any(k in lowered_name for k in ["delete", "remove", "clear"]):
+            verb = "supprimer"
+            action_label = "des elements selectionnes"
+        elif any(k in lowered_name for k in ["display", "show", "open", "preview"]):
+            verb = "afficher"
+            action_label = "un element selectionne"
+        elif any(k in lowered_name for k in ["create", "add", "insert"]):
+            verb = "creer"
+            action_label = "une nouvelle donnee"
+        elif any(k in lowered_name for k in ["update", "edit", "save", "patch"]):
+            verb = "modifier"
+            action_label = "des donnees existantes"
+        elif any(k in lowered_name for k in ["search", "filter", "find"]):
+            verb = "filtrer et rechercher"
+            action_label = "des donnees"
+        elif any(k in lowered_name for k in ["upload", "import"]):
+            verb = "importer"
+            action_label = "des fichiers ou des donnees"
+
+        if extension == ".vue":
+            subject = "Dans le composant UI"
+            if module_name:
+                subject = f"Dans le composant du module {module_name}"
+            if artifact_name and artifact_name != module_name:
+                subject += f" ({artifact_name})"
+
+            if not verb:
+                verb = "gerer"
+                action_label = "une interaction utilisateur"
+
+            clauses = [f"{subject}, la fonction {readable_name} permet de {verb} {action_label}".strip()]
+
+            template_bits = []
+            for usage in template_usages[:4]:
+                snippet = str(usage.get("template_snippet", "")).strip()
+                if not snippet:
+                    continue
+                if "@click" in snippet:
+                    template_bits.append("l'action est declenchee par un clic utilisateur")
+                elif "v-model" in snippet:
+                    template_bits.append("le comportement depend d'une saisie ou d'une selection")
+                elif ":disabled" in snippet:
+                    template_bits.append("l'etat d'activation des controles est gere dans l'interface")
+            clauses.extend(template_bits[:1])
+
+            if any(x in lowered_code for x in ["fetch", "reload", "refresh", "load"]) and any(x in lowered_name for x in ["delete", "remove", "update", "save", "add"]):
+                clauses.append("rafraichit la liste ou recharge les donnees apres l'action")
+
+            if any(x in lowered_code for x in ["selected", "checkbox", "v-model"]) and any(x in lowered_name for x in ["delete", "display", "show", "open"]):
+                clauses.append("gere explicitement la selection des elements concernes")
+
+            if any(x in lowered_code for x in ["url.createobjecturl", "window.open", "dialog", "popup"]):
+                clauses.append("declenche un affichage detaille ou une ouverture de contenu")
+
+            if "alert(" in lowered_code:
+                if "success" in lowered_code or "successfully" in lowered_code:
+                    clauses.append("affiche un message de confirmation en cas de succes")
+                if "failed" in lowered_code or "error" in lowered_code:
+                    clauses.append("affiche un message explicite en cas d'erreur")
+            elif "console.error" in lowered_code or "catch (" in lowered_code or "catch(" in lowered_code:
+                clauses.append("gere un scenario d'erreur ou d'echec")
+
+            result = ". ".join(uniq_keep_order([c for c in clauses if c])).strip()
+            if result and not result.endswith("."):
+                result += "."
+            return result
+
+        parts = []
+        subject = f"Dans le microservice {microservice}, la fonction {readable_name}"
+        parts.append(subject)
+
+        if http_method and http_path:
+            parts.append(f"traite l'endpoint {http_method} {http_path}")
+
+        actions = []
+        call_matches = re.findall(r"\b(?:await\s+)?([A-Za-z_][A-Za-z0-9_$.]*)\s*\(", code_excerpt)
+        ignored_calls = {
+            "if", "for", "while", "switch", "catch", "return", "console.error", "console.log",
+            "alert", "url.createobjecturl",
+        }
+        ordered_calls = []
+        seen_calls = set()
+        for item in call_matches:
+            norm = str(item or "").strip()
+            if not norm:
+                continue
+            low = norm.lower()
+            if low in ignored_calls or low.startswith("this.logger"):
+                continue
+            if norm not in seen_calls:
+                seen_calls.add(norm)
+                ordered_calls.append(norm)
+        if ordered_calls:
+            main_calls = ", ".join(ordered_calls[:3])
+            actions.append(f"appelle {main_calls}")
+
+        state_updates = re.findall(r"([A-Za-z_][A-Za-z0-9_$.]*(?:\.value)?)\s*=", code_excerpt)
+        state_updates = [s for s in state_updates if not str(s).startswith("const ")]
+        dedup_updates = []
+        seen_updates = set()
+        for item in state_updates:
+            if item not in seen_updates:
+                seen_updates.add(item)
+                dedup_updates.append(item)
+        if dedup_updates:
+            actions.append(f"met a jour {', '.join(dedup_updates[:3])}")
+
+        if "response.json(" in lowered_code or ".json(result)" in lowered_code:
+            actions.append("retourne une reponse JSON en cas de succes")
+
+        if "response.status(500)" in lowered_code or "internal server error" in lowered_code:
+            actions.append("renvoie une erreur serveur en cas d'echec")
+        elif "catch (" in lowered_code or "catch(" in lowered_code:
+            actions.append("gere un cas d'erreur ou d'exception")
+
+        if any(x in lowered_code for x in ["dto", "@body()", "@query()", "@param("]):
+            actions.append("utilise des donnees d'entree structurees")
+
+        if not actions and ui_behavior:
+            normalized = [str(x).replace("_", " ").replace("template binding:", "binding template ") for x in ui_behavior[:4]]
+            actions.append(", ".join(normalized))
+
+        if actions:
+            parts.append(", puis ".join(uniq_keep_order(actions)))
+
+        result = ". ".join([p for p in parts if p]).strip()
+        if result and not result.endswith("."):
+            result += "."
+        return result
+
+    def _derive_ui_screens_for_file(self, microservice, file_path):
+        screens = set()
+        file_path = self._normalize_repo_path(file_path)
+        if not microservice or not file_path:
+            return []
+        artifact = self._extract_artifact_name_from_path(file_path)
+        if ("/views/" in file_path or "/pages/" in file_path) and artifact:
+            screens.add(artifact)
+        module_name = self._extract_module_name_from_path(file_path)
+        repo_meta = self.repo_inventory_index.get(str(microservice).strip(), {})
+        for screen in (repo_meta.get("module_views", {}) or {}).get(module_name, []):
+            if screen:
+                screens.add(str(screen))
+        return sorted(screens)
+
+    def _extract_ui_labels_for_function(self, fn_id, microservice, file_path):
+        row = self.function_code_index.get(str(fn_id or "").lower())
+        if not isinstance(row, dict):
+            return []
+        content = self._get_source_file_content(microservice, file_path)
+        if not content:
+            return []
+        lines = content.splitlines()
+        labels = set()
+
+        def _extract_from_window(window_text):
+            for m in re.finditer(r"\$t\(\s*['\"]([^'\"]+)['\"]\s*\)", window_text):
+                token = str(m.group(1) or "").strip()
+                if token:
+                    labels.add(token)
+            for m in re.finditer(r">\s*([^<{][^<]{0,80}?)\s*<", window_text):
+                token = re.sub(r"\s+", " ", str(m.group(1) or "")).strip()
+                if token and len(token) > 1 and not token.startswith("$t("):
+                    labels.add(token)
+
+        usages = row.get("template_usages", []) or []
+        for usage in usages:
+            try:
+                line_no = int(usage.get("template_line") or 0)
+            except Exception:
+                line_no = 0
+            if line_no > 0:
+                start = max(1, line_no - 4)
+                end = min(len(lines), line_no + 5)
+                _extract_from_window("\n".join(lines[start - 1:end]))
+
+        if not labels:
+            function_name = str(row.get("function_name", "")).strip()
+            if function_name:
+                for idx, line in enumerate(lines, start=1):
+                    if function_name in line and "@click" in line:
+                        start = max(1, idx - 4)
+                        end = min(len(lines), idx + 5)
+                        _extract_from_window("\n".join(lines[start - 1:end]))
+
+        return sorted(labels)
+
+    def _derive_ui_context_for_function(self, fn_id, microservice, file_path, frontend_equivalents=None):
+        ui_components = set()
+        ui_files = set()
+        ui_screens = set()
+        ui_labels = set()
+
+        sources = []
+        normalized_path = self._normalize_repo_path(file_path)
+        if normalized_path and str(microservice or "").endswith("-ui"):
+            sources.append((str(microservice).strip(), normalized_path))
+        for eq in frontend_equivalents or []:
+            eq_ms = str((eq or {}).get("microservice") or "").strip()
+            eq_file = self._normalize_repo_path((eq or {}).get("file"))
+            if eq_ms and eq_file:
+                sources.append((eq_ms, eq_file))
+
+        seen = set()
+        for src_ms, src_file in sources:
+            sig = f"{src_ms}|{src_file}"
+            if sig in seen:
+                continue
+            seen.add(sig)
+            ui_files.add(src_file)
+            component = self._component_from_path(src_file)
+            if component:
+                ui_components.add(component)
+            for screen in self._derive_ui_screens_for_file(src_ms, src_file):
+                ui_screens.add(screen)
+            for label in self._extract_ui_labels_for_function(fn_id, src_ms, src_file):
+                ui_labels.add(label)
+
+        return {
+            "ui_components": sorted(ui_components),
+            "ui_files": sorted(ui_files),
+            "ui_screens": sorted(ui_screens),
+            "ui_labels": sorted(ui_labels),
+        }
 
     def _load_known_microservices(self):
         names = set()
@@ -1632,10 +2217,334 @@ class NRTAnalyzer:
             return parts[-2].strip()
         return ""
 
+    @staticmethod
+    def _camel_to_label_v2(name):
+        raw = str(name or "").strip()
+        if not raw:
+            return ""
+        words = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", raw).replace("_", " ").split()
+        out = []
+        for word in words:
+            low = word.lower()
+            if low == "jit":
+                out.append("JIT")
+            elif low == "api":
+                out.append("API")
+            else:
+                out.append(low)
+        return " ".join(out).strip()
+
+    def _derive_non_endpoint_business_phrase_v2(self, function_name, code_text):
+        raw = str(function_name or "").strip()
+        lowered = raw.lower()
+        code_l = str(code_text or "").lower()
+        readable = self._camel_to_label_v2(raw)
+
+        replacements = [
+            (" status string ", " chaine de statuts "),
+            (" status strings ", " chaines de statuts "),
+            (" status code ", " code statut "),
+            (" status codes ", " codes statut "),
+            (" to colors ", " en couleurs "),
+            (" to color ", " en couleur "),
+            (" colors ", " couleurs "),
+            (" color ", " couleur "),
+            (" duration seconds ", " duree en secondes "),
+            (" duration second ", " duree en secondes "),
+            (" closed downtime ", " downtime fermee "),
+            (" border ", " bordure "),
+        ]
+
+        def normalize_core(text):
+            core = f" {str(text or '').strip()} "
+            for source, target in replacements:
+                core = core.replace(source, target)
+            return " ".join(core.split()).strip()
+
+        if lowered.startswith("is") and lowered.endswith("required") and readable:
+            core = normalize_core(readable[2:].strip())
+            if core.endswith(" required"):
+                core = core[:-9].strip()
+            if core:
+                return f"verifie si {core} est requise"
+        if lowered.startswith("resolve") and readable:
+            core = normalize_core(readable[len("resolve"):].strip())
+            if core:
+                return f"determine {core}"
+        if lowered.startswith("determine") and readable:
+            core = normalize_core(readable[len("determine"):].strip())
+            if core:
+                return f"determine {core}"
+        if lowered.startswith("get") and readable:
+            core = normalize_core(readable[len("get"):].strip())
+            if core:
+                return f"recupere {core}"
+        if lowered.startswith("find") and readable:
+            core = normalize_core(readable[len("find"):].strip())
+            if core:
+                return f"recherche {core}"
+        if lowered.startswith("create") and readable:
+            core = normalize_core(readable[len("create"):].strip() or "des donnees")
+            return f"cree {core}"
+        if lowered.startswith("update") and readable:
+            core = normalize_core(readable[len("update"):].strip() or "des donnees")
+            return f"met a jour {core}"
+        if lowered.startswith("save") and readable:
+            core = normalize_core(readable[len("save"):].strip() or "des donnees")
+            return f"enregistre {core}"
+        if lowered.startswith("calculate") and readable:
+            core = normalize_core(readable[len("calculate"):].strip() or "une valeur")
+            return f"calcule {core}"
+        if lowered.startswith("parse") and readable:
+            core = normalize_core(readable[len("parse"):].strip() or "une valeur")
+            return f"analyse {core}"
+        if lowered.startswith("normalize") and readable:
+            core = normalize_core(readable[len("normalize"):].strip() or "une valeur")
+            return f"normalise {core}"
+        if lowered.startswith("serialize") and readable:
+            core = normalize_core(readable[len("serialize"):].strip() or "une valeur")
+            return f"serialise {core}"
+        if lowered.startswith("format") and readable:
+            core = normalize_core(readable[len("format"):].strip() or "une valeur")
+            return f"formate {core}"
+        if lowered.startswith("convert") and readable:
+            core = normalize_core(readable[len("convert"):].strip() or "une valeur")
+            return f"convertit {core}"
+        if lowered.startswith("map") and readable:
+            core = normalize_core(readable[len("map"):].strip() or "une valeur")
+            return f"associe {core}"
+
+        if "threshold" in code_l and "shiftstart" in code_l:
+            return "applique une regle metier liee au seuil et au shift"
+        if readable:
+            return f"traite {normalize_core(readable)}"
+        return "traite une regle metier"
+
+    @staticmethod
+    def _extract_jsdoc_return_value_v2(text):
+        raw = str(text or "")
+        match = re.search(r"@returns?\s+([^\n\r*]+)", raw, flags=re.IGNORECASE)
+        if not match:
+            return ""
+        return " ".join(match.group(1).split()).strip(" .")
+
+    @staticmethod
+    def _extract_jsdoc_param_names_v2(text):
+        raw = str(text or "")
+        names = []
+        for match in re.finditer(r"@param\s+([A-Za-z_][A-Za-z0-9_]*)", raw, flags=re.IGNORECASE):
+            name = str(match.group(1) or "").strip()
+            if name and name not in names:
+                names.append(name)
+        return names[:3]
+
+    def _build_non_endpoint_business_description_v2(self, fn_id, fn_name, fn_container, zone_text, changed_lines):
+        row = self.function_code_index.get(str(fn_id or "").lower(), {}) or {}
+        context_excerpt = str(row.get("context_excerpt", "")).strip()
+        code_excerpt = str(row.get("code_excerpt", "")).strip()
+        merged_text = "\n".join([part for part in [context_excerpt, code_excerpt, zone_text] if part]).strip()
+        business_phrase = self._derive_non_endpoint_business_phrase_v2(fn_name, merged_text)
+        params = self._extract_jsdoc_param_names_v2(context_excerpt)
+
+        details = []
+        merged_lower = merged_text.lower()
+        if "threshold" in merged_lower:
+            details.append("selon un seuil de controle")
+        if "ticket.userid" in merged_lower or "modifiedby" in merged_lower:
+            details.append("en tenant compte du type de ticket et de son statut de modification")
+        if any(token in merged_lower for token in ["shiftstart", "shiftend", "startdate", "enddate"]):
+            details.append("et de sa position dans le shift")
+        if not details and params:
+            details.append(f"a partir de {', '.join(params)}")
+
+        if business_phrase:
+            phrase = business_phrase
+            if details:
+                phrase += " " + " ".join(details)
+            return phrase.strip().capitalize()
+        return "Traite une regle metier simple."
+
+    def _extract_controller_call_context_v2(self, content, call_index, called_name):
+        raw = str(content or "")
+        if not raw or call_index is None:
+            return {}
+
+        pre_text = raw[:call_index]
+        tail_text = pre_text[-5000:]
+        controller_prefix = self._extract_controller_prefix_v2(raw)
+
+        route_matches = list(re.finditer(r"@(Get|Post|Put|Patch|Delete)\s*\(([^)]*)\)", tail_text, flags=re.IGNORECASE))
+        api_matches = list(re.finditer(r"@ApiOperation\s*\(\s*\{(.*?)\}\s*\)", tail_text, flags=re.IGNORECASE | re.DOTALL))
+        dto_matches = list(re.finditer(r"@Api(?:Ok|Created|Response)\s*\(\s*\{(.*?)\}\s*\)", tail_text, flags=re.IGNORECASE | re.DOTALL))
+
+        method = ""
+        route = ""
+        if route_matches:
+            last_route = route_matches[-1]
+            method = str(last_route.group(1) or "").upper().strip()
+            route = self._extract_first_quoted_v2(last_route.group(2))
+
+        api_summary = ""
+        api_description = ""
+        if api_matches:
+            op_body = api_matches[-1].group(1)
+            api_summary = self._extract_swagger_field_v2(op_body, "summary")
+            api_description = self._extract_swagger_field_v2(op_body, "description")
+
+        response_type = ""
+        if dto_matches:
+            type_match = re.search(r"type\s*:\s*([A-Za-z_][A-Za-z0-9_]*)", dto_matches[-1].group(1))
+            if type_match:
+                response_type = type_match.group(1)
+
+        endpoint_part = ""
+        if method:
+            full_route = "/".join([p.strip("/") for p in [controller_prefix, route] if p])
+            full_route = f"/{full_route}" if full_route else "/"
+            endpoint_part = f"Endpoint {method} {full_route}"
+
+        service_call = ""
+        call_match = re.search(rf"\bthis\.(\w+)\.{re.escape(str(called_name or ''))}\s*\(", raw[call_index - 120:call_index + 200])
+        if call_match:
+            service_call = f"appelle {call_match.group(1)}.{called_name}(...)"
+
+        return {
+            "endpoint_part": endpoint_part,
+            "swagger_part": api_summary or api_description,
+            "response_type": response_type,
+            "service_call": service_call,
+            "score": int(bool(endpoint_part)) * 3 + int(bool(api_summary or api_description)) * 2 + int(bool(service_call)),
+        }
+
+    def _find_controller_context_for_function_v2(self, microservice, function_name):
+        snapshot = self._load_source_snapshot_for_microservice(microservice)
+        if not snapshot or not function_name:
+            return {}
+
+        best = {}
+        pattern = re.compile(rf"\bthis\.(\w+)\.{re.escape(str(function_name))}\s*\(", flags=re.IGNORECASE)
+        for _, content in snapshot.items():
+            if "@Controller" not in str(content or ""):
+                continue
+            for match in pattern.finditer(content):
+                ctx = self._extract_controller_call_context_v2(content, match.start(), function_name)
+                if ctx.get("score", 0) > best.get("score", 0):
+                    best = ctx
+        return best
+
+    def _find_same_file_caller_names_v2(self, microservice, file_path, fn):
+        normalized_path = self._normalize_repo_path(file_path)
+        peers = self.function_index_by_ms_file.get((microservice, normalized_path), []) or []
+        content = self._get_source_file_content(microservice, normalized_path)
+        if not peers or not content:
+            return []
+
+        fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+        fn_name = self._extract_function_short_name(fn_id)
+        fn_container = self._extract_function_container(fn_id)
+        if not fn_name:
+            return []
+
+        callers = []
+        for peer in peers:
+            peer_id = str(peer.get("id") or peer.get("name") or "").strip()
+            peer_name = self._extract_function_short_name(peer_id)
+            if not peer_name or peer_name == fn_name:
+                continue
+            if fn_container and self._extract_function_container(peer_id) != fn_container:
+                continue
+            start = int(peer.get("line_start") or 0)
+            end = int(peer.get("line_end") or 0)
+            if start <= 0 or end <= 0 or end < start:
+                continue
+            lines = content.splitlines()
+            peer_zone = "\n".join(lines[start - 1:end])
+            if re.search(rf"\b(?:this\.)?{re.escape(fn_name)}\s*\(", peer_zone):
+                callers.append(peer_name)
+        return callers
+
+    @staticmethod
+    def _extract_enclosing_callable_name_v2(content, index):
+        raw = str(content or "")
+        if not raw or index is None:
+            return ""
+        pre_text = raw[:index]
+        candidates = []
+        patterns = [
+            r"(?:async\s+)?function\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(",
+            r"(?:public|private|protected|static|\s)*(?:async\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*:\s*[^{=\n]+\{",
+            r"(?:public|private|protected|static|\s)*(?:async\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*\{",
+        ]
+        for pattern in patterns:
+            for match in re.finditer(pattern, pre_text, flags=re.IGNORECASE | re.MULTILINE):
+                name = str(match.group(1) or "").strip()
+                if name and name.lower() not in {"if", "for", "while", "switch", "catch", "constructor"}:
+                    candidates.append((match.start(), name))
+        if not candidates:
+            return ""
+        candidates.sort(key=lambda item: item[0])
+        return candidates[-1][1]
+
+    def _find_raw_caller_names_v2(self, microservice, file_path, function_name):
+        normalized_path = self._normalize_repo_path(file_path)
+        content = self._get_source_file_content(microservice, normalized_path)
+        if not content or not function_name:
+            return []
+
+        callers = []
+        pattern = re.compile(rf"\b(?:this\.)?{re.escape(str(function_name))}\s*\(", flags=re.IGNORECASE)
+        for match in pattern.finditer(content):
+            prefix = content[max(0, match.start() - 30):match.start()]
+            if re.search(r"(?:function|const|let|var)\s+$", prefix, flags=re.IGNORECASE):
+                continue
+            caller_name = self._extract_enclosing_callable_name_v2(content, match.start())
+            if caller_name and caller_name.lower() != str(function_name).lower() and caller_name not in callers:
+                callers.append(caller_name)
+        return callers
+
+    def _find_transitive_caller_names_v2(self, microservice, file_path, function_name, max_depth=3):
+        if not function_name:
+            return []
+        seen = {str(function_name).lower()}
+        ordered = []
+        frontier = [function_name]
+        depth = 0
+        while frontier and depth < max_depth:
+            next_frontier = []
+            for current_name in frontier:
+                raw_callers = self._find_raw_caller_names_v2(microservice, file_path, current_name)
+                for caller_name in raw_callers:
+                    key = str(caller_name).lower()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    ordered.append(caller_name)
+                    next_frontier.append(caller_name)
+            frontier = next_frontier
+            depth += 1
+        return ordered
+
+    def _resolve_endpoint_context_for_function_v2(self, microservice, file_path, fn):
+        fn_id = str(fn.get("id") or fn.get("name") or "").strip()
+        fn_name = self._extract_function_short_name(fn_id)
+        if not fn_name:
+            return {}
+
+        best = self._find_controller_context_for_function_v2(microservice, fn_name)
+        for caller_name in self._find_same_file_caller_names_v2(microservice, file_path, fn):
+            ctx = self._find_controller_context_for_function_v2(microservice, caller_name)
+            if ctx.get("score", 0) > best.get("score", 0):
+                best = ctx
+        for caller_name in self._find_transitive_caller_names_v2(microservice, file_path, fn_name):
+            ctx = self._find_controller_context_for_function_v2(microservice, caller_name)
+            if ctx.get("score", 0) > best.get("score", 0):
+                best = ctx
+        return best
+
     def _describe_function_from_source_v2(self, microservice, file_path, fn, changed_lines):
         content = self._get_source_file_content(microservice, file_path)
         if not content:
-            return "Fonction impactee (source snapshot indisponible)."
+            return "Fonction impactee (source snapshot indisponible pour description detaillee)."
 
         lines = content.splitlines()
         start = int(fn.get("line_start") or 0)
@@ -1652,8 +2561,8 @@ class NRTAnalyzer:
         zone_text = "\n".join(lines[zone_start - 1:zone_end])
 
         route_match = re.search(r"@(Get|Post|Put|Patch|Delete)\s*\(([^)]*)\)", zone_text, flags=re.IGNORECASE)
-        method = ""
-        route = ""
+        method = str(fn.get("http_method") or "").upper().strip()
+        route = str(fn.get("path") or "").strip()
         if route_match:
             method = route_match.group(1).upper()
             route = self._extract_first_quoted_v2(route_match.group(2))
@@ -1685,8 +2594,25 @@ class NRTAnalyzer:
             endpoint_part = f"Endpoint {method} {full_route}"
 
         behavior_part = self._derive_behavior_from_fn_v2(fn_name, zone_text)
-        line_part = f"lignes changees: {', '.join(map(str, changed_lines[:8]))}" if changed_lines else "lignes changees non disponibles"
         swagger_part = api_summary or api_description
+
+        if not endpoint_part and not swagger_part and not service_call and fn_name:
+            resolved_ctx = self._resolve_endpoint_context_for_function_v2(microservice, file_path, fn)
+            endpoint_part = resolved_ctx.get("endpoint_part", "")
+            swagger_part = resolved_ctx.get("swagger_part", "") or swagger_part
+            response_type = response_type or resolved_ctx.get("response_type", "")
+            service_call = service_call or resolved_ctx.get("service_call", "")
+
+        if not endpoint_part and not swagger_part and not service_call and fn_name:
+            non_endpoint_desc = self._build_non_endpoint_business_description_v2(
+                fn_id=fn_id,
+                fn_name=fn_name,
+                fn_container=fn_container,
+                zone_text=zone_text,
+                changed_lines=changed_lines,
+            )
+            if non_endpoint_desc:
+                return non_endpoint_desc
 
         parts = []
         if fn_name:
@@ -1704,7 +2630,6 @@ class NRTAnalyzer:
             parts.append(service_call)
         if behavior_part:
             parts.append(behavior_part)
-        parts.append(line_part)
         return " | ".join(parts)
 
     def _describe_function_test_focus_v2(self, function_id, file_path, function_description):
@@ -1839,8 +2764,8 @@ class NRTAnalyzer:
         zone_text = "\n".join(lines[zone_start - 1:zone_end])
 
         route_match = re.search(r"@(Get|Post|Put|Patch|Delete)\s*\(([^)]*)\)", zone_text, flags=re.IGNORECASE)
-        method = ""
-        route = ""
+        method = str(fn.get("http_method") or "").upper().strip()
+        route = str(fn.get("path") or "").strip()
         if route_match:
             method = route_match.group(1).upper()
             route = self._extract_first_quoted(route_match.group(2))
@@ -1872,8 +2797,25 @@ class NRTAnalyzer:
             endpoint_part = f"Endpoint {method} {full_route}"
 
         behavior_part = self._derive_behavior_from_fn(fn_name, zone_text)
-        line_part = f"lignes changees: {', '.join(map(str, changed_lines[:8]))}" if changed_lines else "lignes changees non disponibles"
         swagger_part = api_summary or api_description
+
+        if not endpoint_part and not swagger_part and not service_call and fn_name:
+            resolved_ctx = self._resolve_endpoint_context_for_function_v2(microservice, file_path, fn)
+            endpoint_part = resolved_ctx.get("endpoint_part", "")
+            swagger_part = resolved_ctx.get("swagger_part", "") or swagger_part
+            response_type = response_type or resolved_ctx.get("response_type", "")
+            service_call = service_call or resolved_ctx.get("service_call", "")
+
+        if not endpoint_part and not swagger_part and not service_call and fn_name:
+            non_endpoint_desc = self._build_non_endpoint_business_description_v2(
+                fn_id=fn_id,
+                fn_name=fn_name,
+                fn_container=fn_container,
+                zone_text=zone_text,
+                changed_lines=changed_lines,
+            )
+            if non_endpoint_desc:
+                return non_endpoint_desc
 
         parts = []
         if fn_name:
@@ -1891,7 +2833,6 @@ class NRTAnalyzer:
             parts.append(service_call)
         if behavior_part:
             parts.append(behavior_part)
-        parts.append(line_part)
         return " | ".join(parts)
 
     def _build_retest_items_for_target(self, microservice, files, commit_ids, commit_messages, target_functions, infra_blocks):
@@ -1989,6 +2930,297 @@ class NRTAnalyzer:
             )
         )
         return items
+
+    @staticmethod
+    def _extract_file_roles_from_paths(files):
+        roles = []
+        seen = set()
+        for file_path in files or []:
+            raw = str(file_path or "").replace("\\", "/").strip()
+            if not raw:
+                continue
+            low = raw.lower()
+            name = Path(low).name
+            detected = []
+            if "/migration/" in low or name.endswith(".sql"):
+                detected.append("migration")
+            if "/entities/" in low or name.endswith(".entity.ts") or "entity" in name:
+                detected.append("entity")
+            if "/service/" in low or name in {"api.ts", "api.js"} or name.endswith(".service.ts"):
+                detected.append("service/api")
+            if "/controller" in low or name.endswith(".controller.ts"):
+                detected.append("controller")
+            if "/store/" in low:
+                detected.append("store")
+            if "/components/" in low:
+                detected.append("component")
+            if "/views/" in low or "/pages/" in low:
+                detected.append("view/page")
+            if "/dto/" in low or name.endswith(".dto.ts"):
+                detected.append("dto")
+            if "/config/" in low or name.endswith(".yaml") or name.endswith(".yml"):
+                detected.append("config")
+            if name.endswith(".json"):
+                detected.append("json")
+            for role in detected:
+                if role.lower() in seen:
+                    continue
+                seen.add(role.lower())
+                roles.append(role)
+        return roles
+
+    @staticmethod
+    def _join_sentence_parts(parts):
+        cleaned = []
+        for part in parts or []:
+            value = str(part or "").strip().rstrip(".")
+            if value:
+                cleaned.append(value)
+        if not cleaned:
+            return ""
+        text = ". ".join(cleaned).strip()
+        if text and not text.endswith("."):
+            text += "."
+        return text
+
+    def _build_non_function_scope_group(self, microservice, files, commit_ids, commit_messages, retest_items, workitem_titles=None):
+        files = [str(f or "").strip() for f in (files or []) if str(f or "").strip()]
+        commit_ids = [str(c or "").strip() for c in (commit_ids or []) if str(c or "").strip()]
+        retest_items = [item for item in (retest_items or []) if isinstance(item, dict)]
+        if not files and not retest_items:
+            return None
+
+        file_items = [item for item in retest_items if str(item.get("type") or "").upper() == "FILE-RETEST"]
+        infra_items = [item for item in retest_items if str(item.get("type") or "").upper() == "INFRA-RETEST"]
+        modules = []
+        seen_modules = set()
+        for file_path in files:
+            module_name = self._extract_module_name_from_path(file_path)
+            if module_name and module_name.lower() not in seen_modules:
+                seen_modules.add(module_name.lower())
+                modules.append(module_name)
+        file_roles = self._extract_file_roles_from_paths(files)
+        file_names = []
+        seen_names = set()
+        for file_path in files:
+            name = Path(str(file_path)).name.strip()
+            if name and name.lower() not in seen_names:
+                seen_names.add(name.lower())
+                file_names.append(name)
+
+        actions = []
+        seen_actions = set()
+        for item in file_items + infra_items:
+            text = str(item.get("what_to_test") or "").strip()
+            key = text.lower()
+            if text and key not in seen_actions:
+                seen_actions.add(key)
+                actions.append(text)
+
+        if infra_items and not file_items:
+            description = str(infra_items[0].get("description") or "").strip() or "Changement infra/config detecte."
+            priority_order = 3
+            scope_label = "P3 infra/config"
+            function_scope_type = "P3 infra/config"
+            impact_label = "Impact infra/config"
+            functional_parts = [
+                f"Dans le microservice {microservice}, les changements touchent directement la configuration, le deploiement ou le versioning du service."
+            ]
+            if modules:
+                functional_parts.append(f"Les modules visibles dans les fichiers touches sont: {', '.join(modules[:3])}")
+            elif file_names:
+                functional_parts.append(f"Les fichiers traces par commit sont: {', '.join(file_names[:3])}")
+            if file_roles:
+                functional_parts.append(f"Les types de fichiers touches sont: {', '.join(file_roles[:4])}")
+            functional_parts.append("Aucune fonction metier exacte n'est prouvee par ligne de diff, mais le microservice reste directement impacte par commit et fichier.")
+        else:
+            description = "Fichiers code touches sans preuve ligne->fonction exploitable."
+            priority_order = 2
+            scope_label = "P2/P3 microservice direct"
+            function_scope_type = "P2/P3 candidate"
+            impact_label = "Impact microservice direct"
+            zone_bits = []
+            if modules:
+                zone_bits.append(f"les modules {', '.join(modules[:3])}")
+            if file_roles:
+                zone_bits.append(f"des fichiers de type {', '.join(file_roles[:4])}")
+            if file_names and not zone_bits:
+                zone_bits.append(f"les fichiers {', '.join(file_names[:3])}")
+            scope_area = ", ".join(zone_bits) if zone_bits else "des fichiers code traces par commit"
+            functional_parts = [
+                f"Dans le microservice {microservice}, les changements touchent directement {scope_area}."
+            ]
+            if any(role in file_roles for role in ["service/api", "controller"]):
+                functional_parts.append("Ces changements peuvent influencer les appels API, la recuperation ou la mise a jour des donnees du microservice.")
+            if any(role in file_roles for role in ["entity", "migration", "dto"]):
+                functional_parts.append("Ils peuvent aussi influencer la structure, l'indexation ou la lecture des donnees manipulees par ce microservice.")
+            if any(role in file_roles for role in ["store", "component", "view/page"]):
+                functional_parts.append("Ils peuvent modifier le comportement applicatif ou l'enchainement technique du module touche.")
+            functional_parts.append("Aucune fonction metier exacte n'est prouvee par ligne de diff, mais le microservice reste directement impacte par commit et fichier.")
+
+        business_symptom = self._build_non_function_business_symptom(
+            microservice=microservice,
+            modules=modules,
+            file_roles=file_roles,
+            workitem_titles=workitem_titles or [],
+            commit_messages=commit_messages or [],
+        )
+        technical_justification = self._build_non_function_technical_justification(
+            microservice=microservice,
+            modules=modules,
+            file_roles=file_roles,
+            files=files,
+            commit_ids=commit_ids,
+        )
+        action_parts = self._merge_non_function_retest_actions(
+            base_actions=actions,
+            microservice=microservice,
+            modules=modules,
+            file_roles=file_roles,
+            workitem_titles=workitem_titles or [],
+            commit_messages=commit_messages or [],
+        )
+
+        evidence = (
+            f"commit(s): {', '.join([c[:8] for c in commit_ids[:4]])} | "
+            f"file(s): {', '.join(files[:3])}"
+        ).strip()
+        if evidence.endswith("|"):
+            evidence = evidence[:-1].strip()
+
+        return {
+            "group_type": "INFRA-RETEST" if priority_order == 3 and not file_items else "FILE-RETEST",
+            "function_scope_type": function_scope_type,
+            "priority_order": priority_order,
+            "priority": "P1" if priority_order == 1 else "P2/P3",
+            "scope_label": scope_label,
+            "impact_label": impact_label,
+            "fallback_label": "Aucune fonction metier prouvee",
+            "functions": [],
+            "description": description,
+            "business_symptom": business_symptom,
+            "technical_justification": technical_justification,
+            "functional_description": self._join_sentence_parts(functional_parts),
+            "what_to_test": " ".join(action_parts).strip() or "Verifier le parcours nominal du microservice directement impacte.",
+            "evidence": evidence,
+            "files": files,
+            "commit_ids": commit_ids,
+        }
+
+    @staticmethod
+    def _clean_scope_title_text(value):
+        text = str(value or "").strip()
+        if not text:
+            return ""
+        text = re.sub(r"\[[^\]]+\]\s*", "", text)
+        text = re.sub(r"\s+", " ", text).strip(" -:;,")
+        return text
+
+    def _build_non_function_business_symptom(self, microservice, modules, file_roles, workitem_titles, commit_messages):
+        merged = " ".join(
+            [self._clean_scope_title_text(x) for x in ((workitem_titles or []) + (commit_messages or []))]
+        ).strip()
+        lowered = merged.lower()
+        module_label = modules[0] if modules else ""
+
+        if "shift-context" in lowered:
+            if "current shift" in lowered and "previous" in lowered:
+                return (
+                    "Le changement cible la recuperation des quarts via l'API shift-context "
+                    "et peut limiter le retour complet des quarts attendus au-dela du quart actuel."
+                )
+            return (
+                "Le changement cible la recuperation des donnees de quart via l'API shift-context "
+                "et peut influencer la disponibilite des informations attendues dans les ecrans consommateurs."
+            )
+        if "not displaying data" in lowered or ("display" in lowered and "data" in lowered):
+            area = f" dans le module {module_label}" if module_label else ""
+            return (
+                f"Le symptome signale un risque de non affichage ou d'affichage incomplet des donnees{area}, "
+                "avec un impact possible sur le parcours fonctionnel consommateur."
+            )
+        if "null" in lowered:
+            area = f" pour le module {module_label}" if module_label else ""
+            return (
+                f"Le changement peut faire remonter des valeurs absentes ou nulles{area}, "
+                "ce qui peut alterer l'affichage ou le traitement fonctionnel attendu."
+            )
+        if any(role in file_roles for role in ["service/api", "controller"]):
+            area = f" du module {module_label}" if module_label else ""
+            return (
+                f"Le changement peut modifier la recuperation ou la restitution des donnees applicatives{area}, "
+                "avec un impact possible sur les parcours qui consomment cette API."
+            )
+        if any(role in file_roles for role in ["entity", "migration"]):
+            area = f" pour le module {module_label}" if module_label else ""
+            return (
+                f"Le changement peut influencer la structure ou la lecture des donnees{area}, "
+                "et donc la coherence fonctionnelle visible cote utilisateur."
+            )
+        if "json" in file_roles or "config" in file_roles:
+            return (
+                f"Le changement peut influencer la disponibilite ou le comportement de {microservice} "
+                "au niveau configuration/deploiement."
+            )
+        return (
+            f"Le microservice {microservice} est directement impacte par commit et fichier, "
+            "avec un risque fonctionnel a verifier sur le parcours nominal associe."
+        )
+
+    @staticmethod
+    def _build_non_function_technical_justification(microservice, modules, file_roles, files, commit_ids):
+        parts = [f"Microservice direct touche: {microservice}"]
+        if modules:
+            parts.append(f"Module(s) detecte(s): {', '.join(modules[:3])}")
+        if file_roles:
+            parts.append(f"Type(s) de fichiers touches: {', '.join(file_roles[:4])}")
+        if files:
+            parts.append(f"Fichiers traces: {', '.join([Path(f).name for f in files[:3]])}")
+        if commit_ids:
+            parts.append(f"Preuve: {len(commit_ids)} commit(s) relies")
+        return " | ".join(parts)
+
+    def _merge_non_function_retest_actions(self, base_actions, microservice, modules, file_roles, workitem_titles, commit_messages):
+        merged = " ".join(
+            [self._clean_scope_title_text(x) for x in ((workitem_titles or []) + (commit_messages or []))]
+        ).lower()
+        actions = []
+        seen = set()
+
+        def add_action(text):
+            value = str(text or "").strip()
+            if not value:
+                return
+            key = value.lower()
+            if key in seen:
+                return
+            seen.add(key)
+            actions.append(value)
+
+        for item in base_actions or []:
+            add_action(item)
+
+        if "shift-context" in merged:
+            if "current shift" in merged and "previous" in merged:
+                add_action("Verifier que l'API shift-context retourne bien le quart actuel ainsi que les quarts attendus au-dela du quart actuel.")
+            else:
+                add_action("Verifier le comportement fonctionnel des donnees de quart renvoyees par l'API shift-context.")
+        if "not displaying data" in merged or ("display" in merged and "data" in merged):
+            add_action("Verifier que les donnees attendues s'affichent correctement dans les ecrans consommateurs.")
+        if "null" in merged:
+            add_action("Verifier le comportement applicatif si certaines valeurs reviennent absentes ou nulles.")
+        if any(role in file_roles for role in ["entity", "migration"]):
+            add_action("Verifier la coherence des donnees lues, structurees ou retournees apres modification de structure.")
+        if any(role in file_roles for role in ["service/api", "controller"]):
+            add_action("Verifier les cas nominal, reponse vide, reponse partielle et gestion d'erreur des appels API lies au microservice.")
+        if modules:
+            add_action(f"Verifier le parcours fonctionnel principal du module {modules[0]}.")
+        if microservice.endswith("-data-ingestion") or "ingestion" in microservice:
+            add_action("Verifier que l'alimentation ou la mise a disposition des donnees reste coherente pour les consommateurs fonctionnels.")
+        if microservice.endswith("-infrastructure") or microservice.endswith("infrastructure"):
+            add_action("Verifier la disponibilite du service et le parcours nominal de bout en bout apres mise a jour de configuration.")
+
+        return actions
 
     @staticmethod
     def _describe_file_impact(file_path):
@@ -2094,6 +3326,149 @@ class NRTAnalyzer:
                 continue
 
         return index
+
+    @staticmethod
+    def _normalize_endpoint_path(path_value):
+        p = str(path_value or "").strip()
+        if not p:
+            return ""
+        if "://" in p:
+            try:
+                p = "/" + p.split("://", 1)[1].split("/", 1)[1]
+            except Exception:
+                return ""
+        p = p.split("?", 1)[0].strip()
+        if not p.startswith("/"):
+            p = "/" + p
+        p = re.sub(r"/{2,}", "/", p)
+        if len(p) > 1 and p.endswith("/"):
+            p = p[:-1]
+        return p
+
+    @staticmethod
+    def _component_from_path(path_value):
+        p = str(path_value or "").replace("\\", "/")
+        if not p:
+            return ""
+        name = p.split("/")[-1]
+        return re.sub(r"\.(vue|tsx|jsx|ts|js)$", "", name, flags=re.IGNORECASE)
+
+    def _extract_http_calls_from_content(self, content):
+        """
+        Extract literal HTTP calls from front code with strict evidence only.
+        Returns list of dict: {method, path}
+        """
+        out = []
+        if not isinstance(content, str) or not content:
+            return out
+
+        for method in ("get", "post", "put", "patch", "delete"):
+            pattern = re.compile(rf"\.{method}\s*\(\s*([\"'`])([^\"'`]+)\1", re.IGNORECASE)
+            for m in pattern.finditer(content):
+                raw_path = str(m.group(2) or "").strip()
+                if not raw_path or "${" in raw_path:
+                    continue
+                norm = self._normalize_endpoint_path(raw_path)
+                if not norm:
+                    continue
+                out.append({"method": method.upper(), "path": norm})
+
+        fetch_pattern = re.compile(
+            r"fetch\s*\(\s*([\"'`])([^\"'`]+)\1(?:\s*,\s*\{([^}]*)\})?",
+            re.IGNORECASE | re.DOTALL
+        )
+        for m in fetch_pattern.finditer(content):
+            raw_path = str(m.group(2) or "").strip()
+            if not raw_path or "${" in raw_path:
+                continue
+            norm = self._normalize_endpoint_path(raw_path)
+            if not norm:
+                continue
+            options_blob = str(m.group(3) or "")
+            mm = re.search(r"method\s*:\s*([\"'`])([A-Z]+)\1", options_blob, re.IGNORECASE)
+            method = str(mm.group(2) if mm else "GET").upper()
+            out.append({"method": method, "path": norm})
+
+        dedup = []
+        seen = set()
+        for row in out:
+            key = f"{row.get('method','')}|{row.get('path','')}"
+            if key in seen:
+                continue
+            seen.add(key)
+            dedup.append(row)
+        return dedup
+
+    def _build_front_endpoint_usage_index(self):
+        """
+        Build index from endpoint -> proven front files/components consuming it.
+        Key: (METHOD, /path)
+        """
+        repo_root = Path(__file__).parent.parent
+        index = {}
+        for source_file in repo_root.glob("source_mesx_*ui*.json"):
+            try:
+                ms_name = source_file.stem.replace("source_", "").replace("_", "-")
+                with open(source_file, "r", encoding="utf-8") as f:
+                    entries = json.load(f)
+                for entry in entries or []:
+                    file_path = self._normalize_repo_path(entry.get("chemin"))
+                    content = entry.get("contenu")
+                    if not file_path or not isinstance(content, str):
+                        continue
+                    if Path(file_path).suffix.lower() not in {".vue", ".ts", ".tsx", ".js", ".jsx"}:
+                        continue
+                    http_calls = self._extract_http_calls_from_content(content)
+                    if not http_calls:
+                        continue
+                    component = self._component_from_path(file_path)
+                    for call in http_calls:
+                        method = str(call.get("method") or "").upper().strip()
+                        path = self._normalize_endpoint_path(call.get("path"))
+                        if not method or not path:
+                            continue
+                        key = (method, path)
+                        index.setdefault(key, []).append({
+                            "microservice": ms_name,
+                            "file": file_path,
+                            "component": component,
+                            "method": method,
+                            "path": path,
+                        })
+            except Exception:
+                continue
+
+        # Deduplicate per endpoint.
+        for key, rows in list(index.items()):
+            seen = set()
+            out = []
+            for r in rows:
+                sig = f"{r.get('microservice','')}|{r.get('file','')}"
+                if sig in seen:
+                    continue
+                seen.add(sig)
+                out.append(r)
+            index[key] = out
+        return index
+
+    @staticmethod
+    def _extract_endpoint_from_description_text(description):
+        text = str(description or "")
+        m = re.search(r"Endpoint\s+([A-Z]+)\s+([^\|\n]+)", text, re.IGNORECASE)
+        if not m:
+            return None
+        method = str(m.group(1) or "").upper().strip()
+        path = str(m.group(2) or "").strip()
+        if not method or not path:
+            return None
+        return {"method": method, "path": path}
+
+    def _find_front_equivalents_for_endpoint(self, method, path):
+        m = str(method or "").upper().strip()
+        p = self._normalize_endpoint_path(path)
+        if not m or not p:
+            return []
+        return list(self.front_endpoint_usage_index.get((m, p), []))
 
     def _extract_screens_from_test_cases(self, workitem_id):
         """Extract screen names from child test cases titles/tags."""
@@ -3436,16 +4811,189 @@ analyzer = NRTAnalyzer()
 
 class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
     """HTTP request handler for NRT system"""
+
+    def _get_cookie_value(self, name):
+        raw = self.headers.get("Cookie", "")
+        if not raw:
+            return ""
+        try:
+            jar = cookies.SimpleCookie()
+            jar.load(raw)
+            morsel = jar.get(name)
+            return morsel.value if morsel else ""
+        except Exception:
+            return ""
+
+    def _get_authenticated_email(self):
+        token = self._get_cookie_value(AUTH_COOKIE_NAME)
+        return _get_auth_session_email(token)
+
+    def _is_public_path(self, path):
+        return path in {"/login", "/logout"} or path.startswith("/static/")
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.end_headers()
+
+    def _set_auth_cookie(self, token, expires_at):
+        expiry = expires_at.astimezone(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S GMT")
+        self.send_header(
+            "Set-Cookie",
+            f"{AUTH_COOKIE_NAME}={token}; Path=/; HttpOnly; SameSite=Lax; Expires={expiry}"
+        )
+
+    def _clear_auth_cookie(self):
+        self.send_header(
+            "Set-Cookie",
+            f"{AUTH_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        )
+
+    @staticmethod
+    def _escape_html(value):
+        text = str(value or "")
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+            .replace("'", "&#39;")
+        )
+
+    def _render_template_text(self, content, context):
+        out = str(content or "")
+        for key, value in (context or {}).items():
+            out = out.replace(f"{{{{{key}}}}}", str(value))
+        return out
+
+    def _inject_auth_chrome(self, content, email):
+        safe_email = self._escape_html(email)
+        auth_css = """
+        .nav-user-badge {
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,255,255,0.25);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.10);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .nav-logout-link {
+            color: #fff !important;
+        }
+        .nav-logout-link::after {
+            display: none !important;
+        }
+        @media (max-width: 980px) {
+            .nav-user-badge { display: none; }
+        }
+        """
+        auth_nav = (
+            f'<li><span class="nav-user-badge"><i class="fas fa-user-circle"></i>{safe_email}</span></li>'
+            f'<li><a class="nav-logout-link" href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a></li>'
+        )
+        out = str(content or "")
+        if "</style>" in out:
+            out = out.replace("</style>", auth_css + "\n</style>", 1)
+        if "</ul>" in out and 'nav-logout-link' not in out:
+            out = out.replace("</ul>", auth_nav + "</ul>", 1)
+        return out
+
+    def serve_login_template(self, error_message="", email_value=""):
+        try:
+            full_path = (BASE_DIR / "templates" / "login.html").resolve()
+            if not full_path.exists():
+                self.send_error(404, "Login template not found")
+                return
+            with open(full_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            error_html = ""
+            if str(error_message or "").strip():
+                error_html = (
+                    f'<div class="login-alert"><i class="fas fa-circle-exclamation"></i>'
+                    f'<span>{self._escape_html(error_message)}</span></div>'
+                )
+            rendered = self._render_template_text(content, {
+                "ERROR_BLOCK": error_html,
+                "EMAIL_VALUE": self._escape_html(email_value),
+                "ALLOWED_DOMAIN": self._escape_html(AUTH_ALLOWED_DOMAIN),
+            })
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(rendered.encode("utf-8"))
+        except Exception as e:
+            self.send_error(500, str(e))
+
+    def handle_login(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+        except Exception:
+            length = 0
+        raw = self.rfile.read(length) if length > 0 else b""
+        params = urllib.parse.parse_qs(raw.decode("utf-8", errors="ignore"))
+        email = str((params.get("email") or [""])[0]).strip()
+        if not _is_allowed_auth_email(email):
+            self.serve_login_template(
+                error_message=f"Only corporate email addresses ending with @{AUTH_ALLOWED_DOMAIN} are allowed.",
+                email_value=email,
+            )
+            return
+        token, expires_at = _create_auth_session(email)
+        self.send_response(302)
+        self._set_auth_cookie(token, expires_at)
+        self.send_header("Location", "/")
+        self.end_headers()
+
+    def handle_logout(self):
+        token = self._get_cookie_value(AUTH_COOKIE_NAME)
+        _clear_auth_session(token)
+        self.send_response(302)
+        self._clear_auth_cookie()
+        self.send_header("Location", "/login")
+        self.end_headers()
     
     def do_GET(self):
         """Handle GET requests"""
         parsed_path = urllib.parse.urlparse(self.path)
         path = parsed_path.path
         query_params = urllib.parse.parse_qs(parsed_path.query)
+        auth_email = self._get_authenticated_email()
+
+        if path == '/login':
+            if auth_email:
+                self._redirect('/')
+            else:
+                self.serve_login_template()
+            return
+        if path == '/logout':
+            self.handle_logout()
+            return
+        if path == '/static/forvia_logo.png':
+            self.serve_file(path.lstrip('/'))
+            return
+        if not auth_email and path.startswith('/api/webhook/azure-devops'):
+            pass
+        elif not auth_email and not self._is_public_path(path):
+            if path.startswith('/api/'):
+                self.send_json_response({"error": "authentication required"}, status_code=401)
+            else:
+                self._redirect('/login')
+            return
         
         # API endpoints
         if path == '/api/statistics':
             self.send_json_response(analyzer.get_statistics())
+        elif path == '/api/me':
+            self.send_json_response({
+                "authenticated": True,
+                "email": auth_email,
+                "allowed_domain": AUTH_ALLOWED_DOMAIN,
+            })
         elif path == '/api/webhook/status':
             self.send_json_response({
                 "enabled": WEBHOOK_AUTO_REFRESH_ENABLED,
@@ -3462,18 +5010,31 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
             })
         elif path == '/api/workitem-types':
             self.send_json_response(analyzer.get_workitem_types())
+        elif path == '/api/workitem-statuses':
+            iteration_path = query_params.get('iteration_path', [''])[0]
+            sprint_path = query_params.get('sprint_path', [''])[0]
+            workitem_type = query_params.get('type', ['All'])[0]
+            self.send_json_response(
+                analyzer.get_workitem_status_catalog(
+                    iteration_path=iteration_path,
+                    sprint_path=sprint_path,
+                    workitem_type=workitem_type,
+                )
+            )
         elif path == '/api/iterations':
             self.send_json_response(analyzer.get_iteration_catalog())
         elif path == '/api/workitems-by-iteration':
             iteration_path = query_params.get('iteration_path', [''])[0]
             sprint_path = query_params.get('sprint_path', [''])[0]
             workitem_type = query_params.get('type', ['All'])[0]
+            workitem_status = query_params.get('status', ['All'])[0]
             limit = query_params.get('limit', ['500'])[0]
             self.send_json_response(
                 analyzer.get_workitems_by_iteration(
                     iteration_path=iteration_path,
                     sprint_path=sprint_path,
                     workitem_type=workitem_type,
+                    status=workitem_status,
                     limit=limit,
                 )
             )
@@ -3549,9 +5110,21 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         parsed_path = urllib.parse.urlparse(self.path)
         path = parsed_path.path
+        auth_email = self._get_authenticated_email()
+
+        if path == '/login':
+            self.handle_login()
+            return
 
         if path == '/api/webhook/azure-devops':
             self.handle_azure_webhook()
+            return
+
+        if not auth_email:
+            if path.startswith('/api/'):
+                self.send_json_response({"error": "authentication required"}, status_code=401)
+            else:
+                self._redirect('/login')
             return
 
         self.send_error(404, 'Not found')
@@ -3610,6 +5183,9 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
             if full_path.exists():
                 with open(full_path, 'r', encoding='utf-8') as f:
                     content = f.read()
+                auth_email = self._get_authenticated_email()
+                if auth_email:
+                    content = self._inject_auth_chrome(content, auth_email)
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html; charset=utf-8')
                 self.end_headers()

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports - FORVIA NRT Platform</title>
+    <title>Functional Scope - FORVIA NRT Platform</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -343,10 +343,18 @@
 
         .ms-card {
             border: 1px solid #dce9ff;
-            border-radius: 10px;
+            border-radius: 14px;
             background: #fff;
             overflow: hidden;
             animation: cardIn 0.45s ease both;
+            box-shadow: 0 4px 16px rgba(8, 42, 122, 0.06);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .ms-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 22px rgba(8, 42, 122, 0.1);
+            border-color: #c9dcff;
         }
 
         @keyframes cardIn {
@@ -355,18 +363,84 @@
         }
 
         .ms-head {
-            padding: 10px 12px;
-            background: #f3f7ff;
+            padding: 14px 16px;
+            background: linear-gradient(180deg, #f8fbff 0%, #f1f6ff 100%);
             border-bottom: 1px solid #dce9ff;
             font-size: 14px;
             color: #0b2a7a;
             font-weight: 700;
             display: flex;
             justify-content: space-between;
-            gap: 10px;
+            align-items: center;
+            gap: 14px;
             flex-wrap: wrap;
             cursor: pointer;
             list-style: none;
+        }
+
+        .ms-card:not([open]) .ms-head {
+            border-bottom-color: transparent;
+        }
+
+        .ms-head-main {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 240px;
+            flex: 1 1 320px;
+        }
+
+        .ms-title-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .ms-title-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: #0b2a7a;
+        }
+
+        .ms-subtitle {
+            font-size: 12px;
+            color: #5572a3;
+            font-weight: 600;
+        }
+
+        .ms-head-side {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex: 1 1 320px;
+            flex-wrap: wrap;
+        }
+
+        .ms-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            border: 1px solid #d7e6ff;
+            background: #fff;
+            color: #1e4388;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .ms-open-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: #edf4ff;
+            color: #29539d;
+            font-size: 12px;
+            font-weight: 700;
         }
 
         .ms-head::-webkit-details-marker {
@@ -542,6 +616,54 @@
             cursor: default;
         }
 
+        .chip-fn-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chip-mini-priority {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+            border: 1px solid transparent;
+        }
+
+        .chip-mini-priority.p1 {
+            color: #0f7a42;
+            background: #edfdf3;
+            border-color: #bdeccd;
+        }
+
+        .chip-mini-priority.p23 {
+            color: #b26a00;
+            background: #fff7e8;
+            border-color: #ffd796;
+        }
+
+        .chip-screen {
+            background: #eef4ff;
+            color: #12408f;
+            border: 1px solid #cfe0ff;
+        }
+
+        .chip-label {
+            background: #fff4e8;
+            color: #a45500;
+            border: 1px solid #ffd8ad;
+        }
+
+        .empty-proof {
+            color: #6d7c95;
+            font-style: italic;
+        }
+
         .links-list a {
             display: inline-block;
             margin-bottom: 4px;
@@ -670,6 +792,62 @@
             border-color: #bcd6ff;
         }
 
+        .report-dropdown {
+            position: relative;
+            width: 100%;
+        }
+
+        .report-dropdown-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border: 2px solid #dce9ff;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #fff;
+            cursor: pointer;
+            color: #1a1a1a;
+            min-height: 40px;
+        }
+
+        .report-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #dce9ff;
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(17, 57, 128, 0.15);
+            z-index: 80;
+            padding: 8px 10px;
+            display: none;
+            max-height: 260px;
+            overflow: auto;
+        }
+
+        .report-dropdown.open .report-dropdown-menu {
+            display: block;
+        }
+
+        .report-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            font-size: 13px;
+            cursor: pointer;
+            user-select: none;
+            line-height: 1.25;
+        }
+
+        .report-option strong {
+            color: #0f3a92;
+        }
+
         .live-kpi {
             margin-bottom: 10px;
             font-size: 12px;
@@ -757,6 +935,8 @@
             .report-tools { gap: 10px; }
             .filter-pack { flex: 1 1 100%; max-width: 100%; }
             .compact-pack { width: 100%; justify-content: space-between; }
+            .ms-head { align-items: flex-start; }
+            .ms-head-side { justify-content: flex-start; }
         }
     </style>
 </head>
@@ -774,15 +954,16 @@
                 <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
                 <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
                 <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
-                <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Graph</a></li>
-                <li><a href="/reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                    <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Detailed Scope</a></li>
+                    <li><a href="/reports"><i class="fas fa-chart-bar"></i> Functional Scope</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
         <div class="page-title">
-            <i class="fas fa-clipboard-check"></i> Tester Scope Report
+            <i class="fas fa-clipboard-check"></i> Functional NRT Scope
+            
         </div>
         <div class="subtitle">
             Vue optimisee pour testeurs: scope direct only, regroupe par microservice et dedoublonne les descriptions metier equivalentes.
@@ -802,7 +983,19 @@
                 </div>
                 <div>
                     <label class="form-label"><i class="fas fa-flag-checkered"></i> Sprint</label>
-                    <select id="sprintSelect" class="form-input"></select>
+                    <div id="sprintDropdown" class="type-dropdown">
+                        <button id="sprintDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleSprintDropdown()">
+                            <span id="sprintDropdownLabel">All Sprints</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="sprintDropdownMenu" class="type-dropdown-menu">
+                            <label class="type-option">
+                                <input id="sprintAll" type="checkbox" checked onchange="onSprintSelectionChange('__ALL__')">
+                                <span>All Sprints</span>
+                            </label>
+                            <div id="sprintOptions"></div>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="form-label"><i class="fas fa-bug"></i> WorkItem Type</label>
@@ -813,19 +1006,21 @@
                         </button>
                         <div id="typeDropdownMenu" class="type-dropdown-menu">
                             <label class="type-option">
-                                <input id="typeBug" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <input id="typeBug" type="checkbox" checked onchange="onTypeSelectionChanged()">
                                 <span>Bug</span>
                             </label>
                             <label class="type-option">
-                                <input id="typeUserStory" type="checkbox" checked onchange="updateTypeDropdownLabel()">
+                                <input id="typeUserStory" type="checkbox" checked onchange="onTypeSelectionChanged()">
                                 <span>User Story</span>
                             </label>
                         </div>
                     </div>
                 </div>
                 <div>
-                    <label class="form-label"><i class="fas fa-hashtag"></i> Limit</label>
-                    <input id="limitInput" class="form-input" type="number" min="1" max="1000" value="300">
+                    <label class="form-label"><i class="fas fa-signal"></i> Status</label>
+                    <select id="statusSelect" class="form-input">
+                        <option value="">All</option>
+                    </select>
                 </div>
             </div>
             <div class="control-group">
@@ -888,6 +1083,112 @@
             wrapper.classList.remove("open");
         }
 
+        function getSelectedWorkitemTypes() {
+            const bugChecked = document.getElementById("typeBug")?.checked;
+            const usChecked = document.getElementById("typeUserStory")?.checked;
+            const selectedTypes = [];
+            if (bugChecked) selectedTypes.push("Bug");
+            if (usChecked) selectedTypes.push("User Story");
+            return selectedTypes;
+        }
+
+        function onTypeSelectionChanged() {
+            updateTypeDropdownLabel();
+        }
+
+        function updateSprintDropdownLabel() {
+            const allBox = document.getElementById("sprintAll");
+            const label = document.getElementById("sprintDropdownLabel");
+            if (!label) return;
+            if (allBox?.checked) {
+                label.textContent = "All Sprints";
+                return;
+            }
+            const checked = Array.from(document.querySelectorAll(".sprint-option-checkbox:checked"));
+            if (checked.length === 0) {
+                label.textContent = "Select sprint(s)";
+            } else if (checked.length === 1) {
+                label.textContent = checked[0].dataset.label || checked[0].value;
+            } else {
+                label.textContent = `${checked.length} sprints selected`;
+            }
+        }
+
+        function toggleSprintDropdown() {
+            const wrapper = document.getElementById("sprintDropdown");
+            if (!wrapper) return;
+            wrapper.classList.toggle("open");
+        }
+
+        function closeSprintDropdown() {
+            const wrapper = document.getElementById("sprintDropdown");
+            if (!wrapper) return;
+            wrapper.classList.remove("open");
+        }
+
+        function onSprintSelectionChange(changedValue) {
+            const allBox = document.getElementById("sprintAll");
+            const sprintBoxes = Array.from(document.querySelectorAll(".sprint-option-checkbox"));
+            if (changedValue === "__ALL__") {
+                if (allBox?.checked) {
+                    sprintBoxes.forEach(box => box.checked = false);
+                }
+            } else {
+                const anyChecked = sprintBoxes.some(box => box.checked);
+                if (allBox) {
+                    allBox.checked = !anyChecked;
+                }
+            }
+            updateSprintDropdownLabel();
+        }
+
+        function getSelectedSprints() {
+            const allBox = document.getElementById("sprintAll");
+            if (allBox?.checked) return [];
+            return Array.from(document.querySelectorAll(".sprint-option-checkbox:checked"))
+                .map(box => box.value)
+                .filter(Boolean);
+        }
+
+        function renderSprintOptions(sprints, preservedSelection) {
+            const container = document.getElementById("sprintOptions");
+            const allBox = document.getElementById("sprintAll");
+            if (!container || !allBox) return;
+
+            const selected = new Set((preservedSelection || []).filter(Boolean));
+            container.innerHTML = "";
+
+            (sprints || []).forEach((sp, index) => {
+                const sprintPath = String(sp.sprint_path || "").trim();
+                if (!sprintPath) return;
+                const optionId = `sprintOption_${index}`;
+                const labelText = `${sprintPath} (${sp.workitem_count || 0})`;
+                const row = document.createElement("label");
+                row.className = "type-option";
+                row.innerHTML = `
+                    <input
+                        id="${optionId}"
+                        class="sprint-option-checkbox"
+                        type="checkbox"
+                        value="${escapeHtml(sprintPath)}"
+                        data-label="${escapeHtml(labelText)}"
+                    >
+                    <span>${escapeHtml(labelText)}</span>
+                `;
+                const input = row.querySelector("input");
+                if (input) {
+                    input.checked = selected.has(sprintPath);
+                    input.addEventListener("change", () => onSprintSelectionChange(sprintPath));
+                }
+                container.appendChild(row);
+            });
+
+            const hasSpecificSelection = Array.from(container.querySelectorAll(".sprint-option-checkbox"))
+                .some(box => box.checked);
+            allBox.checked = !hasSpecificSelection;
+            updateSprintDropdownLabel();
+        }
+
         function showToast(message) {
             const el = document.getElementById("uxToast");
             if (!el) return;
@@ -933,25 +1234,24 @@
         }
 
         function clearMsFilter() {
-            const el = document.getElementById("msFilter");
-            if (!el) return;
-            el.value = "__all__";
+            setFilterAll("ms");
+            renderDropdownOptions("ms", reportOptionCatalog.ms);
+            buildFunctionOptions(reportState?.microservices || []);
             applyReportDisplayOptions();
             showToast("Microservice filter cleared");
         }
 
         function clearPriorityFilter() {
-            const el = document.getElementById("priorityFilter");
-            if (!el) return;
-            el.value = "__all__";
+            setFilterAll("priority");
+            renderDropdownOptions("priority", getPriorityOptions());
+            buildFunctionOptions(reportState?.microservices || []);
             applyReportDisplayOptions();
             showToast("Priority filter cleared");
         }
 
         function clearFunctionFilter() {
-            const el = document.getElementById("functionFilter");
-            if (!el) return;
-            el.value = "__all__";
+            setFilterAll("fn");
+            renderDropdownOptions("fn", reportOptionCatalog.fn);
             applyReportDisplayOptions();
             showToast("Function filter cleared");
         }
@@ -966,9 +1266,8 @@
 
         async function loadIterationCatalog() {
             const iterationSel = document.getElementById("iterationSelect");
-            const sprintSel = document.getElementById("sprintSelect");
             iterationSel.innerHTML = '<option value="">All Iterations</option>';
-            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            renderSprintOptions([], []);
             try {
                 const res = await fetch("/api/iterations");
                 const data = await res.json();
@@ -980,37 +1279,58 @@
                     opt.dataset.sprints = JSON.stringify(it.sprints || []);
                     iterationSel.appendChild(opt);
                 });
-                iterationSel.addEventListener("change", refreshSprintsForIteration);
+                iterationSel.addEventListener("change", () => {
+                    refreshSprintsForIteration();
+                });
+                loadStatusCatalog();
             } catch (err) {
                 document.getElementById("workitemsZone").innerHTML =
                     `<div class="summary-box">Error loading iterations: ${escapeHtml(err.message)}</div>`;
             }
         }
 
+        async function loadStatusCatalog() {
+            const statusSel = document.getElementById("statusSelect");
+            if (!statusSel) return;
+            const currentValue = statusSel.value || "";
+            statusSel.innerHTML = '<option value="">All</option>';
+            try {
+                const res = await fetch(`/api/workitem-statuses`);
+                const data = await res.json();
+                const statuses = data.statuses || [];
+                statuses.forEach(item => {
+                    const opt = document.createElement("option");
+                    opt.value = item.status;
+                    opt.textContent = item.status;
+                    statusSel.appendChild(opt);
+                });
+                const values = statuses.map(item => item.status);
+                if (values.includes(currentValue)) {
+                    statusSel.value = currentValue;
+                }
+            } catch (_) {
+                // Keep default option only.
+            }
+        }
+
         function refreshSprintsForIteration() {
             const iterationSel = document.getElementById("iterationSelect");
-            const sprintSel = document.getElementById("sprintSelect");
-            sprintSel.innerHTML = '<option value="">All Sprints</option>';
+            const previousSelection = getSelectedSprints();
             const selectedOpt = iterationSel.options[iterationSel.selectedIndex];
-            if (!selectedOpt || !selectedOpt.dataset.sprints) return;
+            if (!selectedOpt || !selectedOpt.dataset.sprints) {
+                renderSprintOptions([], []);
+                return;
+            }
             const sprints = JSON.parse(selectedOpt.dataset.sprints || "[]");
-            sprints.forEach(sp => {
-                const opt = document.createElement("option");
-                opt.value = sp.sprint_path;
-                opt.textContent = `${sp.sprint_path} (${sp.workitem_count})`;
-                sprintSel.appendChild(opt);
-            });
+            renderSprintOptions(sprints, previousSelection);
         }
 
         async function loadWorkitemsByIteration() {
             const iterationPath = document.getElementById("iterationSelect").value;
-            const sprintPath = document.getElementById("sprintSelect").value;
-            const bugChecked = document.getElementById("typeBug").checked;
-            const usChecked = document.getElementById("typeUserStory").checked;
-            const selectedTypes = [];
-            if (bugChecked) selectedTypes.push("Bug");
-            if (usChecked) selectedTypes.push("User Story");
-            const limit = document.getElementById("limitInput").value || "300";
+            const selectedSprints = getSelectedSprints();
+            const sprintPath = selectedSprints.join(",");
+            const status = document.getElementById("statusSelect").value || "";
+            const selectedTypes = getSelectedWorkitemTypes();
             const target = document.getElementById("workitemsZone");
             document.getElementById("reportZone").innerHTML = "";
 
@@ -1023,7 +1343,7 @@
                 iteration_path: iterationPath,
                 sprint_path: sprintPath,
                 type: selectedTypes.join(","),
-                limit
+                status
             });
 
             target.innerHTML = `<div class="summary-box">Loading WorkItems...</div>`;
@@ -1045,12 +1365,16 @@
         }
 
         function renderWorkitemsTable(data) {
+            const sprintSummary = Number(data.selected_sprint_count || 0) > 1
+                ? `${data.selected_sprint_count} selected`
+                : (data.sprint_path || "All");
             const rows = (data.results || []).map(wi => `
                 <tr>
                     <td><input type="checkbox" class="wi-check" value="${wi.id}" ${wi.has_dev_activity ? "checked" : ""} onchange="updateSelectionMeta()"></td>
                     <td>${wi.id}</td>
                     <td title="${escapeHtml(wi.titre)}">${escapeHtml(wi.titre)}</td>
                     <td>${escapeHtml(wi.type)}</td>
+                    <td>${escapeHtml(wi.statut || "")}</td>
                     <td>${escapeHtml(wi.iteration_path)}</td>
                     <td>${wi.linked_commit_count}</td>
                     <td>${wi.linked_pr_count}</td>
@@ -1062,8 +1386,9 @@
                 <div class="summary-box">
                     Found: <strong>${data.count}</strong> / ${data.total_found}
                     &nbsp;|&nbsp; Iteration: <strong>${escapeHtml(data.iteration_path || "All")}</strong>
-                    &nbsp;|&nbsp; Sprint: <strong>${escapeHtml(data.sprint_path || "All")}</strong>
+                    &nbsp;|&nbsp; Sprint: <strong>${escapeHtml(sprintSummary)}</strong>
                     &nbsp;|&nbsp; Type: <strong>${escapeHtml(data.type || "All")}</strong>
+                    &nbsp;|&nbsp; Status: <strong>${escapeHtml(data.status || "All")}</strong>
                 </div>
                 <div class="table-wrap">
                     <table class="mini-table">
@@ -1073,13 +1398,14 @@
                                 <th>ID</th>
                                 <th>Title</th>
                                 <th>Type</th>
+                                <th>Status</th>
                                 <th>Iteration Path</th>
                                 <th>Commits</th>
                                 <th>PRs</th>
                                 <th>Dev Activity</th>
                             </tr>
                         </thead>
-                        <tbody>${rows || '<tr><td colspan="8">No workitems found</td></tr>'}</tbody>
+                        <tbody>${rows || '<tr><td colspan="9">No workitems found</td></tr>'}</tbody>
                     </table>
                 </div>
             `;
@@ -1094,10 +1420,367 @@
             let text = String(desc || "").trim();
             if (!text) return "";
             text = text.replace(/^Fonction\s+[^|]+\|\s*/i, "");
+            text = text.replace(/^Traite\s+[^|]+\|\s*/i, "");
+            text = text.replace(/^Traitement\s+[^|]+\|\s*/i, "");
+            text = text.replace(/^Action\s+[^|]+\|\s*/i, "");
             text = text.replace(/\|\s*lignes\s+changees[^|]*/i, "");
             text = text.replace(/\|\s*lignes\s+changes[^|]*/i, "");
-            text = text.replace(/\s+/g, " ").trim();
+            const keptSegments = text
+                .split("|")
+                .map(part => String(part || "").replace(/\s+/g, " ").trim())
+                .filter(Boolean)
+                .filter(part => !/^(true when|returns?\b|return\b|whether\b|if\b|checks?\b|should\b)/i.test(part));
+            text = keptSegments.join(" | ").replace(/\s+/g, " ").trim();
             return text;
+        }
+
+        function scoreBusinessDescription(desc) {
+            const text = String(desc || "").trim().toLowerCase();
+            if (!text) return -100;
+            let score = 0;
+            if (text.includes("endpoint ")) score += 100;
+            if (text.includes("appelle ")) score += 40;
+            if (text.includes("gere ")) score += 20;
+            if (text.includes("cree") || text.includes("met a jour") || text.includes("supprime")) score += 10;
+            if (text.includes("lignes changees")) score -= 40;
+            if (/^(true when|returns?\b|return\b|whether\b|if\b|checks?\b|should\b)/i.test(text)) score -= 80;
+            return score + Math.min(text.length, 120) / 1000;
+        }
+
+        function pickBestBusinessDescription(descriptions) {
+            const candidates = uniq((descriptions || []).map(normalizeBusinessDescription).filter(Boolean));
+            if (!candidates.length) return "Description metier non disponible.";
+            candidates.sort((a, b) => {
+                const scoreDiff = scoreBusinessDescription(b) - scoreBusinessDescription(a);
+                if (scoreDiff !== 0) return scoreDiff;
+                return b.length - a.length;
+            });
+            return prettifySentence(candidates[0]);
+        }
+
+        function prettifySentence(text) {
+            let value = String(text || "").trim();
+            if (!value) return "";
+            value = value.replace(/\s+/g, " ").trim();
+            value = value.charAt(0).toUpperCase() + value.slice(1);
+            if (!/[.!?]$/.test(value)) value += ".";
+            return value;
+        }
+
+        function normalizeFunctionalScenario(desc) {
+            let text = String(desc || "").trim();
+            if (!text) return "";
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+permet de/gi, "la fonction permet de");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+traite/gi, "la fonction traite");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+appelle/gi, "la fonction appelle");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+gere/gi, "la fonction gere");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+utilise/gi, "la fonction utilise");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+renvoie/gi, "la fonction renvoie");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+retourne/gi, "la fonction retourne");
+            text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+/gi, "la fonction ");
+            return normalizeText(text);
+        }
+
+        function extractScenarioContext(functionalDesc, fallbackMicroservice) {
+            const text = String(functionalDesc || "").trim();
+            const fallback = String(fallbackMicroservice || "").trim();
+            const frontMatch = text.match(/dans le composant du module\s+([^,(.]+)\s*\(([^)]+)\)/i);
+            if (frontMatch) {
+                const moduleName = String(frontMatch[1] || "").trim().toLowerCase();
+                const componentName = String(frontMatch[2] || "").trim().toLowerCase();
+                return {
+                    kind: "front",
+                    key: `front|${moduleName}|${componentName}`,
+                    moduleName,
+                    componentName,
+                    microserviceName: fallback
+                };
+            }
+            const moduleOnlyMatch = text.match(/dans le module\s+([^,.(]+)/i);
+            if (moduleOnlyMatch) {
+                const moduleName = String(moduleOnlyMatch[1] || "").trim().toLowerCase();
+                return {
+                    kind: "module",
+                    key: `module|${moduleName}`,
+                    moduleName,
+                    componentName: "",
+                    microserviceName: fallback
+                };
+            }
+            const backendMatch = text.match(/dans le microservice\s+([^,]+),/i);
+            if (backendMatch) {
+                const microserviceName = String(backendMatch[1] || "").trim().toLowerCase();
+                return {
+                    kind: "backend",
+                    key: `backend|${microserviceName}`,
+                    moduleName: "",
+                    componentName: "",
+                    microserviceName
+                };
+            }
+            return {
+                kind: "unknown",
+                key: `unknown|${fallback.toLowerCase()}`,
+                moduleName: "",
+                componentName: "",
+                microserviceName: fallback.toLowerCase()
+            };
+        }
+
+        function extractScenarioTags(fn, desc, functionalDesc, testActions) {
+            const fnText = normalizeText(String((fn && (fn.id || fn.name)) || ""));
+            const text = normalizeText(`${fnText} ${desc || ""} ${functionalDesc || ""} ${testActions || ""}`);
+            const tags = new Set();
+            const endpoint = extractEndpointFromDescription(desc);
+
+            if (text.includes("interaction utilisateur") || text.includes("clic/action") || text.includes("click") || text.includes("clic utilisateur")) tags.add("user_interaction");
+            if (text.includes("media/fichier") || text.includes("image") || text.includes("file") || text.includes("blob")) tags.add("file_media");
+            if (text.includes("selection") || text.includes("selected")) tags.add("selection");
+            if (text.includes("afficher") || text.includes("display") || text.includes("preview") || text.includes("previsualisation") || text.includes("ouverture")) tags.add("display");
+            if (text.includes("supprimer") || text.includes("delete") || text.includes("remove")) tags.add("delete");
+            if (text.includes("mise a jour") || text.includes("update") || text.includes("edition") || text.includes("modification")) tags.add("update");
+            if (text.includes("creation") || text.includes("create") || text.includes("enregistrement")) tags.add("create");
+            if (text.includes("recherche") || text.includes("filter") || text.includes("filtre") || text.includes("search")) tags.add("filter_search");
+            if (text.includes("rafraich") || text.includes("reload") || text.includes("refresh") || text.includes("fetch")) tags.add("refresh");
+            if (text.includes("modal") || text.includes("popup") || text.includes("dialog")) tags.add("modal");
+            if (text.includes("erreur") || text.includes("echec") || text.includes("catch") || text.includes("response non nominale")) tags.add("error");
+            if (text.includes("json") || text.includes("api") || text.includes("endpoint") || text.includes("response")) tags.add("api_response");
+            if (text.includes("body") || text.includes("dto") || text.includes("donnees d'entree structurees")) tags.add("structured_input");
+            if (text.includes("back") || text.includes("close") || text.includes("cancel") || text.includes("return")) tags.add("navigation");
+
+            if (fnText.includes("save") || fnText.includes("add") || fnText.includes("create")) tags.add("create");
+            if (fnText.includes("update") || fnText.includes("edit") || fnText.includes("patch")) tags.add("update");
+            if (fnText.includes("delete") || fnText.includes("remove")) tags.add("delete");
+            if (fnText.includes("confirmdelete")) tags.add("delete");
+            if (fnText.includes("show") || fnText.includes("display") || fnText.includes("preview") || fnText.includes("open") || fnText.includes("browse")) tags.add("display");
+            if (fnText.includes("search") || fnText.includes("filter")) tags.add("filter_search");
+            if (fnText.includes("refresh") || fnText.includes("reload") || fnText.includes("fetch")) tags.add("refresh");
+            if (fnText.includes("modal") || fnText.includes("popup") || fnText.includes("dialog")) tags.add("modal");
+            if (fnText.includes("file") || fnText.includes("blob") || fnText.includes("image") || fnText.includes("upload")) tags.add("file_media");
+
+            if (endpoint) {
+                if (endpoint.method === "GET") tags.add("http_get");
+                if (endpoint.method === "POST") tags.add("http_post");
+                if (endpoint.method === "PUT" || endpoint.method === "PATCH") tags.add("http_update");
+                if (endpoint.method === "DELETE") tags.add("http_delete");
+            }
+
+            if (!tags.size) tags.add("generic");
+            return Array.from(tags).sort();
+        }
+
+        function extractFunctionOwner(fn) {
+            const fnId = String((fn && (fn.id || fn.name)) || "").trim().toLowerCase();
+            if (!fnId) return "";
+            const parts = fnId.split("::").filter(Boolean);
+            if (parts.length >= 2) return parts[parts.length - 2];
+            return parts[0] || "";
+        }
+
+        function deriveScenarioFamily(fn, context, scenarioTags, desc, functionalDesc) {
+            const fnId = normalizeText(String((fn && (fn.id || fn.name)) || ""));
+            const text = normalizeText(`${fnId} ${desc || ""} ${functionalDesc || ""}`);
+            const tags = new Set(scenarioTags || []);
+
+            if (tags.has("delete") || /confirmdelete|delete|remove|drop/.test(fnId)) {
+                return "delete_flow";
+            }
+            if (tags.has("file_media") || /upload|blob|image|filechange|browsefile/.test(fnId)) {
+                return "file_media_flow";
+            }
+            if (tags.has("create") || /save|add|create|submit|insert/.test(fnId)) {
+                return "write_flow";
+            }
+            if (tags.has("update") || /update|edit|modify|patch/.test(fnId)) {
+                return "write_flow";
+            }
+            if (tags.has("navigation") || /back|close|cancel|return/.test(fnId)) {
+                return "navigation_flow";
+            }
+            if (tags.has("display") || /show|display|open|preview|view/.test(fnId)) {
+                return "display_flow";
+            }
+            if (tags.has("filter_search") || /search|filter|find/.test(fnId)) {
+                return "query_flow";
+            }
+
+            if (context.kind === "backend") {
+                if (tags.has("http_post") || tags.has("http_update")) return "backend_write_flow";
+                if (tags.has("http_get")) return "backend_query_flow";
+                if (tags.has("http_delete")) return "backend_delete_flow";
+            }
+
+            if (text.includes("modal")) return "modal_flow";
+            return "generic_flow";
+        }
+
+        function buildScenarioFunctionalDescription(context, tags, functionCount) {
+            const clauses = [];
+            const isPlural = (functionCount || 0) > 1;
+            if (tags.includes("user_interaction")) clauses.push(isPlural ? "gerent une interaction utilisateur" : "gere une interaction utilisateur");
+            if (tags.includes("display")) clauses.push(isPlural ? "permettent d'afficher, d'ouvrir ou de previsualiser l'element cible" : "permet d'afficher, d'ouvrir ou de previsualiser l'element cible");
+            if (tags.includes("delete")) clauses.push(isPlural ? "permettent de supprimer les elements concernes" : "permet de supprimer les elements concernes");
+            if (tags.includes("selection")) clauses.push(isPlural ? "gerent la selection des elements concernes" : "gere la selection des elements concernes");
+            if (tags.includes("create")) clauses.push(isPlural ? "permettent de creer ou d'enregistrer des donnees" : "permet de creer ou d'enregistrer des donnees");
+            if (tags.includes("update")) clauses.push(isPlural ? "mettent a jour les donnees ou l'etat de l'interface" : "met a jour les donnees ou l'etat de l'interface");
+            if (tags.includes("filter_search")) clauses.push(isPlural ? "gerent les criteres de filtre ou de recherche" : "gere les criteres de filtre ou de recherche");
+            if (tags.includes("file_media")) clauses.push(isPlural ? "manipulent des donnees media ou fichier" : "manipule des donnees media ou fichier");
+            if (tags.includes("refresh")) clauses.push(isPlural ? "rafraichissent les donnees ou la liste apres action" : "rafraichit les donnees ou la liste apres action");
+            if (tags.includes("modal")) clauses.push(isPlural ? "pilotent l'ouverture ou la fermeture d'un composant modal" : "pilote l'ouverture ou la fermeture d'un composant modal");
+            if (tags.includes("api_response")) clauses.push(isPlural ? "appellent l'API ou traitent sa reponse" : "appelle l'API ou traite sa reponse");
+            if (tags.includes("structured_input")) clauses.push(isPlural ? "traitent des donnees d'entree structurees" : "traite des donnees d'entree structurees");
+            if (tags.includes("error")) clauses.push(isPlural ? "gerent un scenario d'erreur ou d'echec" : "gere un scenario d'erreur ou d'echec");
+
+            const uniqueClauses = uniq(clauses);
+            let prefix = "Ces fonctions";
+            if (!isPlural) prefix = "Cette fonction";
+
+            if (context.kind === "front" && context.moduleName && context.componentName) {
+                prefix = `${prefix} du composant du module ${context.moduleName} (${context.componentName})`;
+            } else if (context.kind === "module" && context.moduleName) {
+                prefix = `${prefix} du module ${context.moduleName}`;
+            } else if (context.kind === "backend" && context.microserviceName) {
+                prefix = `${prefix} du microservice ${context.microserviceName}`;
+            }
+
+            if (!uniqueClauses.length) {
+                return prettifySentence(`${prefix} ${isPlural ? "couvrent" : "couvre"} le parcours fonctionnel principal associe`);
+            }
+            return prettifySentence(`${prefix} ${uniqueClauses.join(", ")}`);
+        }
+
+        function buildScenarioTestActions(tags) {
+            const actions = [];
+            if (tags.includes("create") || tags.includes("http_post")) actions.push("Verifier la creation ou l'enregistrement des donnees avec un cas nominal et un cas d'erreur.");
+            if (tags.includes("update") || tags.includes("http_update")) actions.push("Verifier la mise a jour des donnees, la persistence du resultat et la coherence de l'etat affiche.");
+            if (tags.includes("delete") || tags.includes("http_delete")) actions.push("Verifier la suppression des elements concernes et l'etat de l'interface apres suppression.");
+            if (tags.includes("display") || tags.includes("http_get")) actions.push("Verifier l'affichage detaille, l'ouverture ou la previsualisation de l'element cible.");
+            if (tags.includes("selection")) actions.push("Verifier la gestion de la selection des elements et les restrictions associees.");
+            if (tags.includes("filter_search")) actions.push("Verifier les criteres de filtre ou de recherche, leur remise a zero et la coherence du resultat.");
+            if (tags.includes("refresh")) actions.push("Verifier le rafraichissement des donnees ou de la liste apres l'action.");
+            if (tags.includes("modal")) actions.push("Verifier l'ouverture et la fermeture du composant modal ainsi que les actions associees.");
+            if (tags.includes("file_media")) actions.push("Verifier le parcours fichier ou media, y compris la selection, l'affichage et les erreurs possibles.");
+            if (tags.includes("api_response") && !tags.includes("http_get") && !tags.includes("http_post") && !tags.includes("http_update") && !tags.includes("http_delete")) {
+                actions.push("Verifier le comportement de l'appel API et la reponse retournee dans le parcours nominal.");
+            }
+            if (tags.includes("structured_input")) actions.push("Verifier la validite des donnees d'entree et le comportement avec des donnees invalides.");
+            if (tags.includes("error")) actions.push("Verifier le comportement en cas d'echec, d'erreur ou de reponse non nominale.");
+            if (!actions.length) actions.push("Verifier le parcours fonctionnel principal associe a ces fonctions.");
+            return uniq(actions).join(" ");
+        }
+
+        function buildScenarioGroupKey(fn, descCore, context, scenarioTags, microserviceName) {
+            const ms = String(microserviceName || "").trim().toLowerCase();
+            const owner = extractFunctionOwner(fn) || context.componentName || context.moduleName || "";
+            const family = deriveScenarioFamily(fn, context, scenarioTags, descCore, fn && fn.functional_description);
+            const businessKey = normalizeText(String(descCore || "").trim()) || family;
+            if (context.kind === "front") {
+                return `front|${ms}|${context.moduleName || ""}|${owner}|${family}|${businessKey}`;
+            }
+            if (context.kind === "module") {
+                return `module|${ms}|${context.moduleName || ""}|${owner}|${family}|${businessKey}`;
+            }
+            if (context.kind === "backend") {
+                return `backend|${context.microserviceName || ms}|${owner}|${family}|${businessKey}`;
+            }
+            return `${context.kind}|${ms}|${owner}|${family}|${businessKey}`;
+        }
+
+        function toDisplayBusinessDescription(desc) {
+            const core = normalizeBusinessDescription(desc);
+            return prettifySentence(core || "Description metier non disponible");
+        }
+
+        function toDisplayFunctionalDescription(desc, functionCount) {
+            let text = String(desc || "").trim();
+            if (!text) return "Description fonctionnelle non disponible.";
+            if ((functionCount || 0) > 1) {
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+permet de/gi, "ces fonctions permettent de");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+traite/gi, "ces fonctions traitent");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+appelle/gi, "ces fonctions appellent");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+gere/gi, "ces fonctions gerent");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+utilise/gi, "ces fonctions utilisent");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+renvoie/gi, "ces fonctions renvoient");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+retourne/gi, "ces fonctions retournent");
+                text = text.replace(/,\s*la fonction\s+[A-Za-z0-9_:-]+/gi, ", ces fonctions");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+/gi, "ces fonctions ");
+            }
+            return prettifySentence(text);
+        }
+
+        function normalizeRecommendedActions(actions) {
+            return normalizeText(String(actions || "")
+                .replace(/verifier\s+/gi, "verifier ")
+                .replace(/\s+/g, " ")
+                .trim());
+        }
+
+        function uniq(arr) {
+            return Array.from(new Set((arr || []).filter(Boolean)));
+        }
+
+        function toDisplayNameFromPath(pathValue) {
+            const p = String(pathValue || "").replace(/\\/g, "/");
+            if (!p) return "";
+            const fileName = p.split("/").pop() || "";
+            return fileName.replace(/\.(vue|tsx|jsx|ts|js)$/i, "");
+        }
+
+        function extractEndpointFromDescription(desc) {
+            const text = String(desc || "");
+            const m = text.match(/Endpoint\s+([A-Z]+)\s+([^\|\n]+)/i);
+            if (!m) return null;
+            return { method: String(m[1] || "").toUpperCase(), path: String(m[2] || "").trim() };
+        }
+
+        function deriveTestActionsFromEvidence(fn, desc, functionalDesc) {
+            const fnId = String(fn.id || fn.name || "").toLowerCase();
+            const endpoint = extractEndpointFromDescription(desc);
+            const actions = [];
+            const evidenceText = `${fnId} ${desc || ""} ${functionalDesc || ""}`.toLowerCase();
+
+            if (endpoint) {
+                if (endpoint.method === "GET") {
+                    actions.push("Verifier le chargement et l'affichage des donnees renvoyees par l'API.");
+                } else if (endpoint.method === "POST") {
+                    actions.push("Verifier la creation ou l'enregistrement des donnees avec un cas nominal et un cas d'erreur.");
+                } else if (endpoint.method === "PUT" || endpoint.method === "PATCH") {
+                    actions.push("Verifier la mise a jour des donnees, la persistence du resultat et la gestion d'erreur.");
+                } else if (endpoint.method === "DELETE") {
+                    actions.push("Verifier la suppression, le succes de l'action et la gestion d'erreur.");
+                }
+            }
+
+            if (evidenceText.includes("filter") || evidenceText.includes("search")) {
+                actions.push("Verifier les criteres de filtre ou de recherche, leur remise a zero et la coherence du resultat.");
+            }
+            if (evidenceText.includes("upload") || evidenceText.includes("image") || evidenceText.includes("file") || evidenceText.includes("blob")) {
+                actions.push("Verifier le parcours fichier ou image, y compris la selection, l'affichage et les erreurs possibles.");
+            }
+            if (evidenceText.includes("openmodal") || evidenceText.includes("close") || evidenceText.includes("popup") || evidenceText.includes("modal")) {
+                actions.push("Verifier l'ouverture et la fermeture du composant modal ainsi que les actions associees.");
+            }
+            if (evidenceText.includes("supprimer") || evidenceText.includes("delete") || evidenceText.includes("remove")) {
+                actions.push("Verifier la suppression des elements concernes et l'etat de l'interface apres suppression.");
+            }
+            if (evidenceText.includes("selection") || evidenceText.includes("selected")) {
+                actions.push("Verifier la gestion de la selection des elements et les restrictions associees.");
+            }
+            if (evidenceText.includes("rafraichir la liste") || evidenceText.includes("fetchblobs") || evidenceText.includes("reload") || evidenceText.includes("refresh")) {
+                actions.push("Verifier le rafraichissement des donnees ou de la liste apres l'action.");
+            }
+            if (evidenceText.includes("afficher un message en cas d'erreur") || evidenceText.includes("gestion erreur") || evidenceText.includes("catch") || evidenceText.includes("erreur")) {
+                actions.push("Verifier le comportement en cas d'echec, d'erreur ou de reponse non nominale.");
+            }
+            if (evidenceText.includes("afficher") || evidenceText.includes("display") || evidenceText.includes("preview") || evidenceText.includes("open")) {
+                actions.push("Verifier l'affichage detaille, l'ouverture ou la previsualisation de l'element cible.");
+            }
+
+            if (!actions.length) {
+                actions.push("Verifier le parcours fonctionnel principal associe a cette fonction.");
+            }
+
+            return uniq(actions).join(" ");
         }
 
         async function generateTesterReport() {
@@ -1153,36 +1836,112 @@
         function buildReportModel(data) {
             const c = data.consolidated || {};
             const allFunctions = c.functions || [];
+            const allMicroservices = c.microservices || [];
             const groupedByMs = {};
+
+            function ensureGroup(ms, groupKey, seed) {
+                if (!groupedByMs[ms]) groupedByMs[ms] = { name: ms, groups: {} };
+                if (!groupedByMs[ms].groups[groupKey]) {
+                    groupedByMs[ms].groups[groupKey] = {
+                        priority: seed.priority,
+                        desc: seed.desc,
+                        functionalDesc: seed.functionalDesc || "",
+                        descDisplay: seed.descDisplay || toDisplayBusinessDescription(seed.desc),
+                        descCandidates: seed.desc ? [seed.desc] : [],
+                        context: seed.context,
+                        scenarioTags: new Set(seed.scenarioTags || []),
+                        recommendedActions: seed.recommendedActions || "",
+                        functions: new Set(seed.functions || []),
+                        searchBlob: seed.searchBlob || "",
+                        preserveFunctionalText: !!seed.preserveFunctionalText,
+                        preserveTestActions: !!seed.preserveTestActions,
+                        fallbackLabel: seed.fallbackLabel || "",
+                        isFallback: !!seed.isFallback,
+                        impactLabel: seed.impactLabel || "",
+                        businessSymptom: seed.businessSymptom || "",
+                        technicalJustification: seed.technicalJustification || "",
+                        functionMap: new Map(),
+                        prioritySet: new Set(seed.priority ? [seed.priority] : []),
+                        hasP1: seed.priority === "P1",
+                        hasP23: seed.priority === "P2/P3"
+                    };
+                }
+                return groupedByMs[ms].groups[groupKey];
+            }
 
             for (const fn of allFunctions) {
                 const msList = (Array.isArray(fn.microservices) && fn.microservices.length) ? fn.microservices : ["unknown-microservice"];
                 const scopeTypeRaw = String(fn.function_scope_type || ((fn.evidence_lines_count || 0) > 0 ? "P1 touchee prouvee" : "P2/P3 candidate"));
                 const priority = scopeTypeRaw.toLowerCase().includes("p1") ? "P1" : "P2/P3";
                 const desc = fn.description || "Description metier non disponible.";
-                const impact = fn.impact_front || "Impact front non disponible.";
-                const retest = fn.what_to_test || "Retest conseille non disponible.";
+                const functionalDesc = fn.functional_description || "Description fonctionnelle non disponible.";
                 const descCore = normalizeBusinessDescription(desc);
-                const impactCore = normalizeText(impact);
-                const retestCore = normalizeText(retest);
-                const groupKey = `${priority}|${descCore}|${impactCore}|${retestCore}`;
+                const context = extractScenarioContext(functionalDesc, msList[0] || "unknown-microservice");
+                const evidenceActions = deriveTestActionsFromEvidence(fn, desc, functionalDesc);
+                const scenarioTags = extractScenarioTags(fn, desc, functionalDesc, evidenceActions);
+                const recommendedActions = buildScenarioTestActions(scenarioTags);
                 const fnId = String(fn.id || fn.name || "").trim();
 
                 for (const ms of msList) {
-                    if (!groupedByMs[ms]) groupedByMs[ms] = { name: ms, groups: {} };
-                    if (!groupedByMs[ms].groups[groupKey]) {
-                        groupedByMs[ms].groups[groupKey] = {
-                            priority,
-                            desc,
-                            impact,
-                            retest,
-                            functions: new Set(),
-                            searchBlob: ""
-                        };
-                    }
-                    const g = groupedByMs[ms].groups[groupKey];
+                    const groupKey = buildScenarioGroupKey(fn, descCore, context, scenarioTags, ms);
+                    const g = ensureGroup(ms, groupKey, {
+                        priority,
+                        desc,
+                        functionalDesc,
+                        descDisplay: toDisplayBusinessDescription(desc),
+                        context,
+                        scenarioTags,
+                        recommendedActions
+                    });
                     g.functions.add(fnId);
-                    g.searchBlob += ` ${ms} ${fnId} ${desc} ${impact} ${retest}`;
+                    g.functionMap.set(fnId, { id: fnId, priority });
+                    g.descCandidates.push(desc);
+                    g.prioritySet.add(priority);
+                    g.hasP1 = g.hasP1 || priority === "P1";
+                    g.hasP23 = g.hasP23 || priority !== "P1";
+                    if (priority === "P1") g.priority = "P1";
+                    scenarioTags.forEach(tag => g.scenarioTags.add(tag));
+                    g.searchBlob += ` ${ms} ${fnId} ${desc} ${functionalDesc} ${Array.from(scenarioTags).join(" ")}`;
+                }
+            }
+
+            for (const msEntry of allMicroservices) {
+                const msName = String(msEntry.name || "").trim();
+                if (!msName) continue;
+                const fallbackGroups = Array.isArray(msEntry.fallback_groups) ? msEntry.fallback_groups : [];
+                for (const fg of fallbackGroups) {
+                    const desc = String(fg.description || "Microservice direct impacte sans fonction metier prouvee.").trim();
+                    const functionalDesc = String(fg.functional_description || "Description fonctionnelle non disponible.").trim();
+                    const priority = String(fg.priority || (Number(fg.priority_order || 2) === 1 ? "P1" : "P2/P3")).trim();
+                    const context = extractScenarioContext(functionalDesc, msName);
+                    const scenarioTags = extractScenarioTags({ files: fg.files || [] }, desc, functionalDesc, fg.what_to_test || "");
+                    const groupKey = `fallback|${priority}|${normalizeBusinessDescription(desc)}|${normalizeFunctionalScenario(functionalDesc)}`;
+                    const g = ensureGroup(msName, groupKey, {
+                        priority,
+                        desc,
+                        functionalDesc,
+                        descDisplay: toDisplayBusinessDescription(desc),
+                        context,
+                        scenarioTags,
+                        recommendedActions: String(fg.what_to_test || "").trim(),
+                        preserveFunctionalText: true,
+                        preserveTestActions: true,
+                        fallbackLabel: String(fg.fallback_label || "Aucune fonction metier prouvee").trim(),
+                        impactLabel: String(fg.impact_label || fg.scope_label || "Impact microservice direct").trim(),
+                        businessSymptom: String(fg.business_symptom || "").trim(),
+                        technicalJustification: String(fg.technical_justification || "").trim(),
+                        isFallback: true,
+                        searchBlob: `${msName} ${desc} ${functionalDesc} ${fg.business_symptom || ""} ${fg.technical_justification || ""} ${(fg.files || []).join(" ")}`
+                    });
+                    g.descCandidates.push(desc);
+                    scenarioTags.forEach(tag => g.scenarioTags.add(tag));
+                    if (!g.recommendedActions && fg.what_to_test) {
+                        g.recommendedActions = String(fg.what_to_test).trim();
+                    }
+                    if (!g.fallbackLabel && fg.scope_label) {
+                        g.fallbackLabel = String(fg.scope_label).trim();
+                    }
+                    g.isFallback = true;
                 }
             }
 
@@ -1190,11 +1949,26 @@
                 name: msObj.name,
                 groups: Object.values(msObj.groups).map(g => ({
                     priority: g.priority,
-                    desc: g.desc,
-                    impact: g.impact,
-                    retest: g.retest,
+                    desc: pickBestBusinessDescription(g.descCandidates && g.descCandidates.length ? g.descCandidates : [g.desc]),
+                    functionalDesc: g.preserveFunctionalText
+                        ? (g.functionalDesc || "Description fonctionnelle non disponible.")
+                        : buildScenarioFunctionalDescription(g.context, Array.from(g.scenarioTags), g.functions.size || g.functions.length || 0),
+                    testActions: g.preserveTestActions
+                        ? (g.recommendedActions || "Actions test recommandees non disponibles.")
+                        : (g.recommendedActions || buildScenarioTestActions(Array.from(g.scenarioTags))),
                     functions: Array.from(g.functions).sort(),
-                    searchBlob: normalizeText(g.searchBlob)
+                    functionItems: Array.from(g.functionMap.values()).sort((a, b) => {
+                        if (a.priority !== b.priority) return a.priority === "P1" ? -1 : 1;
+                        return a.id.localeCompare(b.id);
+                    }),
+                    searchBlob: normalizeText(g.searchBlob),
+                    fallbackLabel: g.fallbackLabel || "",
+                    isFallback: !!g.isFallback,
+                    impactLabel: g.impactLabel || "",
+                    businessSymptom: g.businessSymptom || "",
+                    technicalJustification: g.technicalJustification || "",
+                    hasP1: !!g.hasP1,
+                    hasP23: !!g.hasP23
                 }))
             }));
 
@@ -1205,55 +1979,166 @@
             };
         }
 
-        function getReportViewOptions() {
-            return {
-                priority: document.getElementById("priorityFilter")?.value || "__all__",
-                selectedFunction: document.getElementById("functionFilter")?.value || "__all__",
-                compact: !!document.getElementById("compactView")?.checked,
-                selectedMs: document.getElementById("msFilter")?.value || "__all__"
-            };
+        const reportOptionCatalog = { ms: [], fn: [] };
+        const reportFilterState = {
+            ms: new Set(["__all__"]),
+            priority: new Set(["__all__"]),
+            fn: new Set(["__all__"])
+        };
+
+        function getSelectedSet(kind) {
+            return reportFilterState[kind];
         }
 
-        function populateMicroserviceFilter(msList) {
-            const sel = document.getElementById("msFilter");
-            if (!sel) return;
-            const previous = sel.value || "__all__";
-            const options = [`<option value="__all__">All microservices (${msList.length})</option>`];
-            msList
+        function normalizeSet(kind) {
+            const set = getSelectedSet(kind);
+            if (!set || set.size === 0) {
+                reportFilterState[kind] = new Set(["__all__"]);
+                return;
+            }
+            if (set.has("__all__") && set.size > 1) {
+                set.delete("__all__");
+            }
+            if (set.size === 0) {
+                set.add("__all__");
+            }
+        }
+
+        function setFilterAll(kind) {
+            reportFilterState[kind] = new Set(["__all__"]);
+        }
+
+        function getActiveValues(kind) {
+            const set = getSelectedSet(kind);
+            if (!set || set.has("__all__")) return [];
+            return Array.from(set);
+        }
+
+        function buildFilterLabel(kind, optionsCount) {
+            const values = getActiveValues(kind);
+            if (!values.length) {
+                if (kind === "ms") return `All microservices (${optionsCount})`;
+                if (kind === "priority") return "All priorities (P1 + P2/P3)";
+                return `All functions (${optionsCount})`;
+            }
+            if (values.length === 1) return values[0];
+            return `${values.length} selected`;
+        }
+
+        function renderDropdownOptions(kind, options) {
+            const menu = document.getElementById(`${kind}FilterMenu`);
+            const label = document.getElementById(`${kind}FilterLabel`);
+            const set = getSelectedSet(kind);
+            if (!menu || !label) return;
+
+            let allLabel = "All";
+            if (kind === "ms") allLabel = `All microservices (${options.length})`;
+            if (kind === "priority") allLabel = "All priorities (P1 + P2/P3)";
+            if (kind === "fn") allLabel = `All functions (${options.length})`;
+
+            const rows = [
+                `<label class="report-option"><input type="checkbox" data-kind="${kind}" value="__all__" ${set.has("__all__") ? "checked" : ""}> <strong>${escapeHtml(allLabel)}</strong></label>`
+            ];
+            options.forEach(opt => {
+                rows.push(
+                    `<label class="report-option"><input type="checkbox" data-kind="${kind}" value="${escapeHtml(opt.value)}" ${set.has(opt.value) ? "checked" : ""}> <span>${escapeHtml(opt.label)}</span></label>`
+                );
+            });
+            menu.innerHTML = rows.join("");
+            label.textContent = buildFilterLabel(kind, options.length);
+        }
+
+        function openReportDropdown(kind) {
+            document.querySelectorAll(".report-dropdown").forEach(el => {
+                if (el.id !== `${kind}FilterWrap`) el.classList.remove("open");
+            });
+            const wrap = document.getElementById(`${kind}FilterWrap`);
+            if (wrap) wrap.classList.toggle("open");
+        }
+
+        function closeReportDropdowns() {
+            document.querySelectorAll(".report-dropdown").forEach(el => el.classList.remove("open"));
+        }
+
+        function onMultiOptionChange(kind, value, checked) {
+            const set = getSelectedSet(kind);
+            if (!set) return;
+            if (value === "__all__") {
+                setFilterAll(kind);
+            } else {
+                if (checked) {
+                    set.delete("__all__");
+                    set.add(value);
+                } else {
+                    set.delete(value);
+                }
+                normalizeSet(kind);
+            }
+            applyReportDisplayOptions(kind === "fn");
+        }
+
+        function getPriorityOptions() {
+            return [
+                { value: "P1", label: "P1 touched" },
+                { value: "P23", label: "P2/P3 candidates" }
+            ];
+        }
+
+        function buildPriorityOptions() {
+            renderDropdownOptions("priority", getPriorityOptions());
+        }
+
+        function buildMicroserviceOptions(msList) {
+            reportOptionCatalog.ms = msList
                 .slice()
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .forEach(ms => {
-                    const p1 = ms.groups.filter(g => g.priority === "P1").length;
-                    const p23 = ms.groups.length - p1;
+                .map(ms => {
+                    const p1 = ms.groups.filter(g => g.hasP1).length;
+                    const p23 = ms.groups.filter(g => g.hasP23).length;
                     const fnCount = ms.groups.reduce((acc, g) => acc + g.functions.length, 0);
-                    options.push(
-                        `<option value="${escapeHtml(ms.name)}">${escapeHtml(ms.name)} (P1:${p1} | P2/P3:${p23} | fn:${fnCount})</option>`
-                    );
+                    return { value: ms.name, label: `${ms.name} (P1:${p1} | P2/P3:${p23} | fn:${fnCount})` };
                 });
-            sel.innerHTML = options.join("");
-            const hasPrev = msList.some(ms => ms.name === previous);
-            sel.value = hasPrev ? previous : "__all__";
+            const activeMs = new Set(reportOptionCatalog.ms.map(o => o.value));
+            reportFilterState.ms = new Set(Array.from(getSelectedSet("ms")).filter(v => v === "__all__" || activeMs.has(v)));
+            normalizeSet("ms");
+            renderDropdownOptions("ms", reportOptionCatalog.ms);
         }
 
-        function populateFunctionFilter(msList, opts) {
-            const sel = document.getElementById("functionFilter");
-            if (!sel) return;
-            const previous = sel.value || "__all__";
-            const functionSet = new Set();
-            msList.forEach(msObj => {
-                if (opts.selectedMs !== "__all__" && msObj.name !== opts.selectedMs) return;
-                msObj.groups.forEach(g => {
-                    if (opts.priority === "P1" && g.priority !== "P1") return;
-                    if (opts.priority === "P23" && g.priority === "P1") return;
-                    g.functions.forEach(fn => functionSet.add(fn));
+        function buildFunctionOptions(msList) {
+            const selectedMs = getActiveValues("ms");
+            const selectedPriority = getActiveValues("priority");
+            const fnMap = new Map();
+
+                msList.forEach(msObj => {
+                    if (selectedMs.length && !selectedMs.includes(msObj.name)) return;
+                    msObj.groups.forEach(g => {
+                        if (selectedPriority.length) {
+                            if (selectedPriority.includes("P1") && !g.hasP1) return;
+                            if (selectedPriority.includes("P23") && !g.hasP23) return;
+                        }
+                        g.functions.forEach(fnName => {
+                            if (!fnMap.has(fnName)) fnMap.set(fnName, fnName);
+                        });
                 });
             });
-            const sortedFns = Array.from(functionSet).sort((a, b) => a.localeCompare(b));
-            const options = [`<option value="__all__">All functions (${sortedFns.length})</option>`]
-                .concat(sortedFns.map(fn => `<option value="${escapeHtml(fn)}">${escapeHtml(fn)}</option>`));
-            sel.innerHTML = options.join("");
-            const hasPrev = sortedFns.includes(previous);
-            sel.value = hasPrev ? previous : "__all__";
+
+            reportOptionCatalog.fn = Array.from(fnMap.keys())
+                .sort((a, b) => a.localeCompare(b))
+                .map(v => ({ value: v, label: v }));
+
+            const activeFn = new Set(reportOptionCatalog.fn.map(o => o.value));
+            reportFilterState.fn = new Set(Array.from(getSelectedSet("fn")).filter(v => v === "__all__" || activeFn.has(v)));
+            normalizeSet("fn");
+            renderDropdownOptions("fn", reportOptionCatalog.fn);
+        }
+
+        function getReportViewOptions() {
+            return {
+                selectedMs: getActiveValues("ms"),
+                priorities: getActiveValues("priority"),
+                selectedFunctions: getActiveValues("fn"),
+                compact: !!document.getElementById("compactView")?.checked
+            };
         }
 
         function updateFunctionInspector(selectedFn, group) {
@@ -1261,29 +2146,35 @@
             if (!panel) return;
             if (!selectedFn || selectedFn === "__all__" || !group) {
                 panel.innerHTML = `
-                    <div class="title"><i class="fas fa-lightbulb"></i> Function details</div>
-                    <div class="line">Choose a function to view business details.</div>
+                    <div class="title"><i class="fas fa-lightbulb"></i> Details fonctionnels</div>
+                    <div class="line">Selectionne une fonction pour afficher son contexte de test.</div>
                 `;
                 return;
             }
             panel.innerHTML = `
                 <div class="title"><i class="fas fa-code"></i> ${escapeHtml(selectedFn)}</div>
+                <div class="line"><strong>Priorite:</strong> ${escapeHtml((group.functionItems || []).find(fn => fn.id === selectedFn)?.priority || group.priority || "N/A")}</div>
                 <div class="line"><strong>Description metier:</strong> ${escapeHtml(group.desc || "N/A")}</div>
-                <div class="line"><strong>Impact Front cible:</strong> ${escapeHtml(group.impact || "N/A")}</div>
-                <div class="line"><strong>Retest conseille:</strong> ${escapeHtml(group.retest || "N/A")}</div>
+                <div class="line"><strong>Description fonctionnelle:</strong> ${escapeHtml(group.functionalDesc || "N/A")}</div>
+                <div class="line"><strong>Actions test recommandees:</strong> ${escapeHtml(group.testActions || "N/A")}</div>
             `;
         }
 
         function renderMsCards(msList, opts) {
+            const selectedMs = opts.selectedMs || [];
+            const selectedPriorities = opts.priorities || [];
+            const selectedFunctions = opts.selectedFunctions || [];
             const filteredMs = msList
                 .map(msObj => {
-                    if (opts.selectedMs !== "__all__" && msObj.name !== opts.selectedMs) {
+                    if (selectedMs.length && !selectedMs.includes(msObj.name)) {
                         return { ...msObj, groups: [] };
                     }
                     let groups = msObj.groups.filter(g => {
-                        if (opts.priority === "P1" && g.priority !== "P1") return false;
-                        if (opts.priority === "P23" && g.priority === "P1") return false;
-                        if (opts.selectedFunction !== "__all__" && !g.functions.includes(opts.selectedFunction)) return false;
+                        if (selectedPriorities.length) {
+                            if (selectedPriorities.includes("P1") && !g.hasP1) return false;
+                            if (selectedPriorities.includes("P23") && !g.hasP23) return false;
+                        }
+                        if (selectedFunctions.length && !selectedFunctions.some(fn => g.functions.includes(fn))) return false;
                         return true;
                     });
                     return { ...msObj, groups };
@@ -1291,8 +2182,8 @@
                 .filter(msObj => msObj.groups.length > 0);
 
             const getImpactStats = (msObj) => {
-                const p1 = msObj.groups.filter(g => g.priority === "P1").length;
-                const p23 = msObj.groups.length - p1;
+                const p1 = msObj.groups.filter(g => g.hasP1).length;
+                const p23 = msObj.groups.filter(g => g.hasP23).length;
                 const fn = msObj.groups.reduce((acc, g) => acc + g.functions.length, 0);
                 return { p1, p23, fn };
             };
@@ -1310,53 +2201,80 @@
             const totalGroups = filteredMs.reduce((acc, ms) => acc + ms.groups.length, 0);
             const totalFunctions = filteredMs.reduce((acc, ms) => acc + ms.groups.reduce((gAcc, g) => gAcc + g.functions.length, 0), 0);
             let matchedGroupForFunction = null;
+            const inspectorFn = selectedFunctions.length === 1 ? selectedFunctions[0] : "";
 
             const msCards = filteredMs.map((msObj, msIndex) => {
                 const groups = msObj.groups.sort((a, b) => {
                     if (a.priority === b.priority) return a.desc.localeCompare(b.desc);
                     return a.priority === "P1" ? -1 : 1;
                 });
-                const p1Count = groups.filter(g => g.priority === "P1").length;
-                const p23Count = groups.filter(g => g.priority !== "P1").length;
+                const p1Count = groups.filter(g => g.hasP1).length;
+                const p23Count = groups.filter(g => g.hasP23).length;
 
                 const groupCards = groups.map(g => `
                     <div class="group-card ${g.priority === "P1" ? "p1-group" : "p23-group"}">
                         <div class="group-head">
                             <span class="pill ${g.priority === "P1" ? "p1" : "p23"}">${escapeHtml(g.priority)}</span>
-                            <span class="group-meta">${g.functions.length} fonction(s) dans ce groupe</span>
+                            <span class="group-meta">${g.functions.length ? `${g.functions.length} fonction(s) dans ce groupe` : escapeHtml(g.fallbackLabel || "Aucune fonction metier prouvee")}</span>
                         </div>
                         <div class="group-grid">
                             <div class="group-row">
                                 <div class="group-key">Fonctions concernees</div>
                                 <div class="group-val chips">
-                                    ${g.functions.map(fnName => `<span class="chip chip-fn">${escapeHtml(fnName)}</span>`).join("")}
+                                    ${g.functions.length
+                                        ? (g.functionItems || []).map(fn => `
+                                            <span class="chip chip-fn chip-fn-wrap">
+                                                <span class="chip-mini-priority ${fn.priority === "P1" ? "p1" : "p23"}">${escapeHtml(fn.priority)}</span>
+                                                <span>${escapeHtml(fn.id)}</span>
+                                            </span>
+                                        `).join("")
+                                        : `<span class="chip chip-fn">${escapeHtml(g.fallbackLabel || "Aucune fonction metier prouvee")}</span>`}
                                 </div>
                             </div>
+                            ${g.isFallback ? `
+                            <div class="group-row">
+                                <div class="group-key">Type d'impact</div>
+                                <div class="group-val">${escapeHtml(g.impactLabel || "Impact microservice direct")}</div>
+                            </div>
+                            ` : ``}
                             <div class="group-row">
                                 <div class="group-key">Description metier</div>
                                 <div class="group-val">${escapeHtml(g.desc)}</div>
                             </div>
                             <div class="group-row">
-                                <div class="group-key">Impact Front cible</div>
-                                <div class="group-val">${escapeHtml(g.impact)}</div>
+                                <div class="group-key">Description fonctionnelle</div>
+                                <div class="group-val">${escapeHtml(g.functionalDesc)}</div>
                             </div>
                             <div class="group-row">
-                                <div class="group-key">Retest conseille</div>
-                                <div class="group-val">${escapeHtml(g.retest)}</div>
+                                <div class="group-key">Actions test recommandees</div>
+                                <div class="group-val">${escapeHtml(g.testActions)}</div>
                             </div>
                         </div>
                     </div>
                 `).join("");
 
-                if (opts.selectedFunction !== "__all__" && !matchedGroupForFunction) {
-                    matchedGroupForFunction = groups.find(g => g.functions.includes(opts.selectedFunction)) || null;
+                if (inspectorFn && !matchedGroupForFunction) {
+                    matchedGroupForFunction = groups.find(g => g.functions.includes(inspectorFn)) || null;
                 }
 
+                const shouldOpen = !!(inspectorFn && groups.some(g => g.functions.includes(inspectorFn)));
+
                 return `
-                    <details class="ms-card" style="animation-delay:${Math.min(msIndex * 0.06, 0.4)}s" ${msIndex < 2 ? "open" : ""}>
+                    <details class="ms-card" style="animation-delay:${Math.min(msIndex * 0.06, 0.4)}s" ${shouldOpen ? "open" : ""}>
                         <summary class="ms-head">
-                            <span><i class="fas fa-cubes"></i> ${escapeHtml(msObj.name)}</span>
-                            <span class="hint">Groupes: ${groups.length} | P1: ${p1Count} | P2/P3: ${p23Count} <i class="fas fa-chevron-down caret"></i></span>
+                            <div class="ms-head-main">
+                                <div class="ms-title-line">
+                                    <i class="fas fa-cubes"></i>
+                                    <span class="ms-title-name">${escapeHtml(msObj.name)}</span>
+                                </div>
+                                <div class="ms-subtitle">Clique pour ouvrir le detail fonctionnel de ce microservice.</div>
+                            </div>
+                            <div class="ms-head-side">
+                                <span class="ms-stat"><i class="fas fa-layer-group"></i> ${groups.length} groupes</span>
+                                <span class="ms-stat"><i class="fas fa-bolt"></i> P1: ${p1Count}</span>
+                                <span class="ms-stat"><i class="fas fa-shield-alt"></i> P2/P3: ${p23Count}</span>
+                                <span class="ms-open-hint">Voir details <i class="fas fa-chevron-down caret"></i></span>
+                            </div>
                         </summary>
                         <div class="ms-body">
                             <div class="group-list">
@@ -1372,16 +2290,15 @@
                 cardsZone.classList.toggle("compact-mode", !!opts.compact);
                 cardsZone.innerHTML = msCards || '<div class="summary-box">No microservices/functions for current filters.</div>';
             }
-            updateFunctionInspector(opts.selectedFunction, matchedGroupForFunction);
+            updateFunctionInspector(inspectorFn, matchedGroupForFunction);
             return { filteredMs, totalGroups, totalFunctions };
         }
 
         function applyReportDisplayOptions() {
             if (!reportState) return;
+            buildFunctionOptions(reportState.microservices);
             const opts = getReportViewOptions();
-            populateFunctionFilter(reportState.microservices, opts);
-            const optsAfterFunctionRefresh = getReportViewOptions();
-            renderMsCards(reportState.microservices, optsAfterFunctionRefresh);
+            renderMsCards(reportState.microservices, opts);
         }
 
         function renderTesterReport(data) {
@@ -1397,23 +2314,33 @@
                 </div>
                 <div class="report-tools">
                     <div class="tool-inline filter-pack filter-pack-main">
-                        <select id="msFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
-                            <option value="__all__">All microservices</option>
-                        </select>
+                        <div id="msFilterWrap" class="report-dropdown">
+                            <button type="button" class="report-dropdown-btn" onclick="openReportDropdown('ms')">
+                                <span id="msFilterLabel">All microservices</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="msFilterMenu" class="report-dropdown-menu"></div>
+                        </div>
                         <button class="clear-btn" type="button" onclick="clearMsFilter()">Clear</button>
                     </div>
                     <div class="tool-inline filter-pack filter-pack-main">
-                        <select id="priorityFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
-                            <option value="__all__">All priorities (P1 + P2/P3)</option>
-                            <option value="P1">P1 touched only</option>
-                            <option value="P23">P2/P3 candidates only</option>
-                        </select>
+                        <div id="priorityFilterWrap" class="report-dropdown">
+                            <button type="button" class="report-dropdown-btn" onclick="openReportDropdown('priority')">
+                                <span id="priorityFilterLabel">All priorities (P1 + P2/P3)</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="priorityFilterMenu" class="report-dropdown-menu"></div>
+                        </div>
                         <button class="clear-btn" type="button" onclick="clearPriorityFilter()">Clear</button>
                     </div>
                     <div class="tool-inline filter-pack filter-pack-main">
-                        <select id="functionFilter" class="tool-select tool-select-wide" onchange="applyReportDisplayOptions()">
-                            <option value="__all__">All functions</option>
-                        </select>
+                        <div id="fnFilterWrap" class="report-dropdown">
+                            <button type="button" class="report-dropdown-btn" onclick="openReportDropdown('fn')">
+                                <span id="fnFilterLabel">All functions</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div id="fnFilterMenu" class="report-dropdown-menu"></div>
+                        </div>
                         <button class="clear-btn" type="button" onclick="clearFunctionFilter()">Clear</button>
                     </div>
                     <div class="tool-inline filter-pack compact-pack">
@@ -1428,19 +2355,44 @@
                 <div id="msCardsZone" class="scope-by-ms"></div>
             `;
 
-            populateMicroserviceFilter(reportState.microservices);
+            setFilterAll("ms");
+            setFilterAll("priority");
+            setFilterAll("fn");
+            buildMicroserviceOptions(reportState.microservices);
+            buildPriorityOptions();
+            buildFunctionOptions(reportState.microservices);
             applyReportDisplayOptions();
         }
 
         window.addEventListener("load", () => {
             updateTypeDropdownLabel();
+            updateSprintDropdownLabel();
             updateSelectionMeta();
+            document.addEventListener("change", (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLInputElement)) return;
+                if (!target.matches(".report-option input[type='checkbox']")) return;
+                const kind = target.dataset.kind;
+                const value = target.value;
+                if (!kind || !value) return;
+                onMultiOptionChange(kind, value, target.checked);
+            });
             document.addEventListener("click", (event) => {
                 const wrapper = document.getElementById("typeDropdown");
-                if (!wrapper) return;
-                if (!wrapper.contains(event.target)) closeTypeDropdown();
+                if (wrapper && !wrapper.contains(event.target)) closeTypeDropdown();
+                const sprintWrapper = document.getElementById("sprintDropdown");
+                if (sprintWrapper && !sprintWrapper.contains(event.target)) closeSprintDropdown();
+                const dropdownWrappers = [
+                    document.getElementById("msFilterWrap"),
+                    document.getElementById("priorityFilterWrap"),
+                    document.getElementById("fnFilterWrap")
+                ];
+                if (!dropdownWrappers.some(w => w && w.contains(event.target))) {
+                    closeReportDropdowns();
+                }
             });
             loadIterationCatalog();
+            loadStatusCatalog();
         });
     </script>
 </body>

@@ -4,8 +4,8 @@
     "chemin": "/dynamic/order-router.yaml",
     "extension": ".yaml",
     "prioritaire": true,
-    "contenu": "http:\r\n  services:\r\n    order-di-r:\r\n      loadBalancer:\r\n        servers:\r\n        - url: '{{ env \"URL_ORDER_DI_ROUTER\" }}'\r\n        passHostHeader: false\r\n  \r\n  routers:\r\n    order-di-r:\r\n      entryPoints:\r\n        - \"web\"\r\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_DI_ROUTER\" }}`)'\r\n      middlewares:\r\n      - url-prefix-strip\r\n      service: order-di-r",
-    "taille": 363
+    "contenu": "http:\r\n  services:\r\n    order-di-r:\r\n      loadBalancer:\r\n        servers:\r\n          - url: '{{ env \"URL_ORDER_DI_ROUTER\" }}'\r\n        passHostHeader: false\r\n\r\n  routers:\r\n    order-di-r:\r\n      entryPoints:\r\n        - \"web\"\r\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_DI_ROUTER\" }}`)'\r\n      middlewares:\r\n        - url-prefix-strip\r\n      service: order-di-r\r\n",
+    "taille": 367
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
@@ -28,375 +28,391 @@
     "chemin": "/README.md",
     "extension": ".md",
     "prioritaire": false,
-    "contenu": "# App Proxy\n\nThis microservice is a forward proxy routing incoming http requests to different backend services:\n\n- default  --> ui \n- /api     --> api\n- /datahub --> datahub\n\nThe app proxy is based on [Traefik](https://traefik.io/traefik/)\n",
-    "taille": 240
+    "contenu": "# App Proxy\n\nThis microservice is a forward proxy routing incoming http requests to different backend services:\n\n- default  --> ui\n- /api     --> api\n- /datahub --> datahub\n\nThe app proxy is based on [Traefik](https://traefik.io/traefik/)\n",
+    "taille": 239
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/azure-pipelines.yml",
     "extension": ".yml",
     "prioritaire": false,
-    "contenu": "resources:\n  repositories:\n  - repository: mesx-ops-pipelines\n    type: git\n    name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  branches:\n    include:\n    - refs/tags/*\n    - main\n    - ci/*\n  paths:\n    exclude:\n    - README.md\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: app-proxy\n\nstages:\n- stage: Build\n  jobs:\n  - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n    parameters:\n      folder: $(System.DefaultWorkingDirectory)\n      repository: mesx/app-proxy\n      npmauth: false\n\n- stage: Dev\n  condition: and(succeeded(), eq(variables.isMain, true))\n  jobs:\n  - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n    parameters:\n      azureSubscription: spn-dev-inf-mes\n      pipelineDeploymentEnvironment: app_cloud_dev_mes\n      containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n      containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
-    "taille": 935
+    "contenu": "resources:\n  repositories:\n    - repository: mesx-ops-pipelines\n      type: git\n      name: MES_X.0/mesx-ops-pipelines\n\ntrigger:\n  branches:\n    include:\n      - refs/tags/*\n      - main\n      - ci/*\n  paths:\n    exclude:\n      - README.md\nvariables:\n  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]\n  caAppName: app-proxy\n\nstages:\n  - stage: Build\n    jobs:\n      - template: build/jobs/jobs-docker-build.yml@mesx-ops-pipelines\n        parameters:\n          folder: $(System.DefaultWorkingDirectory)\n          repository: mesx/app-proxy\n          npmauth: false\n\n  - stage: Dev\n    condition: and(succeeded(), eq(variables.isMain, true))\n    jobs:\n      - template: deploy/jobs/jobs-container-apps-deploy.yml@mesx-ops-pipelines\n        parameters:\n          azureSubscription: spn-dev-inf-mes\n          pipelineDeploymentEnvironment: app_cloud_dev_mes\n          containerAppName: ca-gptmpxn01-eun-dev-$(caAppName)\n          containerAppResourceGroupName: rg-gptmpxn01-dev-eun-mes-01\n",
+    "taille": 1003
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/admin-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    admin-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ADMIN_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    admin-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ADMIN_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: admin-backend\n",
-    "taille": 352
+    "contenu": "http:\n  services:\n    admin-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ADMIN_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    admin-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ADMIN_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: admin-backend\n",
+    "taille": 356
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/admin-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    admin-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ADMIN_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    admin-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ADMIN_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: admin-ui\n",
-    "taille": 327
+    "contenu": "http:\n  services:\n    admin-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ADMIN_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    admin-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ADMIN_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: admin-ui\n",
+    "taille": 331
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/alert-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    alert-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ALERT_UI\" }}'\n        passHostHeader: false\n  routers:\n    alert-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ALERT_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: alert-ui\n",
-    "taille": 326
+    "contenu": "http:\n  services:\n    alert-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ALERT_UI\" }}'\n        passHostHeader: false\n  routers:\n    alert-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ALERT_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: alert-ui\n",
+    "taille": 330
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/central-error-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    central-error-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_CENTRAL_ERROR_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    central-error-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CENTRAL_ERROR_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: central-error-backend\n",
-    "taille": 392
+    "contenu": "http:\n  services:\n    central-error-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_CENTRAL_ERROR_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    central-error-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CENTRAL_ERROR_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: central-error-backend\n",
+    "taille": 396
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/central-error-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    central-error-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_CENTRAL_ERROR_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    central-error-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CENTRAL_ERROR_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: central-error-ui\n",
-    "taille": 367
+    "contenu": "http:\n  services:\n    central-error-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_CENTRAL_ERROR_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    central-error-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CENTRAL_ERROR_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: central-error-ui\n",
+    "taille": 371
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/chronos-backend.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    chronos-be:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_CHRONOS_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    chronos-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CHRONOS_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: chronos-be\n",
+    "taille": 351
+  },
+  {
+    "microservice": "mesx-infrastructure-app-proxy",
+    "chemin": "/dynamic/chronos-ui.yaml",
+    "extension": ".yaml",
+    "prioritaire": false,
+    "contenu": "http:\n  services:\n    chronos-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_CHRONOS_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    chronos-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_CHRONOS_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: chronos-ui\n",
+    "taille": 341
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/datahub.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    datahub:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_DATAHUB\" }}'\n        passHostHeader: false\n  routers:\n    datahub:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DATAHUB\" }}`)'\n      service: datahub\n",
-    "taille": 277
+    "contenu": "http:\n  services:\n    datahub:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_DATAHUB\" }}'\n        passHostHeader: false\n  routers:\n    datahub:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DATAHUB\" }}`)'\n      service: datahub\n",
+    "taille": 279
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/dependency-management-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    dependency-management-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_DEPENDENCY_MANAGEMENT_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    dependency-management-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DEPENDENCY_MANAGEMENT_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: dependency-management-ui",
-    "taille": 406
+    "contenu": "http:\n  services:\n    dependency-management-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_DEPENDENCY_MANAGEMENT_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    dependency-management-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DEPENDENCY_MANAGEMENT_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: dependency-management-ui\n",
+    "taille": 411
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/downtime-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    downtime-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_DOWNTIME_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    downtime-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DOWNTIME_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: downtime-backend\n",
-    "taille": 367
+    "contenu": "http:\n  services:\n    downtime-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_DOWNTIME_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    downtime-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DOWNTIME_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: downtime-backend\n",
+    "taille": 371
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/downtime-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    downtime-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_DOWNTIME_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    downtime-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DOWNTIME_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: downtime-ui\n",
-    "taille": 342
+    "contenu": "http:\n  services:\n    downtime-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_DOWNTIME_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    downtime-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_DOWNTIME_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: downtime-ui\n",
+    "taille": 346
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/easyauth-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    easyauth-ui:\n      loadBalancer:\n        servers:\n        - url: 'http://ca-gptmpxn01-eun-dev-easyauth-ui'\n        passHostHeader: false\n  routers:\n    easyauth-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/easyauth-ui`)'\n      middlewares:\n      - url-prefix-strip\n      service: easyauth-ui\n",
-    "taille": 334
+    "contenu": "http:\n  services:\n    easyauth-ui:\n      loadBalancer:\n        servers:\n          - url: \"http://ca-gptmpxn01-eun-dev-easyauth-ui\"\n        passHostHeader: false\n  routers:\n    easyauth-ui:\n      entryPoints:\n        - \"web\"\n      rule: \"PathPrefix(`/easyauth-ui`)\"\n      middlewares:\n        - url-prefix-strip\n      service: easyauth-ui\n",
+    "taille": 338
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/epart-board-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    epart-board-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_EPART_BOARD_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    epart-board-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EPART_BOARD_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: epart-board-backend\n",
-    "taille": 382
+    "contenu": "http:\n  services:\n    epart-board-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_EPART_BOARD_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    epart-board-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EPART_BOARD_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: epart-board-backend\n",
+    "taille": 386
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/epart-board-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    epart-board-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_EPART_BOARD_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    epart-board-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EPART_BOARD_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: epart-board-ui\n",
-    "taille": 357
+    "contenu": "http:\n  services:\n    epart-board-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_EPART_BOARD_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    epart-board-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EPART_BOARD_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: epart-board-ui\n",
+    "taille": 361
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/ewm-gateway-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    ewm-gateway-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_EWM_GATEWAY_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    ewm-gateway-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EWM_GATEWAY_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: ewm-gateway-backend\n",
-    "taille": 382
+    "contenu": "http:\n  services:\n    ewm-gateway-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_EWM_GATEWAY_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    ewm-gateway-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_EWM_GATEWAY_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: ewm-gateway-backend\n",
+    "taille": 386
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/job-scheduler-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    job-scheduler-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_JOB_SCHEDULER_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    job-scheduler-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_JOB_SCHEDULER_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: job-scheduler-backend\n",
-    "taille": 392
+    "contenu": "http:\n  services:\n    job-scheduler-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_JOB_SCHEDULER_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    job-scheduler-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_JOB_SCHEDULER_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: job-scheduler-backend\n",
+    "taille": 396
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/job-scheduler-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    job-scheduler-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_JOB_SCHEDULER_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    job-scheduler-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_JOB_SCHEDULER_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: job-scheduler-ui\n",
-    "taille": 367
+    "contenu": "http:\n  services:\n    job-scheduler-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_JOB_SCHEDULER_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    job-scheduler-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_JOB_SCHEDULER_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: job-scheduler-ui\n",
+    "taille": 371
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/leveling-board-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    leveling-board-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_LEVELING_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: leveling-board-backend\n",
-    "taille": 385
+    "contenu": "http:\n  services:\n    leveling-board-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_LEVELING_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: leveling-board-backend\n",
+    "taille": 389
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/leveling-board-mv-orchestrator.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    leveling-board-mv-orchestrator:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_LEVELING_BOARD_MV_ORCHESTRATOR\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-mv-orchestrator:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BOARD_MV_ORCHESTRATOR\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: leveling-board-mv-orchestrator\n",
-    "taille": 437
+    "contenu": "http:\n  services:\n    leveling-board-mv-orchestrator:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_LEVELING_BOARD_MV_ORCHESTRATOR\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-mv-orchestrator:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BOARD_MV_ORCHESTRATOR\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: leveling-board-mv-orchestrator\n",
+    "taille": 441
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/leveling-board-mv-processor.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    leveling-board-mv-processor:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_LEVELING_BOARD_MV_PROCESSOR\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-mv-processor:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BOARD_MV_PROCESSOR\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: leveling-board-mv-processor\n",
-    "taille": 422
+    "contenu": "http:\n  services:\n    leveling-board-mv-processor:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_LEVELING_BOARD_MV_PROCESSOR\" }}'\n        passHostHeader: false\n\n  routers:\n    leveling-board-mv-processor:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_BOARD_MV_PROCESSOR\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: leveling-board-mv-processor\n",
+    "taille": 426
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/leveling-board-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    lvl-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_LEVELING_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    lvl-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: lvl-ui\n",
-    "taille": 327
+    "contenu": "http:\n  services:\n    lvl-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_LEVELING_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    lvl-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_LEVELING_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: lvl-ui\n",
+    "taille": 331
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/master-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    master-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_MASTER_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    master-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: master-api\n",
-    "taille": 339
+    "contenu": "http:\n  services:\n    master-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_MASTER_API\" }}'\n        passHostHeader: false\n\n  routers:\n    master-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: master-api\n",
+    "taille": 341
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/master-setup-be.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    mstr-set-be:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_MASTER_SETUP_BACKEND\" }}'\n        passHostHeader: false\n  \n  routers:\n    mstr-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: mstr-set-be\n",
-    "taille": 362
+    "contenu": "http:\n  services:\n    mstr-set-be:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_MASTER_SETUP_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    mstr-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: mstr-set-be\n",
+    "taille": 364
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/master-setup-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    mstr-set-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_MASTER_SETUP_UI\" }}'\n        passHostHeader: false\n  \n  routers:\n    mstr-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: mstr-set-ui\n",
-    "taille": 352
+    "contenu": "http:\n  services:\n    mstr-set-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_MASTER_SETUP_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    mstr-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_MASTER_SETUP_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: mstr-set-ui\n",
+    "taille": 354
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/order-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    order-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ORDER_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    order-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: order-api\n",
-    "taille": 334
+    "contenu": "http:\n  services:\n    order-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ORDER_API\" }}'\n        passHostHeader: false\n\n  routers:\n    order-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: order-api\n",
+    "taille": 336
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/order-m-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    order-m-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ORDER_MANAGEMENT_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    order-m-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_MANAGEMENT_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: order-m-api\n",
-    "taille": 362
+    "contenu": "http:\n  services:\n    order-m-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ORDER_MANAGEMENT_API\" }}'\n        passHostHeader: false\n\n  routers:\n    order-m-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_MANAGEMENT_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: order-m-api\n",
+    "taille": 364
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/order-management-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    order-management-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_ORDER_MANAGEMENT_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    order-management-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_MANAGEMENT_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: order-management-backend\n",
-    "taille": 407
+    "contenu": "http:\n  services:\n    order-management-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_ORDER_MANAGEMENT_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    order-management-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_ORDER_MANAGEMENT_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: order-management-backend\n",
+    "taille": 411
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/picking-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    picking-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PICKING_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: picking-backend\n",
-    "taille": 362
+    "contenu": "http:\n  services:\n    picking-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PICKING_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: picking-backend\n",
+    "taille": 366
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/picking-mv-orchestrator.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    picking-mv-orchestrator:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PICKING_MV_ORCHESTRATOR\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-mv-orchestrator:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_MV_ORCHESTRATOR\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: picking-mv-orchestrator\n",
-    "taille": 402
+    "contenu": "http:\n  services:\n    picking-mv-orchestrator:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PICKING_MV_ORCHESTRATOR\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-mv-orchestrator:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_MV_ORCHESTRATOR\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: picking-mv-orchestrator\n",
+    "taille": 406
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/picking-mv-processor.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    picking-mv-processor:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PICKING_MV_PROCESSOR\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-mv-processor:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_MV_PROCESSOR\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: picking-mv-processor\n",
-    "taille": 387
+    "contenu": "http:\n  services:\n    picking-mv-processor:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PICKING_MV_PROCESSOR\" }}'\n        passHostHeader: false\n\n  routers:\n    picking-mv-processor:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_MV_PROCESSOR\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: picking-mv-processor\n",
+    "taille": 391
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/picking-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    picking-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PICKING_UI\" }}'\n        passHostHeader: false\n  routers:\n    picking-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: picking-ui\n",
-    "taille": 336
+    "contenu": "http:\n  services:\n    picking-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PICKING_UI\" }}'\n        passHostHeader: false\n  routers:\n    picking-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PICKING_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: picking-ui\n",
+    "taille": 340
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/plant-hierarchy-setup-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    hry-set-be:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_BACKEND\" }}'\n        passHostHeader: false\n  \n  routers:\n    hry-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: hry-set-be\n",
-    "taille": 377
+    "contenu": "http:\n  services:\n    hry-set-be:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    hry-set-be:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: hry-set-be\n",
+    "taille": 379
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/plant-hierarchy-setup-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    hry-set-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_UI\" }}'\n        passHostHeader: false\n  \n  routers:\n    hry-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: hry-set-ui\n",
-    "taille": 367
+    "contenu": "http:\n  services:\n    hry-set-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PLANT_HIERARCHY_SETUP_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    hry-set-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_SETUP_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: hry-set-ui\n",
+    "taille": 369
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/plt-hry-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    plt-hry-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PLANT_HIERARCHY_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    plt-hry-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: plt-hry-api\n",
-    "taille": 360
+    "contenu": "http:\n  services:\n    plt-hry-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PLANT_HIERARCHY_API\" }}'\n        passHostHeader: false\n\n  routers:\n    plt-hry-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PLANT_HIERARCHY_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: plt-hry-api\n",
+    "taille": 362
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/prod-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    prod-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_PROD_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    prod-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PROD_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: prod-api\n",
-    "taille": 329
+    "contenu": "http:\n  services:\n    prod-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_PROD_API\" }}'\n        passHostHeader: false\n\n  routers:\n    prod-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_PROD_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: prod-api\n",
+    "taille": 331
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/quality-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    quality-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_QUALITY_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    quality-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_QUALITY_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: quality-api\n",
-    "taille": 344
+    "contenu": "http:\n  services:\n    quality-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_QUALITY_API\" }}'\n        passHostHeader: false\n\n  routers:\n    quality-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_QUALITY_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: quality-api\n",
+    "taille": 346
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/redis-stream-scaler.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    redis-sclr:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_REDIS_STREAM_SCALER\" }}'\n        passHostHeader: false\n\n  routers:\n    redis-sclr:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_REDIS_STREAM_SCALER\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: redis-sclr\n",
-    "taille": 355
+    "contenu": "http:\n  services:\n    redis-sclr:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_REDIS_STREAM_SCALER\" }}'\n        passHostHeader: false\n\n  routers:\n    redis-sclr:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_REDIS_STREAM_SCALER\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: redis-sclr\n",
+    "taille": 359
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/resource-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    resource-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_RESOURCE_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    resource-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_RESOURCE_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: resource-api\n",
-    "taille": 349
+    "contenu": "http:\n  services:\n    resource-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_RESOURCE_API\" }}'\n        passHostHeader: false\n\n  routers:\n    resource-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_RESOURCE_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: resource-api\n",
+    "taille": 351
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/ship-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    ship-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_SHIP_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    ship-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_SHIP_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: ship-api\n",
-    "taille": 329
+    "contenu": "http:\n  services:\n    ship-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_SHIP_API\" }}'\n        passHostHeader: false\n\n  routers:\n    ship-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_SHIP_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: ship-api\n",
+    "taille": 331
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/transfer-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    transfer-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_TRANSFER_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    transfer-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_TRANSFER_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: transfer-api\n",
-    "taille": 349
+    "contenu": "http:\n  services:\n    transfer-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_TRANSFER_API\" }}'\n        passHostHeader: false\n\n  routers:\n    transfer-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_TRANSFER_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: transfer-api\n",
+    "taille": 351
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/ume-api.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    ume-api:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_UME_API\" }}'\n        passHostHeader: false\n  \n  routers:\n    ume-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_API\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: ume-api\n",
-    "taille": 324
+    "contenu": "http:\n  services:\n    ume-api:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_UME_API\" }}'\n        passHostHeader: false\n\n  routers:\n    ume-api:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_API\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: ume-api\n",
+    "taille": 326
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/ume-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    ume-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_UME_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    ume-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: ume-backend\n",
-    "taille": 342
+    "contenu": "http:\n  services:\n    ume-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_UME_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    ume-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: ume-backend\n",
+    "taille": 346
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/ume-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    ume-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_UME_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    ume-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: ume-ui\n",
-    "taille": 317
+    "contenu": "http:\n  services:\n    ume-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_UME_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    ume-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_UME_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: ume-ui\n",
+    "taille": 321
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/url-prefix-stripper.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  middlewares:\n    url-prefix-strip:\n      stripPrefixRegex:\n        regex:\n          - \"/datahub\"\n          - \"/[A-Za-z0-9_-]+-be\"\n          - \"/[A-Za-z0-9_-]+-api\"\n          - \"/[A-Za-z0-9_-]+-mv\"\n          - \"/[A-Za-z0-9_-]+order-di-r\"\n          - \"/[A-Za-z0-9_-]+-di\"\n          - \"/[A-Za-z0-9_-]+-ui\"\n          - \"/[A-Za-z0-9_-]+-mo\"\n          - \"/[A-Za-z0-9_-]+-mp\"\n          - \"/[A-Za-z0-9_-]+-sclr\"",
-    "taille": 411
+    "contenu": "http:\n  middlewares:\n    url-prefix-strip:\n      stripPrefixRegex:\n        regex:\n          - \"/datahub\"\n          - \"/[A-Za-z0-9_-]+-be\"\n          - \"/[A-Za-z0-9_-]+-api\"\n          - \"/[A-Za-z0-9_-]+-mv\"\n          - \"/[A-Za-z0-9_-]+order-di-r\"\n          - \"/[A-Za-z0-9_-]+-di\"\n          - \"/[A-Za-z0-9_-]+-ui\"\n          - \"/[A-Za-z0-9_-]+-mo\"\n          - \"/[A-Za-z0-9_-]+-mp\"\n          - \"/[A-Za-z0-9_-]+-sclr\"\n",
+    "taille": 412
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/wk-integration-backend.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    wk-integration-backend:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_WK_INTEGRATION_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    wk-integration-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_WK_INTEGRATION_BACKEND\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: wk-integration-backend\n",
-    "taille": 397
+    "contenu": "http:\n  services:\n    wk-integration-backend:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_WK_INTEGRATION_BACKEND\" }}'\n        passHostHeader: false\n\n  routers:\n    wk-integration-backend:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_WK_INTEGRATION_BACKEND\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: wk-integration-backend\n",
+    "taille": 401
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/dynamic/wk-integration-ui.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "http:\n  services:\n    wk-integration-ui:\n      loadBalancer:\n        servers:\n        - url: '{{ env \"URL_WK_INTEGRATION_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    wk-integration-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_WK_INTEGRATION_UI\" }}`)'\n      middlewares:\n      - url-prefix-strip\n      service: wk-integration-ui\n",
-    "taille": 372
+    "contenu": "http:\n  services:\n    wk-integration-ui:\n      loadBalancer:\n        servers:\n          - url: '{{ env \"URL_WK_INTEGRATION_UI\" }}'\n        passHostHeader: false\n\n  routers:\n    wk-integration-ui:\n      entryPoints:\n        - \"web\"\n      rule: 'PathPrefix(`/{{ env \"PREFIX_WK_INTEGRATION_UI\" }}`)'\n      middlewares:\n        - url-prefix-strip\n      service: wk-integration-ui\n",
+    "taille": 376
   },
   {
     "microservice": "mesx-infrastructure-app-proxy",
     "chemin": "/traefik.yaml",
     "extension": ".yaml",
     "prioritaire": false,
-    "contenu": "entryPoints:\n  web:\n    address: \":3001\"\n    http:\n      encodeQuerySemicolons: true\n\nproviders:\n  file:\n    directory: /etc/traefik/dynamic\n    \nlog:\n  level: WARN\n  format: common\n  noColor: true",
-    "taille": 197
+    "contenu": "entryPoints:\n  web:\n    address: \":3001\"\n    http:\n      encodeQuerySemicolons: true\n\nproviders:\n  file:\n    directory: /etc/traefik/dynamic\n\nlog:\n  level: WARN\n  format: common\n  noColor: true\n",
+    "taille": 194
   }
 ]
