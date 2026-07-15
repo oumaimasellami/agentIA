@@ -3800,88 +3800,66 @@ class NRTAnalyzer:
     
     def get_statistics(self):
         """Get overall system statistics"""
+        commit_count = len(self.commits_index or {})
+        pull_request_count = len(self.pull_requests_index or {})
+        microservice_count = len(self.known_microservices or set())
+        function_count = len(self.function_code_index or {})
+        workitem_count = len(self.workitems_data or {})
+
         if not self.driver:
-            return {}
-        
+            return {
+                "total_nodes": 0,
+                "total_relations": 0,
+                "commit_count": commit_count,
+                "pull_request_count": pull_request_count,
+                "microservice_count": microservice_count,
+                "function_count": function_count,
+                "workitem_count": workitem_count,
+                "modifies_count": 0,
+                "implements_count": 0,
+                "touches_function_count": 0,
+                "linked_to_commit_count": 0,
+                "linked_to_pull_request_count": 0,
+                "contains_commit_count": 0,
+            }
+
         try:
             with self.driver.session() as session:
-                # Basic counts
-                result = session.run("""
-                MATCH (n) RETURN COUNT(n) as nodes
-                """)
+                result = session.run("MATCH (n) RETURN COUNT(n) as nodes")
                 nodes_count = result.single()['nodes']
-                
-                result = session.run("""
-                MATCH ()-[r]->() RETURN COUNT(r) as relations
-                """)
+
+                result = session.run("MATCH ()-[r]->() RETURN COUNT(r) as relations")
                 relations_count = result.single()['relations']
-                
-                result = session.run("""
-                MATCH (c:Commit) RETURN COUNT(c) as count
-                """)
-                commit_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH (ms:Microservice) RETURN COUNT(ms) as count
-                """)
-                microservice_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH (f:Function) RETURN COUNT(f) as count
-                """)
-                function_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH (wi:WorkItem) RETURN COUNT(wi) as count
-                """)
-                workitem_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH ()-[r:MODIFIES]->() RETURN COUNT(r) as count
-                """)
+
+                result = session.run("MATCH ()-[r:MODIFIES]->() RETURN COUNT(r) as count")
                 modifies_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH ()-[r:IMPLEMENTS]->() RETURN COUNT(r) as count
-                """)
+
+                result = session.run("MATCH ()-[r:IMPLEMENTS]->() RETURN COUNT(r) as count")
                 implements_count = result.single()['count'] or 0
-                
-                result = session.run("""
-                MATCH ()-[r:TOUCHES_FUNCTION]->() RETURN COUNT(r) as count
-                """)
+
+                result = session.run("MATCH ()-[r:TOUCHES_FUNCTION]->() RETURN COUNT(r) as count")
                 touches_function_count = result.single()['count'] or 0
 
-                result = session.run("""
-                MATCH ()-[r:RELATES_TO_COMMIT]->() RETURN COUNT(r) as count
-                """)
-                relates_to_commit_count = result.single()['count'] or 0
-
-                result = session.run("""
-                MATCH ()-[r:LINKED_TO_COMMIT]->() RETURN COUNT(r) as count
-                """)
+                result = session.run("MATCH ()-[r:LINKED_TO_COMMIT]->() RETURN COUNT(r) as count")
                 linked_to_commit_count = result.single()['count'] or 0
 
-                result = session.run("""
-                MATCH ()-[r:LINKED_TO_PULL_REQUEST]->() RETURN COUNT(r) as count
-                """)
+                result = session.run("MATCH ()-[r:LINKED_TO_PULL_REQUEST]->() RETURN COUNT(r) as count")
                 linked_to_pull_request_count = result.single()['count'] or 0
 
-                result = session.run("""
-                MATCH ()-[r:CONTAINS_COMMIT]->() RETURN COUNT(r) as count
-                """)
+                result = session.run("MATCH ()-[r:CONTAINS_COMMIT]->() RETURN COUNT(r) as count")
                 contains_commit_count = result.single()['count'] or 0
-                
+
                 return {
                     "total_nodes": nodes_count,
                     "total_relations": relations_count,
                     "commit_count": commit_count,
+                    "pull_request_count": pull_request_count,
                     "microservice_count": microservice_count,
                     "function_count": function_count,
                     "workitem_count": workitem_count,
                     "modifies_count": modifies_count,
                     "implements_count": implements_count,
                     "touches_function_count": touches_function_count,
-                    "relates_to_commit_count": relates_to_commit_count,
                     "linked_to_commit_count": linked_to_commit_count,
                     "linked_to_pull_request_count": linked_to_pull_request_count,
                     "contains_commit_count": contains_commit_count
@@ -3889,6 +3867,167 @@ class NRTAnalyzer:
         except Exception as e:
             print(f"Error getting statistics: {e}")
             return {"error": str(e)}
+
+    def get_dashboard_drilldown(self, kind, limit=80):
+        """Return dashboard detail data for interactive cards."""
+        kind = str(kind or "").strip().lower()
+        try:
+            limit = max(10, min(int(limit), 250))
+        except Exception:
+            limit = 80
+
+        def _fmt_date(value):
+            dt = self._parse_iso_datetime(value)
+            if not dt:
+                return str(value or "")
+            return dt.strftime("%Y-%m-%d %H:%M")
+
+        if kind == "commits":
+            commits = sorted(
+                self.commits_index.values(),
+                key=lambda row: self._parse_iso_datetime(row.get("date")) or datetime.min.replace(tzinfo=timezone.utc),
+                reverse=True,
+            )[:limit]
+            return {
+                "kind": "commits",
+                "title": "Commit Activity",
+                "subtitle": "Latest extracted commits from Azure DevOps.",
+                "columns": ["Commit", "Microservice", "Date", "Message"],
+                "rows": [
+                    [
+                        str(row.get("commit_id", ""))[:8],
+                        row.get("microservice", ""),
+                        _fmt_date(row.get("date")),
+                        row.get("message", ""),
+                    ]
+                    for row in commits
+                ],
+            }
+
+        if kind == "pull_requests":
+            prs = sorted(
+                self.pull_requests_index.values(),
+                key=lambda row: self._parse_iso_datetime(row.get("date_creation")) or datetime.min.replace(tzinfo=timezone.utc),
+                reverse=True,
+            )[:limit]
+            return {
+                "kind": "pull_requests",
+                "title": "Pull Request Activity",
+                "subtitle": "Latest extracted pull requests from Azure DevOps.",
+                "columns": ["PR", "Microservice", "Status", "Created", "Title"],
+                "rows": [
+                    [
+                        str(row.get("pr_id", "")),
+                        row.get("microservice", ""),
+                        row.get("statut", ""),
+                        _fmt_date(row.get("date_creation")),
+                        row.get("titre", ""),
+                    ]
+                    for row in prs
+                ],
+            }
+
+        if kind == "microservices":
+            repos = sorted(self.known_microservices or set())
+            return {
+                "kind": "microservices",
+                "title": "Microservice Inventory",
+                "subtitle": "Repositories currently indexed as NRT microservices.",
+                "columns": ["Microservice"],
+                "rows": [[name] for name in repos[:limit]],
+            }
+
+        if kind == "functions":
+            function_ids = sorted((self.function_code_index or {}).keys())[:limit]
+            return {
+                "kind": "functions",
+                "title": "Function Inventory",
+                "subtitle": "Parsed functions available for strict traceability.",
+                "columns": ["Function"],
+                "rows": [[fn] for fn in function_ids],
+            }
+
+        if kind == "workitems":
+            workitems = sorted(
+                self.workitems_data.values(),
+                key=lambda row: self._parse_iso_datetime(row.get("date_creation")) or datetime.min.replace(tzinfo=timezone.utc),
+                reverse=True,
+            )[:limit]
+            return {
+                "kind": "workitems",
+                "title": "WorkItem Inventory",
+                "subtitle": "Latest extracted Azure DevOps workitems.",
+                "columns": ["ID", "Type", "Status", "Title"],
+                "rows": [
+                    [
+                        str(row.get("id", "")),
+                        row.get("type", ""),
+                        row.get("statut", ""),
+                        row.get("titre", ""),
+                    ]
+                    for row in workitems
+                ],
+            }
+
+        if not self.driver:
+            return {
+                "kind": kind,
+                "title": "Data unavailable",
+                "subtitle": "Neo4j is not connected for this dashboard drilldown.",
+                "columns": [],
+                "rows": [],
+            }
+
+        try:
+            with self.driver.session() as session:
+                if kind == "nodes":
+                    result = session.run("""
+                    MATCH (n)
+                    UNWIND labels(n) AS label
+                    RETURN label, count(*) AS count
+                    ORDER BY count DESC, label ASC
+                    LIMIT $limit
+                    """, limit=limit)
+                    rows = [[record["label"], record["count"]] for record in result]
+                    return {
+                        "kind": "nodes",
+                        "title": "Node Distribution",
+                        "subtitle": "Current node labels stored in the graph.",
+                        "columns": ["Node label", "Count"],
+                        "rows": rows,
+                    }
+
+                if kind == "relations":
+                    result = session.run("""
+                    MATCH ()-[r]->()
+                    RETURN type(r) AS relation_type, count(*) AS count
+                    ORDER BY count DESC, relation_type ASC
+                    LIMIT $limit
+                    """, limit=limit)
+                    rows = [[record["relation_type"], record["count"]] for record in result]
+                    return {
+                        "kind": "relations",
+                        "title": "Relationship Distribution",
+                        "subtitle": "Current relation types stored in the graph.",
+                        "columns": ["Relation type", "Count"],
+                        "rows": rows,
+                    }
+        except Exception as e:
+            return {
+                "kind": kind,
+                "title": "Drilldown error",
+                "subtitle": str(e),
+                "columns": [],
+                "rows": [],
+            }
+
+        return {
+            "kind": kind,
+            "title": "Unsupported card",
+            "subtitle": f"No drilldown available for '{kind}'.",
+            "columns": [],
+            "rows": [],
+        }
     
     def get_commit_impact(self, commit_id, workitem_id=None):
         """Get impact of a specific commit - IDENTICAL to Neo4j queries"""
@@ -4988,6 +5127,10 @@ class NRTRequestHandler(http.server.SimpleHTTPRequestHandler):
         # API endpoints
         if path == '/api/statistics':
             self.send_json_response(analyzer.get_statistics())
+        elif path == '/api/dashboard-drilldown':
+            kind = query_params.get('kind', [''])[0]
+            limit = query_params.get('limit', ['80'])[0]
+            self.send_json_response(analyzer.get_dashboard_drilldown(kind, limit))
         elif path == '/api/me':
             self.send_json_response({
                 "authenticated": True,

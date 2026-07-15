@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -140,11 +140,63 @@
             margin-bottom: 16px;
         }
 
+        .filter-panel {
+            position: relative;
+            overflow: visible;
+            padding: 20px;
+        }
+
         .filter-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(170px, 1fr));
-            gap: 12px;
-            margin-bottom: 14px;
+            grid-template-columns: repeat(4, minmax(240px, 1fr));
+            gap: 16px;
+            align-items: end;
+            margin-bottom: 18px;
+        }
+
+        .filter-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+            padding: 12px 14px 14px;
+            border-radius: 14px;
+            border: 1px solid #ebf2ff;
+            background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+            transform-origin: center top;
+        }
+
+        .filter-field:hover {
+            transform: translateY(-2px);
+            border-color: #d5e4ff;
+            box-shadow: 0 10px 24px rgba(12, 53, 137, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .filter-field.is-active {
+            border-color: #93b7ff;
+            background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+            box-shadow: 0 14px 30px rgba(0, 51, 204, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px);
+        }
+
+        .filter-field.is-flash {
+            animation: filterFlash 0.65s ease;
+        }
+
+        @keyframes filterFlash {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 51, 204, 0.18);
+                border-color: #93b7ff;
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(0, 51, 204, 0.08);
+                border-color: #6d9cff;
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 51, 204, 0);
+            }
         }
 
         .form-label {
@@ -152,7 +204,7 @@
             font-size: 12px;
             font-weight: 700;
             color: #0b2a7a;
-            margin-bottom: 6px;
+            margin-bottom: 0;
             text-transform: uppercase;
             letter-spacing: 0.4px;
         }
@@ -164,11 +216,24 @@
             border-radius: 8px;
             font-size: 13px;
             background: #fff;
+            min-height: 46px;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #8db5ff;
+            box-shadow: 0 0 0 4px rgba(0, 51, 204, 0.08);
         }
 
         .type-dropdown {
             position: relative;
             width: 100%;
+            min-width: 0;
+        }
+
+        .type-dropdown.open {
+            z-index: 120;
         }
 
         .type-dropdown-btn {
@@ -184,34 +249,109 @@
             background: #fff;
             cursor: pointer;
             color: #1a1a1a;
+            min-height: 46px;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        .type-dropdown-btn span {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
+        }
+
+        .type-dropdown-btn:hover {
+            border-color: #bfd5ff;
+            background: #fcfdff;
+            transform: translateY(-1px);
+        }
+
+        .type-dropdown.open .type-dropdown-btn {
+            border-color: #8db5ff;
+            box-shadow: 0 0 0 4px rgba(0, 51, 204, 0.08);
+            background: #fcfdff;
+        }
+
+        .type-dropdown-btn i {
+            transition: transform 0.22s ease, color 0.22s ease;
+        }
+
+        .type-dropdown.open .type-dropdown-btn i {
+            transform: rotate(180deg);
+            color: var(--forvia-blue);
         }
 
         .type-dropdown-menu {
             position: absolute;
-            top: calc(100% + 6px);
+            top: calc(100% + 8px);
             left: 0;
-            right: 0;
+            width: 100%;
+            min-width: 100%;
+            max-width: 100%;
             background: #fff;
-            border: 1px solid #dce9ff;
-            border-radius: 8px;
-            box-shadow: 0 8px 18px rgba(17, 57, 128, 0.15);
+            border: 1px solid #d6e5ff;
+            border-radius: 14px;
+            box-shadow: 0 16px 34px rgba(17, 57, 128, 0.18);
             z-index: 50;
-            padding: 8px 10px;
-            display: none;
+            padding: 10px;
+            display: block;
+            max-height: 150px;
+            overflow: auto;
+            overscroll-behavior: contain;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(8px) scale(0.98);
+            transform-origin: top center;
+            transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+        }
+
+        .type-dropdown-menu.dropdown-tall {
+            max-height: 160px;
         }
 
         .type-dropdown.open .type-dropdown-menu {
-            display: block;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0) scale(1);
         }
 
         .type-option {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin: 6px 0;
+            margin: 2px 0;
+            padding: 9px 10px;
+            border-radius: 10px;
             font-size: 13px;
             cursor: pointer;
             user-select: none;
+            border: 1px solid transparent;
+            transition: background 0.18s ease, border-color 0.18s ease;
+        }
+
+        .type-option:hover {
+            background: #f3f8ff;
+            border-color: #dce9ff;
+            transform: translateX(2px);
+        }
+
+        .type-option span {
+            display: block;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.35;
+        }
+
+        .type-option input {
+            accent-color: var(--forvia-blue);
+            flex: 0 0 auto;
         }
 
         .control-group {
@@ -219,6 +359,25 @@
             gap: 10px;
             flex-wrap: wrap;
             align-items: center;
+        }
+
+        .filter-actions {
+            margin-top: 2px;
+            padding-top: 16px;
+            border-top: 1px solid #edf3ff;
+            row-gap: 12px;
+        }
+
+        .post-find-tools {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .post-find-tools.show {
+            display: inline-flex;
+            animation: fadeSlideIn 0.28s ease both;
         }
 
         .btn {
@@ -233,7 +392,9 @@
             font-weight: 600;
             font-size: 13px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn:hover {
@@ -246,6 +407,35 @@
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(0.985);
+        }
+
+        .btn::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.2) 40%, transparent 80%);
+            transform: translateX(-120%);
+            transition: transform 0.45s ease;
+            pointer-events: none;
+        }
+
+        .btn:hover::after {
+            transform: translateX(120%);
+        }
+
+        .btn.is-busy {
+            filter: saturate(1.04);
+        }
+
+        #generateBtn {
+            padding: 8px 14px;
+            font-size: 12px;
+            border-radius: 7px;
+            min-height: 42px;
         }
 
         .btn-ghost {
@@ -283,6 +473,13 @@
             padding: 6px 10px;
             font-size: 12px;
             font-weight: 700;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .hero-pill:hover {
+            transform: translateY(-1px);
+            border-color: #c8dcff;
+            box-shadow: 0 8px 16px rgba(17, 55, 118, 0.08);
         }
 
         .summary-box {
@@ -293,6 +490,7 @@
             margin-bottom: 12px;
             font-size: 13px;
             color: #23324d;
+            animation: fadeSlideIn 0.32s ease both;
         }
 
         .table-wrap {
@@ -441,6 +639,27 @@
             color: #29539d;
             font-size: 12px;
             font-weight: 700;
+        }
+
+        .ms-summary-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 11px;
+            border-radius: 999px;
+            border: 1px solid #b9d0ff;
+            background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
+            color: #0f3a92;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.16s ease;
+        }
+
+        .ms-summary-btn:hover {
+            background: #edf4ff;
+            border-color: #95b9ff;
+            box-shadow: 0 8px 18px rgba(0, 51, 204, 0.14);
         }
 
         .ms-head::-webkit-details-marker {
@@ -693,6 +912,39 @@
             padding: 8px 12px;
             font-size: 12px;
             font-weight: 700;
+            margin-left: auto;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+        }
+
+        .selected-badge.pulse {
+            animation: badgePulse 0.52s ease;
+        }
+
+        @keyframes badgePulse {
+            0% { transform: scale(1); }
+            35% {
+                transform: scale(1.05);
+                box-shadow: 0 10px 20px rgba(0, 51, 204, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+                border-color: #b6d1ff;
+                background: #eef5ff;
+            }
+            100% { transform: scale(1); }
+        }
+
+        .zone-animate > * {
+            animation: fadeSlideIn 0.34s ease both;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .report-tools {
@@ -810,14 +1062,24 @@
             background: #fff;
             cursor: pointer;
             color: #1a1a1a;
-            min-height: 40px;
+            min-height: 46px;
+        }
+
+        .report-dropdown-btn span {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: left;
         }
 
         .report-dropdown-menu {
             position: absolute;
             top: calc(100% + 6px);
             left: 0;
-            right: 0;
+            min-width: max(100%, 420px);
+            max-width: min(680px, calc(100vw - 48px));
             background: #fff;
             border: 1px solid #dce9ff;
             border-radius: 8px;
@@ -835,13 +1097,18 @@
 
         .report-option {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 8px;
             margin: 6px 0;
             font-size: 13px;
             cursor: pointer;
             user-select: none;
             line-height: 1.25;
+        }
+
+        .report-option span {
+            white-space: normal;
+            word-break: break-word;
         }
 
         .report-option strong {
@@ -875,6 +1142,218 @@
             color: #243d6b;
             margin-bottom: 4px;
             line-height: 1.4;
+        }
+
+        .tester-summary-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 26, 74, 0.48);
+            backdrop-filter: blur(5px);
+            z-index: 3000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 22px;
+        }
+
+        .tester-summary-overlay.show {
+            display: flex;
+        }
+
+        .tester-summary-modal {
+            width: min(920px, 100%);
+            max-height: 88vh;
+            overflow: auto;
+            border-radius: 20px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+            border: 1px solid #d7e5ff;
+            box-shadow: 0 24px 60px rgba(0, 34, 112, 0.24);
+        }
+
+        .tester-summary-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 20px 22px 16px;
+            border-bottom: 1px solid #e0ebff;
+            background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+        }
+
+        .tester-summary-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: #082b78;
+            margin-bottom: 6px;
+        }
+
+        .tester-summary-subtitle {
+            font-size: 13px;
+            color: #4a6698;
+            line-height: 1.45;
+        }
+
+        .tester-summary-close {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #d4e3ff;
+            border-radius: 50%;
+            background: #fff;
+            color: #234a90;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 800;
+            flex: 0 0 auto;
+        }
+
+        .tester-summary-content {
+            padding: 20px 22px 22px;
+        }
+
+        .tester-summary-kpis {
+            display: grid;
+            grid-template-columns: minmax(180px, 0.8fr) minmax(300px, 1.2fr);
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .tester-summary-kpi {
+            border: 1px solid #dce9ff;
+            border-radius: 14px;
+            background: #fff;
+            padding: 14px 16px;
+        }
+
+        .tester-summary-kpi .k {
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: #5270a7;
+            margin-bottom: 8px;
+        }
+
+        .tester-summary-kpi .v {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0b2a7a;
+        }
+
+        .tester-summary-kpi-wide .v {
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.55;
+            color: #20385f;
+        }
+
+        .tester-summary-grid {
+            display: grid;
+            grid-template-columns: 1.08fr 0.92fr;
+            gap: 14px;
+        }
+
+        .tester-summary-card {
+            border: 1px solid #dce9ff;
+            border-radius: 16px;
+            background: #fff;
+            padding: 16px;
+            box-shadow: 0 4px 14px rgba(8, 42, 122, 0.05);
+        }
+
+        .tester-summary-card h4 {
+            font-size: 14px;
+            font-weight: 800;
+            color: #0f3a92;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tester-summary-card p,
+        .tester-summary-card li {
+            font-size: 13px;
+            line-height: 1.55;
+            color: #20385f;
+        }
+
+        .tester-summary-card ul {
+            margin-left: 18px;
+        }
+
+        .tester-summary-card li + li {
+            margin-top: 6px;
+        }
+
+        .tester-summary-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tester-summary-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: #f3f8ff;
+            border: 1px solid #dce9ff;
+            color: #1e4388;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .tester-summary-chip.empty {
+            background: #fbfcff;
+            color: #6680aa;
+        }
+
+        .tester-summary-workitems {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tester-summary-workitem {
+            display: block;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #f8fbff;
+            border: 1px solid #e0ebff;
+            color: #17396e;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .tester-summary-workitem strong {
+            color: #0f3a92;
+        }
+
+        .tester-summary-function-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .tester-summary-function-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: #f8fbff;
+            border: 1px solid #e0ebff;
+            font-size: 12px;
+            color: #17396e;
+            font-weight: 700;
+        }
+
+        .tester-summary-note {
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: #5a76a7;
+            font-weight: 700;
         }
 
         .compact-mode .group-grid {
@@ -935,8 +1414,15 @@
             .report-tools { gap: 10px; }
             .filter-pack { flex: 1 1 100%; max-width: 100%; }
             .compact-pack { width: 100%; justify-content: space-between; }
+            .filter-field { padding: 12px; }
+            .filter-actions { padding-top: 14px; }
+            .selected-badge { margin-left: 0; }
             .ms-head { align-items: flex-start; }
             .ms-head-side { justify-content: flex-start; }
+            .tester-summary-kpis { grid-template-columns: 1fr; }
+            .tester-summary-grid { grid-template-columns: 1fr; }
+            .tester-summary-head { padding: 16px; }
+            .tester-summary-content { padding: 16px; }
         }
     </style>
 </head>
@@ -951,7 +1437,7 @@
                 </div>
             </div>
             <ul class="nav-links">
-                <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
                 <li><a href="/commit-analysis"><i class="fas fa-code-branch"></i> Analysis</a></li>
                 <li><a href="/workitem-scope"><i class="fas fa-tasks"></i> Scope</a></li>
                     <li><a href="/graph-visualization"><i class="fas fa-project-diagram"></i> Detailed Scope</a></li>
@@ -966,7 +1452,7 @@
             
         </div>
         <div class="subtitle">
-            Vue optimisee pour testeurs: scope direct only, regroupe par microservice et dedoublonne les descriptions metier equivalentes.
+            Tester-optimized view: direct scope only, grouped by microservice, with duplicate business descriptions consolidated.
         </div>
         <div class="hero-strip">
             <span class="hero-pill"><i class="fas fa-bolt"></i> Live Scope Consolidation</span>
@@ -975,20 +1461,20 @@
             <span class="hero-pill"><i class="fas fa-layer-group"></i> Grouped By Business Meaning</span>
         </div>
 
-        <div class="panel">
+        <div class="panel filter-panel">
             <div class="filter-grid">
-                <div>
+                <div class="filter-field">
                     <label class="form-label"><i class="fas fa-layer-group"></i> Iteration</label>
                     <select id="iterationSelect" class="form-input"></select>
                 </div>
-                <div>
+                <div class="filter-field">
                     <label class="form-label"><i class="fas fa-flag-checkered"></i> Sprint</label>
                     <div id="sprintDropdown" class="type-dropdown">
                         <button id="sprintDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleSprintDropdown()">
                             <span id="sprintDropdownLabel">All Sprints</span>
                             <i class="fas fa-chevron-down"></i>
                         </button>
-                        <div id="sprintDropdownMenu" class="type-dropdown-menu">
+                        <div id="sprintDropdownMenu" class="type-dropdown-menu dropdown-tall">
                             <label class="type-option">
                                 <input id="sprintAll" type="checkbox" checked onchange="onSprintSelectionChange('__ALL__')">
                                 <span>All Sprints</span>
@@ -997,7 +1483,7 @@
                         </div>
                     </div>
                 </div>
-                <div>
+                <div class="filter-field">
                     <label class="form-label"><i class="fas fa-bug"></i> WorkItem Type</label>
                     <div id="typeDropdown" class="type-dropdown">
                         <button id="typeDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleTypeDropdown()">
@@ -1016,24 +1502,47 @@
                         </div>
                     </div>
                 </div>
-                <div>
+                <div class="filter-field">
                     <label class="form-label"><i class="fas fa-signal"></i> Status</label>
-                    <select id="statusSelect" class="form-input">
-                        <option value="">All</option>
-                    </select>
+                    <div id="statusDropdown" class="type-dropdown">
+                        <button id="statusDropdownBtn" type="button" class="type-dropdown-btn" onclick="toggleStatusDropdown()">
+                            <span id="statusDropdownLabel">All Statuses</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="statusDropdownMenu" class="type-dropdown-menu dropdown-tall">
+                            <div id="statusOptions"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="control-group">
+            <div class="control-group filter-actions">
                 <button id="findBtn" class="btn" onclick="loadWorkitemsByIteration()"><i class="fas fa-filter"></i> Find WorkItems</button>
-                <button id="generateBtn" class="btn" onclick="generateTesterReport()"><i class="fas fa-layer-group"></i> Generate Scope Report</button>
-                <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(true)"><i class="fas fa-check-square"></i> Select All</button>
-                <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(false)"><i class="fas fa-square"></i> Clear Selection</button>
-                <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(true)"><i class="fas fa-angle-down"></i> Expand All</button>
-                <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(false)"><i class="fas fa-angle-up"></i> Collapse All</button>
-                <span id="selectionMeta" class="selected-badge">Selected: 0</span>
+                <button id="generateBtn" class="btn" onclick="generateTesterReport()"><i class="fas fa-layer-group"></i> Generate Scope</button>
+                <div id="postFindTools" class="post-find-tools">
+                    <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(true)"><i class="fas fa-check-square"></i> Select All</button>
+                    <button class="btn btn-ghost" type="button" onclick="toggleSelectAllRows(false)"><i class="fas fa-square"></i> Clear Selection</button>
+                    <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(true)"><i class="fas fa-angle-down"></i> Expand All</button>
+                    <button class="btn btn-ghost" type="button" onclick="toggleAllMsCards(false)"><i class="fas fa-angle-up"></i> Collapse All</button>
+                    <span id="selectionMeta" class="selected-badge">Selected: 0</span>
+                </div>
             </div>
             <div id="workitemsZone" style="margin-top:12px;"></div>
             <div id="reportZone" style="margin-top:12px;"></div>
+        </div>
+    </div>
+
+    <div id="testerSummaryOverlay" class="tester-summary-overlay" onclick="closeTesterSummary(event)">
+        <div class="tester-summary-modal" role="dialog" aria-modal="true" aria-labelledby="testerSummaryTitle" onclick="event.stopPropagation()">
+            <div class="tester-summary-head">
+                <div>
+                    <div id="testerSummaryTitle" class="tester-summary-title">Tester Summary</div>
+                    <div id="testerSummarySubtitle" class="tester-summary-subtitle">Compact functional recap for the selected microservice.</div>
+                </div>
+                <button type="button" class="tester-summary-close" onclick="closeTesterSummary()" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="testerSummaryContent" class="tester-summary-content"></div>
         </div>
     </div>
 
@@ -1060,6 +1569,50 @@
             return p;
         }
 
+        function getFilterFieldByChildId(childId) {
+            const el = document.getElementById(childId);
+            return el ? el.closest(".filter-field") : null;
+        }
+
+        function flashFilterFieldByChildId(childId) {
+            const field = getFilterFieldByChildId(childId);
+            if (!field) return;
+            field.classList.remove("is-flash");
+            void field.offsetWidth;
+            field.classList.add("is-flash");
+        }
+
+        function setFilterFieldActive(childId, active) {
+            const field = getFilterFieldByChildId(childId);
+            if (!field) return;
+            field.classList.toggle("is-active", !!active);
+        }
+
+        function pulseElement(targetOrId, className = "pulse", duration = 520) {
+            const el = typeof targetOrId === "string"
+                ? document.getElementById(targetOrId)
+                : targetOrId;
+            if (!el) return;
+            el.classList.remove(className);
+            void el.offsetWidth;
+            el.classList.add(className);
+            window.setTimeout(() => el.classList.remove(className), duration);
+        }
+
+        function animateZone(zoneId) {
+            const zone = document.getElementById(zoneId);
+            if (!zone) return;
+            zone.classList.remove("zone-animate");
+            void zone.offsetWidth;
+            zone.classList.add("zone-animate");
+        }
+
+        function togglePostFindTools(show) {
+            const tools = document.getElementById("postFindTools");
+            if (!tools) return;
+            tools.classList.toggle("show", !!show);
+        }
+
         function updateTypeDropdownLabel() {
             const bug = document.getElementById("typeBug")?.checked;
             const us = document.getElementById("typeUserStory")?.checked;
@@ -1069,18 +1622,62 @@
             else if (bug) label.textContent = "Bug";
             else if (us) label.textContent = "User Story";
             else label.textContent = "Select ticket type";
+            flashFilterFieldByChildId("typeDropdown");
         }
 
         function toggleTypeDropdown() {
             const wrapper = document.getElementById("typeDropdown");
             if (!wrapper) return;
-            wrapper.classList.toggle("open");
+            const nextState = !wrapper.classList.contains("open");
+            wrapper.classList.toggle("open", nextState);
+            setFilterFieldActive("typeDropdown", nextState);
         }
 
         function closeTypeDropdown() {
             const wrapper = document.getElementById("typeDropdown");
             if (!wrapper) return;
             wrapper.classList.remove("open");
+            setFilterFieldActive("typeDropdown", false);
+        }
+
+        let currentStatusValue = "";
+
+        function updateStatusDropdownLabel() {
+            const label = document.getElementById("statusDropdownLabel");
+            if (!label) return;
+            const value = currentStatusValue || "All Statuses";
+            label.textContent = value;
+            label.title = value;
+            flashFilterFieldByChildId("statusDropdown");
+        }
+
+        function toggleStatusDropdown() {
+            const wrapper = document.getElementById("statusDropdown");
+            if (!wrapper) return;
+            const nextState = !wrapper.classList.contains("open");
+            wrapper.classList.toggle("open", nextState);
+            setFilterFieldActive("statusDropdown", nextState);
+        }
+
+        function closeStatusDropdown() {
+            const wrapper = document.getElementById("statusDropdown");
+            if (!wrapper) return;
+            wrapper.classList.remove("open");
+            setFilterFieldActive("statusDropdown", false);
+        }
+
+        function getSelectedStatusValue() {
+            return currentStatusValue || "";
+        }
+
+        function setSelectedStatusValue(value) {
+            currentStatusValue = value || "";
+            const radios = document.querySelectorAll("#statusOptions input[type='radio']");
+            radios.forEach(radio => {
+                radio.checked = radio.value === currentStatusValue;
+            });
+            updateStatusDropdownLabel();
+            pulseElement("selectionMeta");
         }
 
         function getSelectedWorkitemTypes() {
@@ -1094,6 +1691,7 @@
 
         function onTypeSelectionChanged() {
             updateTypeDropdownLabel();
+            pulseElement("selectionMeta");
         }
 
         function updateSprintDropdownLabel() {
@@ -1102,28 +1700,38 @@
             if (!label) return;
             if (allBox?.checked) {
                 label.textContent = "All Sprints";
+                label.title = "All Sprints";
+                flashFilterFieldByChildId("sprintDropdown");
                 return;
             }
             const checked = Array.from(document.querySelectorAll(".sprint-option-checkbox:checked"));
             if (checked.length === 0) {
                 label.textContent = "Select sprint(s)";
+                label.title = "Select sprint(s)";
             } else if (checked.length === 1) {
-                label.textContent = checked[0].dataset.label || checked[0].value;
+                const sprintLabel = checked[0].dataset.label || checked[0].value;
+                label.textContent = sprintLabel;
+                label.title = sprintLabel;
             } else {
                 label.textContent = `${checked.length} sprints selected`;
+                label.title = checked.map(item => item.dataset.label || item.value).join("\n");
             }
+            flashFilterFieldByChildId("sprintDropdown");
         }
 
         function toggleSprintDropdown() {
             const wrapper = document.getElementById("sprintDropdown");
             if (!wrapper) return;
-            wrapper.classList.toggle("open");
+            const nextState = !wrapper.classList.contains("open");
+            wrapper.classList.toggle("open", nextState);
+            setFilterFieldActive("sprintDropdown", nextState);
         }
 
         function closeSprintDropdown() {
             const wrapper = document.getElementById("sprintDropdown");
             if (!wrapper) return;
             wrapper.classList.remove("open");
+            setFilterFieldActive("sprintDropdown", false);
         }
 
         function onSprintSelectionChange(changedValue) {
@@ -1140,6 +1748,7 @@
                 }
             }
             updateSprintDropdownLabel();
+            pulseElement("selectionMeta");
         }
 
         function getSelectedSprints() {
@@ -1173,7 +1782,7 @@
                         value="${escapeHtml(sprintPath)}"
                         data-label="${escapeHtml(labelText)}"
                     >
-                    <span>${escapeHtml(labelText)}</span>
+                    <span title="${escapeHtml(labelText)}">${escapeHtml(labelText)}</span>
                 `;
                 const input = row.querySelector("input");
                 if (input) {
@@ -1204,9 +1813,11 @@
             if (busy) {
                 if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
                 btn.disabled = true;
+                btn.classList.add("is-busy");
                 btn.innerHTML = `<i class="fas fa-circle-notch spin"></i> ${escapeHtml(busyLabel || "Loading...")}`;
             } else {
                 btn.disabled = false;
+                btn.classList.remove("is-busy");
                 if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
             }
         }
@@ -1215,7 +1826,10 @@
             const all = Array.from(document.querySelectorAll(".wi-check"));
             const checked = all.filter(c => c.checked).length;
             const badge = document.getElementById("selectionMeta");
-            if (badge) badge.textContent = `Selected: ${checked}`;
+            if (badge) {
+                badge.textContent = `Selected: ${checked}`;
+                pulseElement(badge);
+            }
         }
 
         function toggleSelectAllRows(checked) {
@@ -1290,26 +1904,32 @@
         }
 
         async function loadStatusCatalog() {
-            const statusSel = document.getElementById("statusSelect");
-            if (!statusSel) return;
-            const currentValue = statusSel.value || "";
-            statusSel.innerHTML = '<option value="">All</option>';
+            const statusOptions = document.getElementById("statusOptions");
+            if (!statusOptions) return;
+            const previousValue = currentStatusValue || "";
+            statusOptions.innerHTML = `
+                <label class="type-option">
+                    <input type="radio" name="report-status" value="" checked onchange="setSelectedStatusValue(''); closeStatusDropdown();">
+                    <span title="All Statuses">All Statuses</span>
+                </label>
+            `;
             try {
                 const res = await fetch(`/api/workitem-statuses`);
                 const data = await res.json();
                 const statuses = data.statuses || [];
                 statuses.forEach(item => {
-                    const opt = document.createElement("option");
-                    opt.value = item.status;
-                    opt.textContent = item.status;
-                    statusSel.appendChild(opt);
+                    const option = document.createElement("label");
+                    option.className = "type-option";
+                    option.innerHTML = `
+                        <input type="radio" name="report-status" value="${escapeHtml(item.status || "")}" onchange="setSelectedStatusValue(this.value); closeStatusDropdown();">
+                        <span title="${escapeHtml(item.status || "")}">${escapeHtml(item.status || "")}</span>
+                    `;
+                    statusOptions.appendChild(option);
                 });
                 const values = statuses.map(item => item.status);
-                if (values.includes(currentValue)) {
-                    statusSel.value = currentValue;
-                }
+                setSelectedStatusValue(values.includes(previousValue) ? previousValue : "");
             } catch (_) {
-                // Keep default option only.
+                setSelectedStatusValue("");
             }
         }
 
@@ -1329,13 +1949,15 @@
             const iterationPath = document.getElementById("iterationSelect").value;
             const selectedSprints = getSelectedSprints();
             const sprintPath = selectedSprints.join(",");
-            const status = document.getElementById("statusSelect").value || "";
+            const status = getSelectedStatusValue();
             const selectedTypes = getSelectedWorkitemTypes();
             const target = document.getElementById("workitemsZone");
             document.getElementById("reportZone").innerHTML = "";
+            togglePostFindTools(false);
 
             if (selectedTypes.length === 0) {
                 target.innerHTML = `<div class="summary-box">Error: select at least one ticket type (Bug and/or User Story).</div>`;
+                animateZone("workitemsZone");
                 return;
             }
 
@@ -1347,18 +1969,23 @@
             });
 
             target.innerHTML = `<div class="summary-box">Loading WorkItems...</div>`;
+            animateZone("workitemsZone");
             setButtonBusy("findBtn", true, "Finding...");
             try {
                 const res = await fetch(`/api/workitems-by-iteration?${qs.toString()}`);
                 const data = await res.json();
                 if (!res.ok || data.error) {
                     target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(data.error || "Unable to load workitems")}</div>`;
+                    animateZone("workitemsZone");
+                    togglePostFindTools(false);
                     return;
                 }
                 renderWorkitemsTable(data);
                 showToast(`${data.count || 0} workitems loaded`);
             } catch (err) {
                 target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+                animateZone("workitemsZone");
+                togglePostFindTools(false);
             } finally {
                 setButtonBusy("findBtn", false);
             }
@@ -1410,6 +2037,8 @@
                 </div>
             `;
             updateSelectionMeta();
+            togglePostFindTools((data.results || []).length > 0);
+            animateZone("workitemsZone");
         }
 
         function normalizeText(v) {
@@ -1449,7 +2078,7 @@
 
         function pickBestBusinessDescription(descriptions) {
             const candidates = uniq((descriptions || []).map(normalizeBusinessDescription).filter(Boolean));
-            if (!candidates.length) return "Description metier non disponible.";
+            if (!candidates.length) return "Business description not available.";
             candidates.sort((a, b) => {
                 const scoreDiff = scoreBusinessDescription(b) - scoreBusinessDescription(a);
                 if (scoreDiff !== 0) return scoreDiff;
@@ -1617,55 +2246,55 @@
         function buildScenarioFunctionalDescription(context, tags, functionCount) {
             const clauses = [];
             const isPlural = (functionCount || 0) > 1;
-            if (tags.includes("user_interaction")) clauses.push(isPlural ? "gerent une interaction utilisateur" : "gere une interaction utilisateur");
-            if (tags.includes("display")) clauses.push(isPlural ? "permettent d'afficher, d'ouvrir ou de previsualiser l'element cible" : "permet d'afficher, d'ouvrir ou de previsualiser l'element cible");
-            if (tags.includes("delete")) clauses.push(isPlural ? "permettent de supprimer les elements concernes" : "permet de supprimer les elements concernes");
-            if (tags.includes("selection")) clauses.push(isPlural ? "gerent la selection des elements concernes" : "gere la selection des elements concernes");
-            if (tags.includes("create")) clauses.push(isPlural ? "permettent de creer ou d'enregistrer des donnees" : "permet de creer ou d'enregistrer des donnees");
-            if (tags.includes("update")) clauses.push(isPlural ? "mettent a jour les donnees ou l'etat de l'interface" : "met a jour les donnees ou l'etat de l'interface");
-            if (tags.includes("filter_search")) clauses.push(isPlural ? "gerent les criteres de filtre ou de recherche" : "gere les criteres de filtre ou de recherche");
-            if (tags.includes("file_media")) clauses.push(isPlural ? "manipulent des donnees media ou fichier" : "manipule des donnees media ou fichier");
-            if (tags.includes("refresh")) clauses.push(isPlural ? "rafraichissent les donnees ou la liste apres action" : "rafraichit les donnees ou la liste apres action");
-            if (tags.includes("modal")) clauses.push(isPlural ? "pilotent l'ouverture ou la fermeture d'un composant modal" : "pilote l'ouverture ou la fermeture d'un composant modal");
-            if (tags.includes("api_response")) clauses.push(isPlural ? "appellent l'API ou traitent sa reponse" : "appelle l'API ou traite sa reponse");
-            if (tags.includes("structured_input")) clauses.push(isPlural ? "traitent des donnees d'entree structurees" : "traite des donnees d'entree structurees");
-            if (tags.includes("error")) clauses.push(isPlural ? "gerent un scenario d'erreur ou d'echec" : "gere un scenario d'erreur ou d'echec");
+            if (tags.includes("user_interaction")) clauses.push(isPlural ? "manage user interaction" : "manages user interaction");
+            if (tags.includes("display")) clauses.push(isPlural ? "support display, opening, or preview of the targeted item" : "supports display, opening, or preview of the targeted item");
+            if (tags.includes("delete")) clauses.push(isPlural ? "handle deletion of the targeted items" : "handles deletion of the targeted items");
+            if (tags.includes("selection")) clauses.push(isPlural ? "handle selection of the targeted items" : "handles selection of the targeted items");
+            if (tags.includes("create")) clauses.push(isPlural ? "create or save data" : "creates or saves data");
+            if (tags.includes("update")) clauses.push(isPlural ? "update data or displayed state" : "updates data or displayed state");
+            if (tags.includes("filter_search")) clauses.push(isPlural ? "manage filter or search criteria" : "manages filter or search criteria");
+            if (tags.includes("file_media")) clauses.push(isPlural ? "manipulate file or media data" : "manipulates file or media data");
+            if (tags.includes("refresh")) clauses.push(isPlural ? "refresh data or lists after the action" : "refreshes data or lists after the action");
+            if (tags.includes("modal")) clauses.push(isPlural ? "control modal opening or closing" : "controls modal opening or closing");
+            if (tags.includes("api_response")) clauses.push(isPlural ? "call the API or process its response" : "calls the API or processes its response");
+            if (tags.includes("structured_input")) clauses.push(isPlural ? "process structured input data" : "processes structured input data");
+            if (tags.includes("error")) clauses.push(isPlural ? "cover failure or error handling" : "covers failure or error handling");
 
             const uniqueClauses = uniq(clauses);
-            let prefix = "Ces fonctions";
-            if (!isPlural) prefix = "Cette fonction";
+            let prefix = "These functions";
+            if (!isPlural) prefix = "This function";
 
             if (context.kind === "front" && context.moduleName && context.componentName) {
-                prefix = `${prefix} du composant du module ${context.moduleName} (${context.componentName})`;
+                prefix = `${prefix} in the ${context.componentName} component of module ${context.moduleName}`;
             } else if (context.kind === "module" && context.moduleName) {
-                prefix = `${prefix} du module ${context.moduleName}`;
+                prefix = `${prefix} in module ${context.moduleName}`;
             } else if (context.kind === "backend" && context.microserviceName) {
-                prefix = `${prefix} du microservice ${context.microserviceName}`;
+                prefix = `${prefix} in microservice ${context.microserviceName}`;
             }
 
             if (!uniqueClauses.length) {
-                return prettifySentence(`${prefix} ${isPlural ? "couvrent" : "couvre"} le parcours fonctionnel principal associe`);
+                return prettifySentence(`${prefix} ${isPlural ? "cover" : "covers"} the main functional flow in scope`);
             }
             return prettifySentence(`${prefix} ${uniqueClauses.join(", ")}`);
         }
 
         function buildScenarioTestActions(tags) {
             const actions = [];
-            if (tags.includes("create") || tags.includes("http_post")) actions.push("Verifier la creation ou l'enregistrement des donnees avec un cas nominal et un cas d'erreur.");
-            if (tags.includes("update") || tags.includes("http_update")) actions.push("Verifier la mise a jour des donnees, la persistence du resultat et la coherence de l'etat affiche.");
-            if (tags.includes("delete") || tags.includes("http_delete")) actions.push("Verifier la suppression des elements concernes et l'etat de l'interface apres suppression.");
-            if (tags.includes("display") || tags.includes("http_get")) actions.push("Verifier l'affichage detaille, l'ouverture ou la previsualisation de l'element cible.");
-            if (tags.includes("selection")) actions.push("Verifier la gestion de la selection des elements et les restrictions associees.");
-            if (tags.includes("filter_search")) actions.push("Verifier les criteres de filtre ou de recherche, leur remise a zero et la coherence du resultat.");
-            if (tags.includes("refresh")) actions.push("Verifier le rafraichissement des donnees ou de la liste apres l'action.");
-            if (tags.includes("modal")) actions.push("Verifier l'ouverture et la fermeture du composant modal ainsi que les actions associees.");
-            if (tags.includes("file_media")) actions.push("Verifier le parcours fichier ou media, y compris la selection, l'affichage et les erreurs possibles.");
+            if (tags.includes("create") || tags.includes("http_post")) actions.push("Verify create or save behavior with both nominal and error cases.");
+            if (tags.includes("update") || tags.includes("http_update")) actions.push("Verify data updates, persistence, and displayed state consistency.");
+            if (tags.includes("delete") || tags.includes("http_delete")) actions.push("Verify deletion behavior and the resulting UI state after removal.");
+            if (tags.includes("display") || tags.includes("http_get")) actions.push("Verify detailed display, opening behavior, or preview behavior for the targeted item.");
+            if (tags.includes("selection")) actions.push("Verify item selection behavior and related restrictions.");
+            if (tags.includes("filter_search")) actions.push("Verify filter or search criteria, reset behavior, and result consistency.");
+            if (tags.includes("refresh")) actions.push("Verify data or list refresh after the action.");
+            if (tags.includes("modal")) actions.push("Verify modal open and close behavior and the related actions.");
+            if (tags.includes("file_media")) actions.push("Verify the file or media flow, including selection, display, and possible errors.");
             if (tags.includes("api_response") && !tags.includes("http_get") && !tags.includes("http_post") && !tags.includes("http_update") && !tags.includes("http_delete")) {
-                actions.push("Verifier le comportement de l'appel API et la reponse retournee dans le parcours nominal.");
+                actions.push("Verify API call behavior and the returned response in the nominal flow.");
             }
-            if (tags.includes("structured_input")) actions.push("Verifier la validite des donnees d'entree et le comportement avec des donnees invalides.");
-            if (tags.includes("error")) actions.push("Verifier le comportement en cas d'echec, d'erreur ou de reponse non nominale.");
-            if (!actions.length) actions.push("Verifier le parcours fonctionnel principal associe a ces fonctions.");
+            if (tags.includes("structured_input")) actions.push("Verify input validity and behavior with invalid data.");
+            if (tags.includes("error")) actions.push("Verify behavior in failure, error, or non-nominal response cases.");
+            if (!actions.length) actions.push("Verify the main functional flow associated with these functions.");
             return uniq(actions).join(" ");
         }
 
@@ -1688,22 +2317,22 @@
 
         function toDisplayBusinessDescription(desc) {
             const core = normalizeBusinessDescription(desc);
-            return prettifySentence(core || "Description metier non disponible");
+            return prettifySentence(core || "Business description not available");
         }
 
         function toDisplayFunctionalDescription(desc, functionCount) {
             let text = String(desc || "").trim();
-            if (!text) return "Description fonctionnelle non disponible.";
+            if (!text) return "Functional description not available.";
             if ((functionCount || 0) > 1) {
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+permet de/gi, "ces fonctions permettent de");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+traite/gi, "ces fonctions traitent");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+appelle/gi, "ces fonctions appellent");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+gere/gi, "ces fonctions gerent");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+utilise/gi, "ces fonctions utilisent");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+renvoie/gi, "ces fonctions renvoient");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+retourne/gi, "ces fonctions retournent");
-                text = text.replace(/,\s*la fonction\s+[A-Za-z0-9_:-]+/gi, ", ces fonctions");
-                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+/gi, "ces fonctions ");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+permet de/gi, "these functions allow");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+traite/gi, "these functions handle");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+appelle/gi, "these functions call");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+gere/gi, "these functions manage");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+utilise/gi, "these functions use");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+renvoie/gi, "these functions return");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+retourne/gi, "these functions return");
+                text = text.replace(/,\s*la fonction\s+[A-Za-z0-9_:-]+/gi, ", these functions");
+                text = text.replace(/la fonction\s+[A-Za-z0-9_:-]+\s+/gi, "these functions ");
             }
             return prettifySentence(text);
         }
@@ -1741,43 +2370,43 @@
 
             if (endpoint) {
                 if (endpoint.method === "GET") {
-                    actions.push("Verifier le chargement et l'affichage des donnees renvoyees par l'API.");
+                    actions.push("Verify data loading and display for the API response.");
                 } else if (endpoint.method === "POST") {
-                    actions.push("Verifier la creation ou l'enregistrement des donnees avec un cas nominal et un cas d'erreur.");
+                    actions.push("Verify create or save behavior with both nominal and error cases.");
                 } else if (endpoint.method === "PUT" || endpoint.method === "PATCH") {
-                    actions.push("Verifier la mise a jour des donnees, la persistence du resultat et la gestion d'erreur.");
+                    actions.push("Verify data updates, persistence, and error handling.");
                 } else if (endpoint.method === "DELETE") {
-                    actions.push("Verifier la suppression, le succes de l'action et la gestion d'erreur.");
+                    actions.push("Verify delete behavior, success handling, and error handling.");
                 }
             }
 
             if (evidenceText.includes("filter") || evidenceText.includes("search")) {
-                actions.push("Verifier les criteres de filtre ou de recherche, leur remise a zero et la coherence du resultat.");
+                actions.push("Verify filter or search criteria, reset behavior, and result consistency.");
             }
             if (evidenceText.includes("upload") || evidenceText.includes("image") || evidenceText.includes("file") || evidenceText.includes("blob")) {
-                actions.push("Verifier le parcours fichier ou image, y compris la selection, l'affichage et les erreurs possibles.");
+                actions.push("Verify the file or image flow, including selection, display, and possible errors.");
             }
             if (evidenceText.includes("openmodal") || evidenceText.includes("close") || evidenceText.includes("popup") || evidenceText.includes("modal")) {
-                actions.push("Verifier l'ouverture et la fermeture du composant modal ainsi que les actions associees.");
+                actions.push("Verify modal open and close behavior and the related actions.");
             }
             if (evidenceText.includes("supprimer") || evidenceText.includes("delete") || evidenceText.includes("remove")) {
-                actions.push("Verifier la suppression des elements concernes et l'etat de l'interface apres suppression.");
+                actions.push("Verify deletion behavior and the resulting UI state after removal.");
             }
             if (evidenceText.includes("selection") || evidenceText.includes("selected")) {
-                actions.push("Verifier la gestion de la selection des elements et les restrictions associees.");
+                actions.push("Verify item selection behavior and related restrictions.");
             }
             if (evidenceText.includes("rafraichir la liste") || evidenceText.includes("fetchblobs") || evidenceText.includes("reload") || evidenceText.includes("refresh")) {
-                actions.push("Verifier le rafraichissement des donnees ou de la liste apres l'action.");
+                actions.push("Verify data or list refresh after the action.");
             }
             if (evidenceText.includes("afficher un message en cas d'erreur") || evidenceText.includes("gestion erreur") || evidenceText.includes("catch") || evidenceText.includes("erreur")) {
-                actions.push("Verifier le comportement en cas d'echec, d'erreur ou de reponse non nominale.");
+                actions.push("Verify behavior in failure, error, or non-nominal response cases.");
             }
             if (evidenceText.includes("afficher") || evidenceText.includes("display") || evidenceText.includes("preview") || evidenceText.includes("open")) {
-                actions.push("Verifier l'affichage detaille, l'ouverture ou la previsualisation de l'element cible.");
+                actions.push("Verify detailed display, opening behavior, or preview behavior for the targeted item.");
             }
 
             if (!actions.length) {
-                actions.push("Verifier le parcours fonctionnel principal associe a cette fonction.");
+                actions.push("Verify the main functional flow associated with this function.");
             }
 
             return uniq(actions).join(" ");
@@ -1788,10 +2417,12 @@
             const target = document.getElementById("reportZone");
             if (!checks.length) {
                 target.innerHTML = `<div class="summary-box">Select at least one WorkItem.</div>`;
+                animateZone("reportZone");
                 return;
             }
             const ids = checks.map(c => c.value);
             target.innerHTML = `<div class="summary-box">Generating tester report...</div>`;
+            animateZone("reportZone");
             setButtonBusy("generateBtn", true, "Generating...");
 
             try {
@@ -1805,6 +2436,7 @@
                     const legacyData = await legacyRes.json();
                     if (!legacyRes.ok || legacyData.error) {
                         target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(legacyData.error || "Unable to generate report")}</div>`;
+                        animateZone("reportZone");
                         return;
                     }
                     data = legacyData;
@@ -1815,28 +2447,54 @@
                         if (maybe && maybe.error) errText = maybe.error;
                     } catch (_) {}
                     target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(errText)}</div>`;
+                    animateZone("reportZone");
                     return;
                 }
 
                 if (!data || data.error) {
                     target.innerHTML = `<div class="summary-box">Error: ${escapeHtml((data && data.error) || "Unable to generate report")}</div>`;
+                    animateZone("reportZone");
                     return;
                 }
                 renderTesterReport(data);
                 showToast("Scope report generated");
             } catch (err) {
                 target.innerHTML = `<div class="summary-box">Error: ${escapeHtml(err.message)}</div>`;
+                animateZone("reportZone");
             } finally {
                 setButtonBusy("generateBtn", false);
             }
         }
 
         let reportState = null;
+        let renderedMicroserviceMap = new Map();
 
         function buildReportModel(data) {
             const c = data.consolidated || {};
             const allFunctions = c.functions || [];
             const allMicroservices = c.microservices || [];
+            const workitemMetaById = new Map(
+                (Array.isArray(data.workitems) ? data.workitems : []).map(wi => [
+                    String(wi.id),
+                    {
+                        id: wi.id,
+                        title: wi.title || wi.titre || "",
+                        type: wi.type || ""
+                    }
+                ])
+            );
+            const microserviceMetaByName = new Map(
+                allMicroservices.map(ms => [
+                    String(ms.name || "").trim().toLowerCase(),
+                    {
+                        workitemIds: Array.isArray(ms.workitem_ids) ? ms.workitem_ids : [],
+                        workitemCount: Number(ms.workitem_count || 0),
+                        commitCount: Number(ms.commit_count || 0),
+                        functionCount: Number(ms.function_count || 0),
+                        filesCount: Number(ms.files_count || 0)
+                    }
+                ])
+            );
             const groupedByMs = {};
 
             function ensureGroup(ms, groupKey, seed) {
@@ -1860,6 +2518,8 @@
                         impactLabel: seed.impactLabel || "",
                         businessSymptom: seed.businessSymptom || "",
                         technicalJustification: seed.technicalJustification || "",
+                        uiScreens: new Set(seed.uiScreens || []),
+                        uiComponents: new Set(seed.uiComponents || []),
                         functionMap: new Map(),
                         prioritySet: new Set(seed.priority ? [seed.priority] : []),
                         hasP1: seed.priority === "P1",
@@ -1873,8 +2533,8 @@
                 const msList = (Array.isArray(fn.microservices) && fn.microservices.length) ? fn.microservices : ["unknown-microservice"];
                 const scopeTypeRaw = String(fn.function_scope_type || ((fn.evidence_lines_count || 0) > 0 ? "P1 touchee prouvee" : "P2/P3 candidate"));
                 const priority = scopeTypeRaw.toLowerCase().includes("p1") ? "P1" : "P2/P3";
-                const desc = fn.description || "Description metier non disponible.";
-                const functionalDesc = fn.functional_description || "Description fonctionnelle non disponible.";
+                const desc = fn.description || "Business description not available.";
+                const functionalDesc = fn.functional_description || "Functional description not available.";
                 const descCore = normalizeBusinessDescription(desc);
                 const context = extractScenarioContext(functionalDesc, msList[0] || "unknown-microservice");
                 const evidenceActions = deriveTestActionsFromEvidence(fn, desc, functionalDesc);
@@ -1891,16 +2551,28 @@
                         descDisplay: toDisplayBusinessDescription(desc),
                         context,
                         scenarioTags,
-                        recommendedActions
+                        recommendedActions,
+                        uiScreens: fn.ui_screens || [],
+                        uiComponents: fn.ui_components || []
                     });
                     g.functions.add(fnId);
-                    g.functionMap.set(fnId, { id: fnId, priority });
+                    g.functionMap.set(fnId, {
+                        id: fnId,
+                        priority,
+                        uiScreens: Array.isArray(fn.ui_screens) ? fn.ui_screens : [],
+                        uiComponents: Array.isArray(fn.ui_components) ? fn.ui_components : [],
+                        description: desc,
+                        functionalDesc,
+                        recommendedActions
+                    });
                     g.descCandidates.push(desc);
                     g.prioritySet.add(priority);
                     g.hasP1 = g.hasP1 || priority === "P1";
                     g.hasP23 = g.hasP23 || priority !== "P1";
                     if (priority === "P1") g.priority = "P1";
                     scenarioTags.forEach(tag => g.scenarioTags.add(tag));
+                    (fn.ui_screens || []).forEach(screen => g.uiScreens.add(String(screen)));
+                    (fn.ui_components || []).forEach(component => g.uiComponents.add(String(component)));
                     g.searchBlob += ` ${ms} ${fnId} ${desc} ${functionalDesc} ${Array.from(scenarioTags).join(" ")}`;
                 }
             }
@@ -1910,8 +2582,8 @@
                 if (!msName) continue;
                 const fallbackGroups = Array.isArray(msEntry.fallback_groups) ? msEntry.fallback_groups : [];
                 for (const fg of fallbackGroups) {
-                    const desc = String(fg.description || "Microservice direct impacte sans fonction metier prouvee.").trim();
-                    const functionalDesc = String(fg.functional_description || "Description fonctionnelle non disponible.").trim();
+                    const desc = String(fg.description || "Direct microservice impact without an explicitly proven business function.").trim();
+                    const functionalDesc = String(fg.functional_description || "Functional description not available.").trim();
                     const priority = String(fg.priority || (Number(fg.priority_order || 2) === 1 ? "P1" : "P2/P3")).trim();
                     const context = extractScenarioContext(functionalDesc, msName);
                     const scenarioTags = extractScenarioTags({ files: fg.files || [] }, desc, functionalDesc, fg.what_to_test || "");
@@ -1926,8 +2598,8 @@
                         recommendedActions: String(fg.what_to_test || "").trim(),
                         preserveFunctionalText: true,
                         preserveTestActions: true,
-                        fallbackLabel: String(fg.fallback_label || "Aucune fonction metier prouvee").trim(),
-                        impactLabel: String(fg.impact_label || fg.scope_label || "Impact microservice direct").trim(),
+                        fallbackLabel: String(fg.fallback_label || "No explicitly proven business function").trim(),
+                        impactLabel: String(fg.impact_label || fg.scope_label || "Direct microservice impact").trim(),
                         businessSymptom: String(fg.business_symptom || "").trim(),
                         technicalJustification: String(fg.technical_justification || "").trim(),
                         isFallback: true,
@@ -1947,20 +2619,30 @@
 
             const microservices = Object.values(groupedByMs).map(msObj => ({
                 name: msObj.name,
+                workitemIds: (microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.workitemIds || []).slice(),
+                workitems: (microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.workitemIds || [])
+                    .map(id => workitemMetaById.get(String(id)))
+                    .filter(Boolean),
+                workitemCount: microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.workitemCount || 0,
+                commitCount: microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.commitCount || 0,
+                functionCount: microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.functionCount || 0,
+                filesCount: microserviceMetaByName.get(String(msObj.name || "").trim().toLowerCase())?.filesCount || 0,
                 groups: Object.values(msObj.groups).map(g => ({
                     priority: g.priority,
                     desc: pickBestBusinessDescription(g.descCandidates && g.descCandidates.length ? g.descCandidates : [g.desc]),
                     functionalDesc: g.preserveFunctionalText
-                        ? (g.functionalDesc || "Description fonctionnelle non disponible.")
+                        ? (g.functionalDesc || "Functional description not available.")
                         : buildScenarioFunctionalDescription(g.context, Array.from(g.scenarioTags), g.functions.size || g.functions.length || 0),
                     testActions: g.preserveTestActions
-                        ? (g.recommendedActions || "Actions test recommandees non disponibles.")
+                        ? (g.recommendedActions || "Recommended test actions not available.")
                         : (g.recommendedActions || buildScenarioTestActions(Array.from(g.scenarioTags))),
                     functions: Array.from(g.functions).sort(),
                     functionItems: Array.from(g.functionMap.values()).sort((a, b) => {
                         if (a.priority !== b.priority) return a.priority === "P1" ? -1 : 1;
                         return a.id.localeCompare(b.id);
                     }),
+                    uiScreens: Array.from(g.uiScreens || []).sort(),
+                    uiComponents: Array.from(g.uiComponents || []).sort(),
                     searchBlob: normalizeText(g.searchBlob),
                     fallbackLabel: g.fallbackLabel || "",
                     isFallback: !!g.isFallback,
@@ -2146,17 +2828,17 @@
             if (!panel) return;
             if (!selectedFn || selectedFn === "__all__" || !group) {
                 panel.innerHTML = `
-                    <div class="title"><i class="fas fa-lightbulb"></i> Details fonctionnels</div>
-                    <div class="line">Selectionne une fonction pour afficher son contexte de test.</div>
+                    <div class="title"><i class="fas fa-lightbulb"></i> Functional details</div>
+                    <div class="line">Select a function to view its testing context.</div>
                 `;
                 return;
             }
             panel.innerHTML = `
                 <div class="title"><i class="fas fa-code"></i> ${escapeHtml(selectedFn)}</div>
-                <div class="line"><strong>Priorite:</strong> ${escapeHtml((group.functionItems || []).find(fn => fn.id === selectedFn)?.priority || group.priority || "N/A")}</div>
-                <div class="line"><strong>Description metier:</strong> ${escapeHtml(group.desc || "N/A")}</div>
-                <div class="line"><strong>Description fonctionnelle:</strong> ${escapeHtml(group.functionalDesc || "N/A")}</div>
-                <div class="line"><strong>Actions test recommandees:</strong> ${escapeHtml(group.testActions || "N/A")}</div>
+                <div class="line"><strong>Priority:</strong> ${escapeHtml((group.functionItems || []).find(fn => fn.id === selectedFn)?.priority || group.priority || "N/A")}</div>
+                <div class="line"><strong>Business description:</strong> ${escapeHtml(translateReportText(group.desc || "N/A"))}</div>
+                <div class="line"><strong>Functional description:</strong> ${escapeHtml(translateReportText(group.functionalDesc || "N/A"))}</div>
+                <div class="line"><strong>Recommended test actions:</strong> ${escapeHtml(translateReportText(group.testActions || "N/A"))}</div>
             `;
         }
 
@@ -2202,6 +2884,7 @@
             const totalFunctions = filteredMs.reduce((acc, ms) => acc + ms.groups.reduce((gAcc, g) => gAcc + g.functions.length, 0), 0);
             let matchedGroupForFunction = null;
             const inspectorFn = selectedFunctions.length === 1 ? selectedFunctions[0] : "";
+            renderedMicroserviceMap = new Map(filteredMs.map(ms => [ms.name, ms]));
 
             const msCards = filteredMs.map((msObj, msIndex) => {
                 const groups = msObj.groups.sort((a, b) => {
@@ -2215,11 +2898,11 @@
                     <div class="group-card ${g.priority === "P1" ? "p1-group" : "p23-group"}">
                         <div class="group-head">
                             <span class="pill ${g.priority === "P1" ? "p1" : "p23"}">${escapeHtml(g.priority)}</span>
-                            <span class="group-meta">${g.functions.length ? `${g.functions.length} fonction(s) dans ce groupe` : escapeHtml(g.fallbackLabel || "Aucune fonction metier prouvee")}</span>
+                            <span class="group-meta">${g.functions.length ? `${g.functions.length} function(s) in this group` : escapeHtml(g.fallbackLabel || "No proven business function")}</span>
                         </div>
                         <div class="group-grid">
                             <div class="group-row">
-                                <div class="group-key">Fonctions concernees</div>
+                                <div class="group-key">Functions in scope</div>
                                 <div class="group-val chips">
                                     ${g.functions.length
                                         ? (g.functionItems || []).map(fn => `
@@ -2228,26 +2911,26 @@
                                                 <span>${escapeHtml(fn.id)}</span>
                                             </span>
                                         `).join("")
-                                        : `<span class="chip chip-fn">${escapeHtml(g.fallbackLabel || "Aucune fonction metier prouvee")}</span>`}
+                                        : `<span class="chip chip-fn">${escapeHtml(g.fallbackLabel || "No proven business function")}</span>`}
                                 </div>
                             </div>
                             ${g.isFallback ? `
                             <div class="group-row">
-                                <div class="group-key">Type d'impact</div>
-                                <div class="group-val">${escapeHtml(g.impactLabel || "Impact microservice direct")}</div>
+                                <div class="group-key">Impact type</div>
+                                <div class="group-val">${escapeHtml(translateReportText(g.impactLabel || "Direct microservice impact"))}</div>
                             </div>
                             ` : ``}
                             <div class="group-row">
-                                <div class="group-key">Description metier</div>
-                                <div class="group-val">${escapeHtml(g.desc)}</div>
+                                <div class="group-key">Business description</div>
+                                <div class="group-val">${escapeHtml(translateReportText(g.desc))}</div>
                             </div>
                             <div class="group-row">
-                                <div class="group-key">Description fonctionnelle</div>
-                                <div class="group-val">${escapeHtml(g.functionalDesc)}</div>
+                                <div class="group-key">Functional description</div>
+                                <div class="group-val">${escapeHtml(translateReportText(g.functionalDesc))}</div>
                             </div>
                             <div class="group-row">
-                                <div class="group-key">Actions test recommandees</div>
-                                <div class="group-val">${escapeHtml(g.testActions)}</div>
+                                <div class="group-key">Recommended test actions</div>
+                                <div class="group-val">${escapeHtml(translateReportText(g.testActions))}</div>
                             </div>
                         </div>
                     </div>
@@ -2267,13 +2950,16 @@
                                     <i class="fas fa-cubes"></i>
                                     <span class="ms-title-name">${escapeHtml(msObj.name)}</span>
                                 </div>
-                                <div class="ms-subtitle">Clique pour ouvrir le detail fonctionnel de ce microservice.</div>
+                                <div class="ms-subtitle">Click to open the functional detail for this microservice.</div>
                             </div>
                             <div class="ms-head-side">
-                                <span class="ms-stat"><i class="fas fa-layer-group"></i> ${groups.length} groupes</span>
+                                <span class="ms-stat"><i class="fas fa-layer-group"></i> ${groups.length} groups</span>
                                 <span class="ms-stat"><i class="fas fa-bolt"></i> P1: ${p1Count}</span>
                                 <span class="ms-stat"><i class="fas fa-shield-alt"></i> P2/P3: ${p23Count}</span>
-                                <span class="ms-open-hint">Voir details <i class="fas fa-chevron-down caret"></i></span>
+                                <button class="ms-summary-btn" type="button" onclick='event.preventDefault(); event.stopPropagation(); openTesterSummary(${JSON.stringify(msObj.name)})'>
+                                    <i class="fas fa-list-check"></i> Summary
+                                </button>
+                                <span class="ms-open-hint">View details <i class="fas fa-chevron-down caret"></i></span>
                             </div>
                         </summary>
                         <div class="ms-body">
@@ -2294,11 +2980,220 @@
             return { filteredMs, totalGroups, totalFunctions };
         }
 
+        function ensureSentence(value) {
+            const text = String(value || "").trim();
+            if (!text) return "";
+            return /[.!?]$/.test(text) ? text : `${text}.`;
+        }
+
+        function dedupeTexts(values) {
+            const out = [];
+            const seen = new Set();
+            for (const value of values || []) {
+                const text = String(value || "").replace(/\s+/g, " ").trim();
+                if (!text) continue;
+                const key = text.toLowerCase();
+                if (seen.has(key)) continue;
+                seen.add(key);
+                out.push(text);
+            }
+            return out;
+        }
+
+        function splitRecommendedActions(text) {
+            return String(text || "")
+                .split(/(?<=[.!?])\s+/)
+                .map(part => String(part || "").trim())
+                .filter(Boolean);
+        }
+
+        function extractModuleFromFunctionId(fnId) {
+            const match = String(fnId || "").match(/^[^:]+::([^:]+)::/);
+            return match ? match[1] : "";
+        }
+
+        function humanizeToken(value) {
+            return String(value || "")
+                .replace(/[_-]+/g, " ")
+                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function translateReportText(value) {
+            let text = String(value || "").trim();
+            if (!text) return "";
+
+            const replacements = [
+                [/\bAucune fonction metier prouvee\b/gi, "No proven business function"],
+                [/\bAucune fonction métier prouvée\b/gi, "No proven business function"],
+                [/\bImpact infra\/config\b/gi, "Infrastructure/config impact"],
+                [/\bImpact microservice direct\b/gi, "Direct microservice impact"],
+                [/\bP2\/P3 microservice direct\b/gi, "P2/P3 direct microservice impact"],
+                [/\bDescription metier non disponible\b/gi, "Business description not available"],
+                [/\bDescription métier non disponible\b/gi, "Business description not available"],
+                [/\bDescription fonctionnelle non disponible\b/gi, "Functional description not available"],
+                [/\bDans le composant du module\b/gi, "In the module component"],
+                [/\bDans le composant UI\b/gi, "In the UI component"],
+                [/\bDans le microservice\b/gi, "In the microservice"],
+                [/\bla fonction\b/gi, "the function"],
+                [/\bles fonctions\b/gi, "the functions"],
+                [/\bles changements touchent directement\b/gi, "the changes directly affect"],
+                [/\btraite l'endpoint\b/gi, "handles endpoint"],
+                [/\bappelle\b/gi, "calls"],
+                [/\bmet a jour\b/gi, "updates"],
+                [/\bmet à jour\b/gi, "updates"],
+                [/\bcree\/ajoute des donnees\b/gi, "creates/adds data"],
+                [/\bcrée\/ajoute des données\b/gi, "creates/adds data"],
+                [/\bgere une interaction utilisateur \(clic\/action\)\b/gi, "handles user interaction (click/action)"],
+                [/\bgere des donnees media\/fichier\b/gi, "handles media/file data"],
+                [/\bgère des données media\/fichier\b/gi, "handles media/file data"],
+                [/\bgere la logique de filtre\/recherche\b/gi, "handles filtering/search logic"],
+                [/\bgere le filtrage\/recherche metier\b/gi, "handles business filtering/search"],
+                [/\bgère le filtrage\/recherche métier\b/gi, "handles business filtering/search"],
+                [/\bgere l'ouverture\/fermeture de modal\b/gi, "handles modal open/close behavior"],
+                [/\bgere un scenario d'erreur ou d'echec\b/gi, "handles a failure or error scenario"],
+                [/\bgère un scénario d'erreur ou d'échec\b/gi, "handles a failure or error scenario"],
+                [/\brafraichit les donnees ou la liste apres action\b/gi, "refreshes data or lists after the action"],
+                [/\brafraîchit les données ou la liste après action\b/gi, "refreshes data or lists after the action"],
+                [/\bVerifier\b/gi, "Verify"],
+                [/\bRetester\b/gi, "Retest"],
+                [/\bsucces\b/gi, "success"],
+                [/\bsuccesses\b/gi, "success"],
+                [/\béchec\b/gi, "failure"],
+                [/\berreur\b/gi, "error"],
+                [/\bdonnees\b/gi, "data"],
+                [/\bdonnées\b/gi, "data"],
+                [/\bselection\b/gi, "selection"],
+                [/\bprevisualisation\b/gi, "preview"],
+                [/\baffichage\b/gi, "display"],
+                [/\bcoherence\b/gi, "consistency"],
+                [/\bmodale\b/gi, "modal"]
+            ];
+
+            for (const [pattern, replacement] of replacements) {
+                text = text.replace(pattern, replacement);
+            }
+
+            return text
+                .replace(/\s+/g, " ")
+                .replace(/\s+([,.;:!?])/g, "$1")
+                .trim();
+        }
+
+        function buildTesterSummaryModel(msObj) {
+            const screens = new Set();
+            const descs = [];
+            const functionalDescs = [];
+            const actionLines = [];
+
+            for (const group of msObj.groups || []) {
+                if (group.desc) descs.push(group.desc);
+                if (group.functionalDesc) functionalDescs.push(group.functionalDesc);
+                splitRecommendedActions(group.testActions).forEach(action => actionLines.push(action));
+                (group.uiScreens || []).forEach(screen => screens.add(String(screen)));
+                (group.functionItems || []).forEach(fn => {
+                    (fn.uiScreens || []).forEach(screen => screens.add(String(screen)));
+                });
+            }
+
+            const screenTargets = dedupeTexts(
+                Array.from(screens).filter(screen => !/^(app|main|index|loading|unauthorized)$/i.test(String(screen || "").trim()))
+            ).slice(0, 10);
+
+            const businessLines = dedupeTexts(descs)
+                .filter(text => !/non disponible/i.test(text))
+                .slice(0, 2)
+                .map(text => ensureSentence(translateReportText(text)));
+
+            const recapLines = dedupeTexts(functionalDescs)
+                .filter(text => !/non disponible/i.test(text))
+                .slice(0, 1)
+                .map(text => ensureSentence(translateReportText(text)));
+
+            const actionSummary = dedupeTexts(actionLines)
+                .filter(text => !/non disponible/i.test(text))
+                .slice(0, 4)
+                .map(text => ensureSentence(translateReportText(text)));
+
+            return {
+                uiTargets: screenTargets,
+                businessLines,
+                recapLines,
+                actions: actionSummary
+            };
+        }
+
+        function openTesterSummary(msName) {
+            const msObj = renderedMicroserviceMap.get(msName) || (reportState && reportState.microservices || []).find(ms => ms.name === msName);
+            if (!msObj) {
+                showToast("Summary unavailable for this microservice.");
+                return;
+            }
+
+            const summary = buildTesterSummaryModel(msObj);
+            const workitems = Array.isArray(msObj.workitems) ? msObj.workitems : [];
+            const workitemsMarkup = workitems.length
+                ? workitems.map(wi => `
+                    <div class="tester-summary-workitem">
+                        <strong>#${escapeHtml(wi.id)}</strong>${wi.title ? ` - ${escapeHtml(wi.title)}` : ""}
+                    </div>
+                `).join("")
+                : `<span class="tester-summary-chip empty">No workitem metadata is available for this microservice in the current scope.</span>`;
+
+            document.getElementById("testerSummaryTitle").textContent = `Tester Summary - ${msObj.name}`;
+            document.getElementById("testerSummarySubtitle").textContent =
+                "Compact retest recap built from the current evidence-based NRT scope.";
+
+            document.getElementById("testerSummaryContent").innerHTML = `
+                <div class="tester-summary-kpis">
+                    <div class="tester-summary-kpi"><div class="k">Microservice</div><div class="v" style="font-size:18px">${escapeHtml(msObj.name)}</div></div>
+                    <div class="tester-summary-kpi tester-summary-kpi-wide">
+                        <div class="k">Related WorkItems</div>
+                        <div class="v">
+                            <div class="tester-summary-workitems">${workitemsMarkup}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tester-summary-grid">
+                    <div class="tester-summary-card">
+                        <h4><i class="fas fa-desktop"></i> Screens to review</h4>
+                        <div class="tester-summary-chip-row">
+                            ${summary.uiTargets.length
+                                ? summary.uiTargets.map(item => `<span class="tester-summary-chip">${escapeHtml(item)}</span>`).join("")
+                                : `<span class="tester-summary-chip empty">No explicit screen name was extracted from /views/ or /pages/ files in the current scope.</span>`}
+                        </div>
+                    </div>
+                    <div class="tester-summary-card">
+                        <h4><i class="fas fa-list-check"></i> Retest focus</h4>
+                        <ul>
+                            ${(summary.actions.length
+                                ? summary.actions
+                                : ["Retest the main nominal flow and the checkpoints directly linked to the current scope."])
+                                .map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+                        </ul>
+                    </div>
+                </div>
+            `;
+
+            const overlay = document.getElementById("testerSummaryOverlay");
+            overlay.classList.add("show");
+            document.body.style.overflow = "hidden";
+        }
+
+        function closeTesterSummary(event) {
+            if (event && event.target && event.target !== event.currentTarget) return;
+            const overlay = document.getElementById("testerSummaryOverlay");
+            overlay.classList.remove("show");
+            document.body.style.overflow = "";
+        }
+
         function applyReportDisplayOptions() {
             if (!reportState) return;
             buildFunctionOptions(reportState.microservices);
             const opts = getReportViewOptions();
             renderMsCards(reportState.microservices, opts);
+            animateZone("reportZone");
         }
 
         function renderTesterReport(data) {
@@ -2307,9 +3202,9 @@
 
             document.getElementById("reportZone").innerHTML = `
                 <div class="scope-kpi-grid">
-                    <div class="scope-kpi"><div class="k">WorkItems scopes</div><div class="v">${data.scoped_workitem_count || 0}</div></div>
-                    <div class="scope-kpi"><div class="k">Microservices directs</div><div class="v">${c.microservice_count || 0}</div></div>
-                    <div class="scope-kpi"><div class="k">Fonctions consolidees</div><div class="v">${c.function_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">WorkItems in scope</div><div class="v">${data.scoped_workitem_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">Direct microservices</div><div class="v">${c.microservice_count || 0}</div></div>
+                    <div class="scope-kpi"><div class="k">Consolidated functions</div><div class="v">${c.function_count || 0}</div></div>
                     <div class="scope-kpi"><div class="k">Mode</div><div class="v" style="font-size:16px">Direct only</div></div>
                 </div>
                 <div class="report-tools">
@@ -2349,8 +3244,8 @@
                     </div>
                 </div>
                 <div id="functionInspector" class="function-inspector">
-                    <div class="title"><i class="fas fa-lightbulb"></i> Function details</div>
-                    <div class="line">Choose a function to view business details.</div>
+                    <div class="title"><i class="fas fa-lightbulb"></i> Functional details</div>
+                    <div class="line">Select a function to view its testing context.</div>
                 </div>
                 <div id="msCardsZone" class="scope-by-ms"></div>
             `;
@@ -2377,11 +3272,16 @@
                 if (!kind || !value) return;
                 onMultiOptionChange(kind, value, target.checked);
             });
+            document.addEventListener("keydown", (event) => {
+                if (event.key === "Escape") closeTesterSummary();
+            });
             document.addEventListener("click", (event) => {
                 const wrapper = document.getElementById("typeDropdown");
                 if (wrapper && !wrapper.contains(event.target)) closeTypeDropdown();
                 const sprintWrapper = document.getElementById("sprintDropdown");
                 if (sprintWrapper && !sprintWrapper.contains(event.target)) closeSprintDropdown();
+                const statusWrapper = document.getElementById("statusDropdown");
+                if (statusWrapper && !statusWrapper.contains(event.target)) closeStatusDropdown();
                 const dropdownWrappers = [
                     document.getElementById("msFilterWrap"),
                     document.getElementById("priorityFilterWrap"),
